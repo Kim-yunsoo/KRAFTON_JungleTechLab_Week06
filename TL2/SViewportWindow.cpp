@@ -281,6 +281,13 @@ void SViewportWindow::RenderToolbar()
 				Viewport->ToggleShowFlag(EEngineShowFlags::SF_BoundingBoxes);
 			}
 
+			// Decals
+			bool bDecalsEnabled = Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals);
+			if (ImGui::Checkbox("Decals", &bDecalsEnabled))
+			{
+				Viewport->ToggleShowFlag(EEngineShowFlags::SF_Decals);
+			}
+
 			//// Wireframe
 			//bool bWireframeEnabled = Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Wireframe);
 			//if (ImGui::Checkbox("Wireframe", &bWireframeEnabled))
