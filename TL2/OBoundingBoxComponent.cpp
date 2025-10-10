@@ -44,7 +44,7 @@ void UOBoundingBoxComponent::UpdateFromWorld(const FMatrix& World)
 }
 
 bool UOBoundingBoxComponent::IntersectWithAABB(FBound AABB)
-{
+{ 
     // TODO: SAT Algorithm 
     FVector t = AABB.GetCenter() - GetCenter();
 

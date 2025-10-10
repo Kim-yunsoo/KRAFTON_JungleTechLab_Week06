@@ -9,7 +9,6 @@
 #include "StaticMeshComponent.h"
 #include "StaticMesh.h"
 
-IMPLEMENT_CLASS(UDecalComponent)
 
 UDecalComponent::UDecalComponent()
 {
@@ -23,7 +22,16 @@ UDecalComponent::UDecalComponent()
     {
         Material->Load("Editor/Decal/SpotLight_64x.dds", UResourceManager::GetInstance().GetDevice());
     }
-  
+
+    //Decal Stat  Init
+    DecalStat.SortOrder = 0;
+    DecalStat.FadeInDuration = 0;
+    DecalStat.FadeStartDelay = 0;
+    DecalStat.FadeDuration = 0; 
+
+    CurrentAlpha = 1.0f;
+    CurrentStateElapsedTime = 0.0f;
+    DecalCurrentState = EDecalState::Finished;
 }
 
 UDecalComponent::~UDecalComponent()
@@ -48,20 +56,20 @@ void UDecalComponent::RenderOnActor(URenderer* Renderer, AActor* TargetActor, co
 
     FMatrix DecalProj = FMatrix::OrthoLH(OrthoWidth, OrthoHeight, NearZ, FarZ);
       
-    // Prepare pipeline with projection decal shader
+    // Prepare pipeline 
     UShader* DecalProjShader = UResourceManager::GetInstance().Load<UShader>("ProjectionDecal.hlsl");
 
     Renderer->PrepareShader(DecalProjShader);
     Renderer->OMSetBlendState(true);
     Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqualReadOnly);  
 
-    ID3D11DeviceContext* ctx = Renderer->GetRHIDevice()->GetDeviceContext();
+    ID3D11DeviceContext* DevieContext = Renderer->GetRHIDevice()->GetDeviceContext();
 
     // Bind decal texture
     if (Material->GetTexture())
     {
         ID3D11ShaderResourceView* texSRV = Material->GetTexture()->GetShaderResourceView();
-        ctx->PSSetShaderResources(0, 1, &texSRV);
+        DevieContext->PSSetShaderResources(0, 1, &texSRV);
     }
     Renderer->GetRHIDevice()->PSSetDefaultSampler(0);
 
@@ -89,16 +97,16 @@ void UDecalComponent::RenderOnActor(URenderer* Renderer, AActor* TargetActor, co
         UINT offset = 0;
         ID3D11Buffer* vb = Mesh->GetVertexBuffer();
         ID3D11Buffer* ib = Mesh->GetIndexBuffer();
-        ctx->IASetVertexBuffers(0, 1, &vb, &stride, &offset);
-        ctx->IASetIndexBuffer(ib, DXGI_FORMAT_R32_UINT, 0);
-        ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        DevieContext->IASetVertexBuffers(0, 1, &vb, &stride, &offset);
+        DevieContext->IASetIndexBuffer(ib, DXGI_FORMAT_R32_UINT, 0);
+        DevieContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-        ctx->DrawIndexed(Mesh->GetIndexCount(), 0, 0);
+        DevieContext->DrawIndexed(Mesh->GetIndexCount(), 0, 0);
     }
 
     // Unbind SRVs
     ID3D11ShaderResourceView* nullSRV[2] = { nullptr, nullptr };
-    ctx->PSSetShaderResources(0, 2, nullSRV);
+    DevieContext->PSSetShaderResources(0, 2, nullSRV);
 
     Renderer->OMSetBlendState(false);
     Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
@@ -112,13 +120,39 @@ void UDecalComponent::SetDecalTexture(const FString& TexturePath)
     Material->Load(TexturePath, UResourceManager::GetInstance().GetDevice());
 }
 
+void UDecalComponent::StatTick(float DeltaTime)
+{
+    if (GetFadeInDuration() >= 0) 
+    {
+
+    }
+
+}
+
+void UDecalComponent::ActivateFadeEffect()
+{
+    /*switch (DecalCurrentState)
+    {
+    case EDecalState::FadeIn:
+        break;
+    case EDecalState::FadeIn:
+        break;
+    case EDecalState::FadeIn:
+        break;
+    }*/
+}
+
 UObject* UDecalComponent::Duplicate()
 {
     UDecalComponent* DuplicatedComponent = Cast<UDecalComponent>(NewObject(GetClass()));
+   
+    
     if (DuplicatedComponent)
     {
-        DuplicatedComponent->DecalSize = DecalSize;
-        DuplicatedComponent->BlendMode = BlendMode;
+        DuplicatedComponent->SetDecalStat(GetDecalStat());
+
+        //DuplicatedComponent->DecalSize = DecalSize;
+        //DuplicatedComponent->BlendMode = BlendMode;
     }
     return DuplicatedComponent;
 }

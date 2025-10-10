@@ -2,6 +2,32 @@
 #pragma once
 #include "PrimitiveComponent.h"
 #include "StaticMesh.h"
+ 
+enum class EDecalState : uint8
+{
+   FadeIn,
+   Delay,
+   FadingOut,
+   Finished,
+};
+
+struct FDecalStat
+{ 
+    /** Decal이 그려지는 순서, 값이 클 수록 나중에 그려진다. */
+    int32 SortOrder;
+
+    /** Decal이 나타나는데 걸리는 시간 (투명 -> 불투명) */
+    float FadeInDuration;
+
+    /** Decal 지속 시간 */
+    float FadeStartDelay;
+
+    /** Decal이 Fadeout으로 사라지는데 걸리는 시간 */
+    float FadeDuration;
+
+    /** Decal Space에서의 크기 */
+    FVector DecalSize;
+};
 
 class UDecalComponent : public UPrimitiveComponent
 {
@@ -13,7 +39,6 @@ public:
     
     //void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj) override;
 
-    void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj, FViewport* Viewport) ;
     void RenderOnActor(URenderer* Renderer, AActor* TargetActor, const FMatrix& View, const FMatrix& Proj);
     
     // 데칼 크기 설정 (박스 볼륨의 크기)
@@ -22,11 +47,30 @@ public:
 
     // 데칼 텍스처 설정
     void SetDecalTexture(const FString& TexturePath);
+     
+    void StatTick(float DeltaTime);
+   
+    // Fade 효과를 처음부터 시작시키는 함수
+    void ActivateFadeEffect();
+
+    // 현재 계산된 투명도 값을 반환하는 함수
+    float GetCurrentAlpha() const { return CurrentAlpha; }
 
     UObject* Duplicate() override;
     void DuplicateSubObjects() override;
 
     UStaticMesh* GetDecalBoxMesh() const { return DecalBoxMesh; }
+
+    float GetFadeInDuration() { return DecalStat.FadeInDuration; }
+    float GetFadeStartDelay() { return DecalStat.FadeStartDelay; }
+    float GetFadeDuration() { return DecalStat.FadeInDuration; }
+
+    void SetFadeInDuration(float Value) { DecalStat.FadeInDuration = Value; }
+    void SetFadeStartDelay(float Value) { DecalStat.FadeStartDelay = Value; }
+    void SetFadeDuration(float Value) { DecalStat.FadeInDuration = Value; }
+
+    FDecalStat GetDecalStat() { return DecalStat; }
+    void SetDecalStat(FDecalStat Stat) { DecalStat = Stat; }
 protected:
     // 데칼 박스 메쉬 (큐브)
     UStaticMesh* DecalBoxMesh = nullptr;
@@ -34,14 +78,19 @@ protected:
     // 데칼 크기
     FVector DecalSize = FVector(1.0f, 1.0f, 1.0f);
 
-    // 데칼 블렌드 모드
-    enum class EDecalBlendMode
-    {
-        Translucent,    // 반투명 블렌딩
-        Stain,          // 곱셈 블렌딩
-        Normal,         // 노멀맵
-        Emissive        // 발광
-    };
 
-    EDecalBlendMode BlendMode = EDecalBlendMode::Translucent;
+    EDecalState DecalCurrentState;
+    FDecalStat DecalStat;
+    
+    float CurrentAlpha;
+    float CurrentStateElapsedTime;
+
+    // 데칼 블렌드 모드
+    //enum class EDecalBlendMode
+    //{
+    //    Translucent,    // 반투명 블렌딩
+    //    Stain,          // 곱셈 블렌딩
+    //    Normal,         // 노멀맵
+    //    Emissive        // 발광
+    //};
 };

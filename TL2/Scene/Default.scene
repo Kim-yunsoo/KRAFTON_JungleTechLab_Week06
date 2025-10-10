@@ -1,187 +1,78 @@
 {
   "Version" : 2,
-  "NextUUID" : 554,
+  "NextUUID" : 714,
   "PerspectiveCamera" : {
     "FOV" : [60.000000],
     "FarClip" : [4000.000000],
-    "Location" : [-5.490052, -9.806613, 6.427300],
+    "Location" : [-5.777772, -3.261525, 3.857491],
     "NearClip" : [0.100000],
-    "Rotation" : [0.000000, 29.499992, 34.499996]
+    "Rotation" : [0.000000, 25.100010, 21.600000]
   },
   "Actors" : [
     {
-      "UUID" : 504,
+      "UUID" : 530,
       "Type" : "ADecalActor",
-      "Name" : "DefaultActor",
-      "RootComponentUUID" : 505
+      "Name" : "Decal_0",
+      "RootComponentUUID" : 531
     },
     {
-      "UUID" : 504,
-      "Type" : "ADecalActor",
-      "Name" : "DefaultActor",
-      "RootComponentUUID" : 505
-    },
-    {
-      "UUID" : 537,
+      "UUID" : 539,
       "Type" : "AStaticMeshActor",
       "Name" : "Cube_0",
-      "RootComponentUUID" : 539
-    },
-    {
-      "UUID" : 541,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Cube_1",
-      "RootComponentUUID" : 543
-    },
-    {
-      "UUID" : 545,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Cube_2",
-      "RootComponentUUID" : 547
-    },
-    {
-      "UUID" : 549,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Cube_3",
-      "RootComponentUUID" : 551
+      "RootComponentUUID" : 541
     }
   ],
   "Components" : [
     {
-      "UUID" : 505,
-      "OwnerActorUUID" : 504,
+      "UUID" : 531,
+      "OwnerActorUUID" : 530,
       "ParentComponentUUID" : 0,
       "Type" : "USceneComponent",
+      "RelativeLocation" : [-0.750271, 0.000000, 0.000000],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.050000, 1.050000, 1.050000]
+    },
+    {
+      "UUID" : 537,
+      "OwnerActorUUID" : 530,
+      "ParentComponentUUID" : 531,
+      "Type" : "UAABoundingBoxComponent",
       "RelativeLocation" : [0.000000, 0.000000, 0.000000],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000]
     },
     {
-      "UUID" : 506,
-      "OwnerActorUUID" : 504,
-      "ParentComponentUUID" : 505,
+      "UUID" : 532,
+      "OwnerActorUUID" : 530,
+      "ParentComponentUUID" : 531,
       "Type" : "UDecalComponent",
       "RelativeLocation" : [0.000000, 0.000000, 0.000000],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000]
     },
     {
-      "UUID" : 511,
-      "OwnerActorUUID" : 504,
-      "ParentComponentUUID" : 505,
-      "Type" : "UAABoundingBoxComponent",
+      "UUID" : 538,
+      "OwnerActorUUID" : 530,
+      "ParentComponentUUID" : 531,
+      "Type" : "UOBoundingBoxComponent",
       "RelativeLocation" : [0.000000, 0.000000, 0.000000],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000]
     },
     {
-      "UUID" : 505,
-      "OwnerActorUUID" : 504,
-      "ParentComponentUUID" : 0,
-      "Type" : "USceneComponent",
-      "RelativeLocation" : [0.000000, 0.000000, 0.000000],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000]
-    },
-    {
-      "UUID" : 506,
-      "OwnerActorUUID" : 504,
-      "ParentComponentUUID" : 505,
-      "Type" : "UDecalComponent",
-      "RelativeLocation" : [0.000000, 0.000000, 0.000000],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000]
-    },
-    {
-      "UUID" : 511,
-      "OwnerActorUUID" : 504,
-      "ParentComponentUUID" : 505,
-      "Type" : "UAABoundingBoxComponent",
-      "RelativeLocation" : [0.000000, 0.000000, 0.000000],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000]
-    },
-    {
-      "UUID" : 539,
-      "OwnerActorUUID" : 537,
+      "UUID" : 541,
+      "OwnerActorUUID" : 539,
       "ParentComponentUUID" : 0,
       "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [0.000000, -6.098257, 0.000000],
+      "RelativeLocation" : [0.000000, 0.000000, 0.000000],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
       "StaticMesh" : "Data/Cube.obj"
     },
     {
-      "UUID" : 540,
-      "OwnerActorUUID" : 537,
-      "ParentComponentUUID" : 539,
-      "Type" : "UAABoundingBoxComponent",
-      "RelativeLocation" : [0.000000, 0.000000, 0.000000],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000]
-    },
-    {
-      "UUID" : 553,
-      "OwnerActorUUID" : 537,
-      "ParentComponentUUID" : 539,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [1.700000, 0.000000, 0.000000],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Cube.obj"
-    },
-    {
-      "UUID" : 544,
-      "OwnerActorUUID" : 541,
-      "ParentComponentUUID" : 543,
-      "Type" : "UAABoundingBoxComponent",
-      "RelativeLocation" : [0.000000, 0.000000, 0.000000],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000]
-    },
-    {
-      "UUID" : 543,
-      "OwnerActorUUID" : 541,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [0.000000, 2.782667, 0.000000],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Cube.obj"
-    },
-    {
-      "UUID" : 547,
-      "OwnerActorUUID" : 545,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [0.000000, -3.067819, 0.000000],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Cube.obj"
-    },
-    {
-      "UUID" : 548,
-      "OwnerActorUUID" : 545,
-      "ParentComponentUUID" : 547,
-      "Type" : "UAABoundingBoxComponent",
-      "RelativeLocation" : [0.000000, 0.000000, 0.000000],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000]
-    },
-    {
-      "UUID" : 551,
-      "OwnerActorUUID" : 549,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [0.000000, -1.740421, 0.000000],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Cube.obj"
-    },
-    {
-      "UUID" : 552,
-      "OwnerActorUUID" : 549,
-      "ParentComponentUUID" : 551,
+      "UUID" : 542,
+      "OwnerActorUUID" : 539,
+      "ParentComponentUUID" : 541,
       "Type" : "UAABoundingBoxComponent",
       "RelativeLocation" : [0.000000, 0.000000, 0.000000],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],

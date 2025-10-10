@@ -164,7 +164,7 @@ void UWorld::Initialize()
     //SetupActorReferences(); 
 }
 
-void UWorld::InitializeMainCamera()
+void UWorld::InitializeMainCamera() 
 {
     MainCameraActor = NewObject<ACameraActor>();
 
