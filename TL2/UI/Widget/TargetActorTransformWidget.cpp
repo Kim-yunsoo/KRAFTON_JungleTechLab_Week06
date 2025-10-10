@@ -14,6 +14,7 @@
 #include "ResourceManager.h"    
 #include "SceneComponent.h"    
 #include "TextRenderComponent.h"    
+#include "DecalComponent.h"
 #include <filesystem>
 #include <vector>
 
@@ -483,6 +484,55 @@ void UTargetActorTransformWidget::RenderWidget()
 			}
 		}
 			// Billboard Component가 선택된 경우 Sprite UI
+			else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(SelectedComponent))
+			{
+				ImGui::Separator();
+				ImGui::Text("Decal Component Settings");
+				
+				float FadeIn = DecalComp->GetFadeInDuration();
+				float StartDelay = DecalComp->GetFadeStartDelay();
+				float FadeOut = DecalComp->GetFadeDuration();
+				bool bChanged = false; 
+
+				if (ImGui::DragFloat("Fade In Duration", &FadeIn, 0.05f, 0.0f, 100.0f, "%.2f"))
+				{
+					bChanged = true;
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("이 값은 Fade In 지속 시간을 초 단위로 설정합니다.");
+				}
+
+				if (ImGui::DragFloat("Fade Start Delay", &StartDelay, 0.05f, 0.0f, 100.0f, "%.2f"))
+				{
+					bChanged = true;
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("이 값은 Decal 지속 시간을 초 단위로 설정합니다.");
+
+				}
+				if (ImGui::DragFloat("Fade Out Duration", &FadeOut, 0.05f, 0.0f, 100.0f, "%.2f"))
+				{
+					bChanged = true;
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("이 값은 Fade Out 지속 시간을 초 단위로 설정합니다.");
+				}
+				if (bChanged)
+				{
+					DecalComp->SetFadeInDuration(FadeIn);
+					DecalComp->SetFadeStartDelay(StartDelay);
+					DecalComp->SetFadeDuration(FadeOut);
+
+				}
+				ImGui::Text("Current Alpha: %.2f", DecalComp->GetCurrentAlpha());
+				if (ImGui::Button("Start Fade"))
+				{
+					DecalComp->StartFade();
+				}
+			}
 			else if (UBillboardComponent* BBC = Cast<UBillboardComponent>(SelectedComponent))
 			{
 				ImGui::Separator();
