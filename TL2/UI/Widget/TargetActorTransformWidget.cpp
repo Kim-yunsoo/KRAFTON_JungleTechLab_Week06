@@ -75,6 +75,33 @@ static TArray<FString> GetIconFiles()
 	return iconFiles;
 }
 
+// Editor/Decal 폴더의 사용 가능한 텍스처(.dds/.png/.jpg)를 수집
+static TArray<FString> GetDecalFiles()
+{
+	TArray<FString> decalFiles;
+
+	fs::path DecalPath = "Editor/Decal/";
+	if (fs::exists(DecalPath) && fs::is_directory(DecalPath))
+	{
+		for (const auto& File : fs::directory_iterator(DecalPath))
+		{
+			//data 인지 파악
+			if (File.is_regular_file())
+			{
+				auto Filename = File.path().filename().string();
+
+				if (Filename.ends_with(".dds") || Filename.ends_with(".png") || Filename.ends_with(".jpg"))
+				{
+					FString RelativePath = DecalPath.string() + Filename;
+					decalFiles.Push(RelativePath);
+
+				}
+			}
+		}
+	}
+		return decalFiles;
+}
+
 UTargetActorTransformWidget::UTargetActorTransformWidget()
 	: UWidget("Target Actor Transform Widget")
 	, UIManager(&UUIManager::GetInstance())
@@ -531,6 +558,65 @@ void UTargetActorTransformWidget::RenderWidget()
 				if (ImGui::Button("Start Fade"))
 				{
 					DecalComp->StartFade();
+				}
+
+				// Texture selection for Decal
+				ImGui::Separator();
+				ImGui::Text("Decal Texture");
+				FString CurrentTexturePath;
+
+				if (UMaterial* Material = DecalComp->GetMaterial())
+				{
+					if (UTexture* Texture = Material->GetTexture())
+					{
+						CurrentTexturePath = Texture->GetFilePath();
+					}
+				} 
+				ImGui::Text("Current: %s", (CurrentTexturePath.empty() ? FString("<None>") : CurrentTexturePath).c_str());
+
+				static TArray<FString> DecalOptions;
+				static bool bDecalOptionsLoaded = false;
+				static int currentDecalIndex = -1;
+
+				if (!bDecalOptionsLoaded)
+				{
+					DecalOptions = GetDecalFiles();
+					bDecalOptionsLoaded = true;
+					currentDecalIndex = -1;
+					for (int i = 0; i < (int)DecalOptions.size(); ++i)
+					{
+						if (!CurrentTexturePath.empty() && DecalOptions[i] == CurrentTexturePath)
+						{
+							currentDecalIndex = i;
+							break;
+						}
+					}
+				}
+
+				FString DecalDisplayName = (currentDecalIndex >= 0 && currentDecalIndex < (int)DecalOptions.size())
+					? GetBaseNameNoExt(DecalOptions[currentDecalIndex])
+					: "Select Texture";
+
+				if (ImGui::BeginCombo("##DecalTextureCombo", DecalDisplayName.c_str()))
+				{
+					for (int i = 0; i < (int)DecalOptions.size(); ++i)
+					{
+						FString displayName = GetBaseNameNoExt(DecalOptions[i]);
+						bool selected = (currentDecalIndex == i);
+						if (ImGui::Selectable(displayName.c_str(), selected))
+						{
+							currentDecalIndex = i;
+							DecalComp->SetDecalTexture(DecalOptions[i]);
+						}
+						if (selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+
+				ImGui::SameLine();
+				if (ImGui::Button("Refresh Textures"))
+				{
+					bDecalOptionsLoaded = false;
 				}
 			}
 			else if (UBillboardComponent* BBC = Cast<UBillboardComponent>(SelectedComponent))

@@ -206,7 +206,7 @@ void UDecalComponent::ActivateFadeEffect()
 
 void UDecalComponent::StartFade()
 {
-    // Reset timers
+    // Reset Timers
     for (int i = 0; i < 4; ++i)
     {
         CurrentStateElapsedTime[i] = 0.0f;
