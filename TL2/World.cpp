@@ -394,8 +394,6 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
             // 데칼 컴포넌트만 렌더링
             if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
             {
-                bool bIsSelected = SelectionManager.IsActorSelected(Actor);
-                //Renderer->UpdateHighLightConstantBuffer(bIsSelected, rgb, 0, 0, 0, 0);
                 DecalComp->Render(Renderer, ViewMatrix, ProjectionMatrix, Viewport);
             }
         }

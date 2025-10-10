@@ -38,6 +38,7 @@ public:
 
 
     void CreateTextBillboardTexture();
+    void CreateDefaultDecalTexture();
 
     void UpdateDynamicVertexBuffer(const FString& name, TArray<FBillboardVertexInfo_GPU>& vertices);
     void UpdateDynamicVertexBuffer(UTextQuad* InMesh, TArray<FBillboardVertexInfo_GPU>& InVertices);

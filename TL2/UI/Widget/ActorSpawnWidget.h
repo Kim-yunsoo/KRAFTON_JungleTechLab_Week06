@@ -38,8 +38,8 @@ private:
 
 	// Spawn 설정
 	int32 NumberOfSpawn = 1;
-	float SpawnRangeMin = -5.0f;
-	float SpawnRangeMax = 5.0f;
+	float SpawnRangeMin = -1.0f;
+	float SpawnRangeMax = 1.0f;
 	bool bRandomRotation = true;
 	bool bRandomScale = false;
 	float MinScale = 0.5f;
@@ -52,7 +52,7 @@ private:
 	// DecalActor 전용
 	mutable int32 SelectedDecalTextureIndex = -1;
 	mutable TArray<FString> CachedDecalTexturePaths;
-	FVector DecalSize = FVector(10.0f, 10.0f, 10.0f); // X=Depth, Y=Width, Z=Height
+	FVector DecalSize = FVector(5.0f, 5.0f, 5.0f); // X=Depth, Y=Width, Z=Height
 	float DecalOpacity = 1.0f;
 	bool bAutoFadeIn = false;
 	float FadeInDuration = 1.0f;

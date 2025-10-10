@@ -66,7 +66,7 @@ PS_INPUT mainVS(VS_INPUT input)
     output.position = mul(worldPos, VP);
     output.position.z -= 0.0001;
 
-    // 노멀을 월드 공간으로 변환
+    // 노멀을 월드 공간으로 변환 (backface culling용?)
     output.worldNormal = mul(float4(input.normal, 0.0f), MeshWorldMatrix).xyz;
     output.worldNormal = normalize(output.worldNormal);
 

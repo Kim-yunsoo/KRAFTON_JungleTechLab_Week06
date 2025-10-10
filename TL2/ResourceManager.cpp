@@ -40,7 +40,7 @@ void UResourceManager::Initialize(ID3D11Device* InDevice, ID3D11DeviceContext* I
     CreateBillboardMesh();//"Billboard"
 
     CreateTextBillboardTexture();
-    
+    CreateDefaultDecalTexture();
 }
 
 
@@ -428,6 +428,13 @@ void UResourceManager::CreateTextBillboardTexture()
     UTexture* TextBillboardTexture = NewObject<UTexture>();
     TextBillboardTexture->Load("TextBillboard.dds",Device);
     Add<UTexture>("TextBillboard.dds", TextBillboardTexture);
+}
+
+void UResourceManager::CreateDefaultDecalTexture()
+{
+    UTexture* DefaultDecalTexture = NewObject<UTexture>();
+    DefaultDecalTexture->Load("Data/DefaultDecalTexture.dds", Device);
+    Add<UTexture>("DefaultDecalTexture.dds", DefaultDecalTexture);
 }
 
 

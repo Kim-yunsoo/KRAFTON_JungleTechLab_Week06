@@ -96,7 +96,7 @@ FBound UDecalComponent::GetDecalBoundingBox() const
     FQuat WorldRotation = GetWorldRotation();
 
     // Decal 로컬 박스: [-Size/2, +Size/2]
-    FVector HalfSize = DecalSize * 0.5f;
+    FVector HalfSize = (DecalSize * GetWorldScale()) * 0.5f;
 
     // 8개 모서리 점을 월드로 변환
     FVector Corners[8] = {
@@ -134,7 +134,7 @@ FOrientedBox UDecalComponent::GetDecalOrientedBox() const
 {
     return FOrientedBox(
         GetWorldLocation(),
-        DecalSize * 0.5f,
+        (DecalSize * GetWorldScale()) * 0.5f,
         GetWorldRotation()
     );
 }
@@ -220,6 +220,32 @@ void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMa
 
     // Renderer를 통해 Decal 렌더링
     Renderer->RenderDecalComponent(this, View, Proj, Viewport);
+
+    // --- OBB Drawing ---
+    FOrientedBox OBB = GetDecalOrientedBox();
+    TArray<FVector> Corners = OBB.GetCorners();
+    const FVector4 Yellow(1.0f, 1.0f, 0.0f, 1.0f);
+
+    if (Corners.size() == 8)
+    {
+        // Draw bottom face
+        Renderer->AddLine(Corners[0], Corners[1], Yellow);
+        Renderer->AddLine(Corners[1], Corners[3], Yellow);
+        Renderer->AddLine(Corners[3], Corners[2], Yellow);
+        Renderer->AddLine(Corners[2], Corners[0], Yellow);
+
+        // Draw top face
+        Renderer->AddLine(Corners[4], Corners[5], Yellow);
+        Renderer->AddLine(Corners[5], Corners[7], Yellow);
+        Renderer->AddLine(Corners[7], Corners[6], Yellow);
+        Renderer->AddLine(Corners[6], Corners[4], Yellow);
+
+        // Draw vertical edges
+        Renderer->AddLine(Corners[0], Corners[4], Yellow);
+        Renderer->AddLine(Corners[1], Corners[5], Yellow);
+        Renderer->AddLine(Corners[2], Corners[6], Yellow);
+        Renderer->AddLine(Corners[3], Corners[7], Yellow);
+    }
 }
 
 // Duplicate Support
