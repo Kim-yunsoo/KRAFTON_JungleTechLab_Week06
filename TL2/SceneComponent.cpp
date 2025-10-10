@@ -125,7 +125,11 @@ void USceneComponent::SetWorldRotation(const FQuat& R)
 }
 FQuat USceneComponent::GetWorldRotation() const
 {
-    return GetWorldTransform().Rotation;
+    if (AttachParent != nullptr)
+    {
+        return RelativeTransform.Rotation * AttachParent->GetWorldRotation();
+    }
+    return RelativeTransform.Rotation;
 }
 
 void USceneComponent::SetWorldScale(const FVector& S)
