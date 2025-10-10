@@ -10,14 +10,14 @@ public:
 
     UDecalComponent();
     virtual ~UDecalComponent() override;
+    
+    //void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj) override;
 
     void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj, FViewport* Viewport) ;
-
+    
     // 데칼 크기 설정 (박스 볼륨의 크기)
     void SetDecalSize(const FVector& InSize) { DecalSize = InSize; }
     FVector GetDecalSize() const { return DecalSize; }
-
-
 
     // 데칼 텍스처 설정
     void SetDecalTexture(const FString& TexturePath);

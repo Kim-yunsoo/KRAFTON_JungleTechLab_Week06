@@ -60,6 +60,7 @@ IMPLEMENT_CLASS(USceneComponent)
 IMPLEMENT_CLASS(UCameraComponent)
 IMPLEMENT_CLASS(UStaticMeshComponent)
 IMPLEMENT_CLASS(UAABoundingBoxComponent)
+IMPLEMENT_CLASS(UOBoundingBoxComponent)
 IMPLEMENT_CLASS(UShapeComponent)
 
 IMPLEMENT_CLASS(AActor)

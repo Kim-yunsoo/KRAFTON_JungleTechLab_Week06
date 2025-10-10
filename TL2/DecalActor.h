@@ -3,6 +3,8 @@
 #include "Actor.h"
 #include "DecalComponent.h"
 
+class UOBoundingBoxComponent;
+
 class ADecalActor : public AActor
 {
 public:
@@ -16,6 +18,8 @@ public:
     UDecalComponent* GetDecalComponent() const { return DecalComponent; }
     void SetDecalComponent(UDecalComponent* InDecalComponent);
 
+    void CheckAndAddOverlappingActors(AActor* OverlappingActor); 
+
     virtual bool DeleteComponent(USceneComponent* ComponentToDelete) override;
 
     UObject* Duplicate() override;
@@ -23,4 +27,7 @@ public:
 
 protected:
     UDecalComponent* DecalComponent;
+    UOBoundingBoxComponent* DecalVolumeComponent;
+
+    TArray<AActor*> OverlappingActors;
 };
