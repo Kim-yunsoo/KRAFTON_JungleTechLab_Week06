@@ -50,7 +50,7 @@ void FViewportClient::Draw(FViewport* Viewport)
             }
             Camera->GetCameraComponent()->SetProjectionMode(ECameraProjectionMode::Perspective);
             PerspectiveCameraPosition = Camera->GetActorLocation();
-            PerspectiveCameraRotation = Camera->GetActorRotation();
+            PerspectiveCameraRotation = Camera->GetActorRotation() ;
             PerspectiveCameraFov = Camera->GetCameraComponent()->GetFOV();
             if (World)
             {

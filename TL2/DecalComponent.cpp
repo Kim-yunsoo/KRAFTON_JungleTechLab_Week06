@@ -24,10 +24,10 @@ UDecalComponent::UDecalComponent()
     }
 
     //Decal Stat  Init
-    DecalStat.SortOrder = 0;
-    DecalStat.FadeInDuration = 0;
-    DecalStat.FadeStartDelay = 0;
-    DecalStat.FadeDuration = 0; 
+    SortOrder = 0;
+    FadeInDuration = 0;
+    FadeStartDelay = 0;
+    FadeDuration = 0; 
 
     CurrentAlpha = 1.0f;
     CurrentStateElapsedTime = 0.0f;
@@ -122,24 +122,42 @@ void UDecalComponent::SetDecalTexture(const FString& TexturePath)
 
 void UDecalComponent::StatTick(float DeltaTime)
 {
-    if (GetFadeInDuration() >= 0) 
-    {
+    CurrentStateElapsedTime[static_cast<uint8>(DecalCurrentState)] += DeltaTime;
 
-    }
-
+    ActivateFadeEffect();
 }
 
 void UDecalComponent::ActivateFadeEffect()
 {
-    /*switch (DecalCurrentState)
+    switch (DecalCurrentState)
     {
     case EDecalState::FadeIn:
+        if(CurrentStateElapsedTime[static_cast<uint8>(DecalCurrentState)] > GetFadeInDuration())
+        {
+            DecalCurrentState = EDecalState::Delay;
+        }
+
         break;
-    case EDecalState::FadeIn:
+    case EDecalState::Delay:
+        if (CurrentStateElapsedTime[static_cast<uint8>(DecalCurrentState)] > GetFadeStartDelay())
+        {
+            DecalCurrentState = EDecalState::FadingOut;
+        }
+
         break;
-    case EDecalState::FadeIn:
+    case EDecalState::FadingOut:
+        if (CurrentStateElapsedTime[static_cast<uint8>(DecalCurrentState)] > GetFadeStartDelay())
+        {
+            DecalCurrentState = EDecalState::Finished;
+        }
         break;
-    }*/
+    case EDecalState::Finished:
+        for (int8 i = 0; i < (int8)EDecalState::Count; ++i)
+        {
+            CurrentStateElapsedTime[static_cast<uint8>(DecalCurrentState)] = 0.0f;
+        } 
+        break;
+    }
 }
 
 UObject* UDecalComponent::Duplicate()
@@ -149,7 +167,9 @@ UObject* UDecalComponent::Duplicate()
     
     if (DuplicatedComponent)
     {
-        DuplicatedComponent->SetDecalStat(GetDecalStat());
+        DuplicatedComponent->SetFadeInDuration(GetFadeInDuration());
+        DuplicatedComponent->SetFadeStartDelay(GetFadeStartDelay());
+        DuplicatedComponent->SetFadeDuration(GetFadeDuration());
 
         //DuplicatedComponent->DecalSize = DecalSize;
         //DuplicatedComponent->BlendMode = BlendMode;
