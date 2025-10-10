@@ -12,7 +12,8 @@
 UDecalComponent::UDecalComponent()
 {
     // Decal은 기본적으로 Material이 필요 없음 (전용 Shader 사용)
-    // SetMaterial("DecalShader.hlsl"); // Phase 2에서 추가
+    // 기본 Decal 텍스처 로드
+    SetDecalTexture("Data/DefaultDecalTexture.dds");
 }
 
 UDecalComponent::~UDecalComponent()
@@ -23,7 +24,7 @@ UDecalComponent::~UDecalComponent()
 void UDecalComponent::SetDecalTexture(const FString& TexturePath)
 {
     auto& ResourceManager = UResourceManager::GetInstance();
-    DecalTexture = ResourceManager.Get<UTexture>(TexturePath);
+    DecalTexture = ResourceManager.Load<UTexture>(TexturePath);
 
     if (!DecalTexture)
     {
@@ -214,14 +215,11 @@ TArray<UStaticMeshComponent*> UDecalComponent::FindAffectedMeshes(UWorld* World)
 // Rendering
 void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj, FViewport* Viewport)
 {
-    // Phase 2에서 구현 예정
-    // 현재는 스텁으로 남겨둠
-
-    if (!DecalTexture)
+    if (!DecalTexture || !Renderer)
         return;
 
-    // TODO: Phase 2-2에서 Renderer의 Decal 렌더링 메서드 호출
-    // Renderer->RenderDecalComponent(this, View, Proj, Viewport);
+    // Renderer를 통해 Decal 렌더링
+    Renderer->RenderDecalComponent(this, View, Proj, Viewport);
 }
 
 // Duplicate Support

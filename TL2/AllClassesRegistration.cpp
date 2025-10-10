@@ -25,6 +25,7 @@
 #include "UI/Widget/TargetActorTransformWidget.h"
 #include "UI/Widget/SceneManagerWidget.h"
 #include "UI/Widget/ShowFlagWidget.h"
+#include "UI/Widget/ActorSpawnWidget.h"
 #include "UI/Widget/Widget.h"
 #include "UI/Window/ConsoleWindow.h"
 #include "UI/Window/ControlPanelWindow.h"
@@ -49,7 +50,7 @@
 #include "GameEngine.h"
 #include "Level.h"
 #include "DecalComponent.h"
-//#include "DecalActor.h"
+#include "DecalActor.h"
 // ... (rest of the file)
 IMPLEMENT_CLASS(UWorld)
 
@@ -67,7 +68,7 @@ IMPLEMENT_CLASS(ACameraActor)
 IMPLEMENT_CLASS(AStaticMeshActor)
 IMPLEMENT_CLASS(AGizmoActor)
 IMPLEMENT_CLASS(AGridActor)
-//IMPLEMENT_CLASS(ADecalActor)
+IMPLEMENT_CLASS(ADecalActor)
 
 IMPLEMENT_CLASS(UGizmoArrowComponent)
 IMPLEMENT_CLASS(UGizmoScaleComponent)
@@ -95,6 +96,7 @@ IMPLEMENT_CLASS(UCameraControlWidget)
 IMPLEMENT_CLASS(UConsoleWidget)
 IMPLEMENT_CLASS(UFPSWidget)
 IMPLEMENT_CLASS(UInputInformationWidget)
+IMPLEMENT_CLASS(UActorSpawnWidget)
 IMPLEMENT_CLASS(UPrimitiveSpawnWidget)
 IMPLEMENT_CLASS(USceneIOWidget)
 IMPLEMENT_CLASS(UTargetActorTransformWidget)

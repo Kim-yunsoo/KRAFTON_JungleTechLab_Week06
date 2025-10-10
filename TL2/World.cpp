@@ -18,6 +18,7 @@
 #include "Octree.h"
 #include "BVH.h"
 #include "UEContainer.h"
+#include "DecalComponent.h"
 
 
 extern float CLIENTWIDTH;
@@ -328,10 +329,10 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
                 }
 
                 // 데칼 컴포넌트는 Pass 2에서 렌더링
-                /*if (Cast<UDecalComponent>(Component))
+                if (Cast<UDecalComponent>(Component))
                 {
                     continue;
-                }*/
+                }
 
                 if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
                 {
@@ -391,12 +392,12 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
             }
 
             // 데칼 컴포넌트만 렌더링
-            /*if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
+            if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
             {
                 bool bIsSelected = SelectionManager.IsActorSelected(Actor);
-                Renderer->UpdateHighLightConstantBuffer(bIsSelected, rgb, 0, 0, 0, 0);
+                //Renderer->UpdateHighLightConstantBuffer(bIsSelected, rgb, 0, 0, 0, 0);
                 DecalComp->Render(Renderer, ViewMatrix, ProjectionMatrix, Viewport);
-            }*/
+            }
         }
     }
 

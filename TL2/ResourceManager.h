@@ -72,6 +72,10 @@ public:
     // Convenience for UStaticMesh
     TArray<UStaticMesh*> GetAllStaticMeshes() { return GetAll<UStaticMesh>(); }
     TArray<FString> GetAllStaticMeshFilePaths() { return GetAllFilePaths<UStaticMesh>(); }
+
+    // Convenience for UTexture
+    TArray<UTexture*> GetAllTextures() { return GetAll<UTexture>(); }
+    TArray<FString> GetAllTextureFilePaths() { return GetAllFilePaths<UTexture>(); }
     TArray<D3D11_INPUT_ELEMENT_DESC>& GetProperInputLayout(const FString& InShaderName);
     FString& GetProperShader(const FString& InTextureName);
 

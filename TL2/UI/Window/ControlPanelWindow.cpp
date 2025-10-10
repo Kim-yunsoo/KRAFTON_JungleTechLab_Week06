@@ -4,6 +4,7 @@
 #include "../Widget/FPSWidget.h"
 #include "../Widget/TargetActorTransformWidget.h"
 #include "../Widget/ActorTerminationWidget.h"
+#include "../Widget/ActorSpawnWidget.h"
 #include "../Widget/PrimitiveSpawnWidget.h"
 #include "../Widget/SceneIOWidget.h"
 #include "../Widget/SceneManagerWidget.h"
@@ -44,9 +45,13 @@ UControlPanelWindow::UControlPanelWindow()
 	ActorTerminationWidget->Initialize();
 	AddWidget(ActorTerminationWidget);
 
-	UPrimitiveSpawnWidget* PrimitiveSpawnWidget = NewObject<UPrimitiveSpawnWidget>();
-	PrimitiveSpawnWidget->Initialize();
-	AddWidget(PrimitiveSpawnWidget);
+	UActorSpawnWidget* ActorSpawnWidget = NewObject<UActorSpawnWidget>();
+	ActorSpawnWidget->Initialize();
+	AddWidget(ActorSpawnWidget);
+
+	//UPrimitiveSpawnWidget* PrimitiveSpawnWidget = NewObject<UPrimitiveSpawnWidget>();
+	//PrimitiveSpawnWidget->Initialize();
+	//AddWidget(PrimitiveSpawnWidget);
 
 	USceneIOWidget* SceneIOWidget = NewObject<USceneIOWidget>();
 	SceneIOWidget->Initialize();

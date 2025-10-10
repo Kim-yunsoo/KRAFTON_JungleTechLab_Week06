@@ -81,6 +81,27 @@ struct BillboardBufferType
     FVector cameraUp;*/
 };
 
+// Decal Buffer Types
+struct MeshWorldBufferType
+{
+    FMatrix MeshWorld;
+};
+
+struct DecalTransformBufferType
+{
+    FMatrix WorldToDecal;
+};
+
+struct DecalPropertiesBufferType
+{
+    FVector DecalSize;       // X=Depth, Y=Width, Z=Height
+    float Opacity;           // Fade 적용된 투명도
+
+    int BlendMode;           // 0=Translucent, 1=Multiply, 2=Additive
+    int bProjectOnBackfaces; // 뒷면 투영 여부
+    FVector2D Padding;        // 16바이트 정렬
+};
+
 void D3D11RHI::Initialize(HWND hWindow)
 {
     // 이곳에서 Device, DeviceContext, viewport, swapchain를 초기화한다
@@ -123,6 +144,10 @@ void D3D11RHI::Release()
     if (UVScrollCB) { UVScrollCB->Release(); UVScrollCB = nullptr; }
     if (InvWorldCB) { InvWorldCB->Release(); InvWorldCB = nullptr; }
     if (ViewportCB) { ViewportCB->Release(); ViewportCB = nullptr; }
+    // Decal 상수버퍼
+    if (MeshWorldCB) { MeshWorldCB->Release(); MeshWorldCB = nullptr; }
+    if (DecalTransformCB) { DecalTransformCB->Release(); DecalTransformCB = nullptr; }
+    if (DecalPropertiesCB) { DecalPropertiesCB->Release(); DecalPropertiesCB = nullptr; }
     if (ConstantBuffer) { ConstantBuffer->Release(); ConstantBuffer = nullptr; }
 
     // 상태 객체
@@ -285,7 +310,6 @@ void D3D11RHI::UpdateViewConstantBuffers(const FMatrix& ViewMatrix, const FMatri
 
         DeviceContext->Unmap(ViewProjCB, 0);
         DeviceContext->VSSetConstantBuffers(1, 1, &ViewProjCB); // b1 슬롯
-       
     }
 }
 
@@ -643,6 +667,31 @@ void D3D11RHI::CreateConstantBuffer()
     viewportDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     viewportDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     Device->CreateBuffer(&viewportDesc, nullptr, &ViewportCB);
+
+    // Decal Buffers
+    // b0 : MeshWorldBuffer (Decal 렌더링 시 메쉬의 월드 변환)
+    D3D11_BUFFER_DESC meshWorldDesc = {};
+    meshWorldDesc.Usage = D3D11_USAGE_DYNAMIC;
+    meshWorldDesc.ByteWidth = sizeof(MeshWorldBufferType);
+    meshWorldDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    meshWorldDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&meshWorldDesc, nullptr, &MeshWorldCB);
+
+    // b1 : DecalTransformBuffer (World → Decal Local 변환)
+    D3D11_BUFFER_DESC decalTransformDesc = {};
+    decalTransformDesc.Usage = D3D11_USAGE_DYNAMIC;
+    decalTransformDesc.ByteWidth = sizeof(DecalTransformBufferType);
+    decalTransformDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    decalTransformDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&decalTransformDesc, nullptr, &DecalTransformCB);
+
+    // b3 : DecalPropertiesBuffer (Decal 속성)
+    D3D11_BUFFER_DESC decalPropsDesc = {};
+    decalPropsDesc.Usage = D3D11_USAGE_DYNAMIC;
+    decalPropsDesc.ByteWidth = sizeof(DecalPropertiesBufferType);
+    decalPropsDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    decalPropsDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&decalPropsDesc, nullptr, &DecalPropertiesCB);
 }
 
 void D3D11RHI::UpdateUVScrollConstantBuffers(const FVector2D& Speed, float TimeSec)
@@ -696,6 +745,58 @@ void D3D11RHI::UpdateViewportConstantBuffer(float StartX, float StartY, float Si
         memcpy(mapped.pData, &data, sizeof(ViewportBufferType));
         DeviceContext->Unmap(ViewportCB, 0);
         DeviceContext->PSSetConstantBuffers(6, 1, &ViewportCB);
+    }
+}
+
+void D3D11RHI::UpdateMeshWorldMatrixBuffer(const FMatrix& MeshWorldMatrix)
+{
+    if (!MeshWorldCB) return;
+
+    MeshWorldBufferType data;
+    data.MeshWorld = MeshWorldMatrix;
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(MeshWorldCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(MeshWorldBufferType));
+        DeviceContext->Unmap(MeshWorldCB, 0);
+        DeviceContext->VSSetConstantBuffers(0, 1, &MeshWorldCB); // b0
+    }
+}
+
+void D3D11RHI::UpdateDecalTransformBuffer(const FMatrix& WorldToDecalMatrix)
+{
+    if (!DecalTransformCB) return;
+
+    DecalTransformBufferType data;
+    data.WorldToDecal = WorldToDecalMatrix;
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(DecalTransformCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(DecalTransformBufferType));
+        DeviceContext->Unmap(DecalTransformCB, 0);
+        DeviceContext->VSSetConstantBuffers(2, 1, &DecalTransformCB); // b2
+    }
+}
+
+void D3D11RHI::UpdateDecalPropertiesBuffer(const FVector& DecalSize, float Opacity, int BlendMode, bool bProjectOnBackfaces)
+{
+    if (!DecalPropertiesCB) return;
+
+    DecalPropertiesBufferType data;
+    data.DecalSize = DecalSize;
+    data.Opacity = Opacity;
+    data.BlendMode = BlendMode;
+    data.bProjectOnBackfaces = bProjectOnBackfaces ? 1 : 0;
+    data.Padding = FVector2D();
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(DecalPropertiesCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(DecalPropertiesBufferType));
+        DeviceContext->Unmap(DecalPropertiesCB, 0);
+        DeviceContext->PSSetConstantBuffers(3, 1, &DecalPropertiesCB); // b3
     }
 }
 

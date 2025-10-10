@@ -54,6 +54,11 @@ public:
     void UpdateInvWorldConstantBuffer(const FMatrix& InvWorldMatrix, const FMatrix& InvViewProjMatrix) override;
     void UpdateViewportConstantBuffer(float StartX, float StartY, float SizeX, float SizeY);
 
+    // Decal Rendering
+    void UpdateMeshWorldMatrixBuffer(const FMatrix& MeshWorldMatrix);
+    void UpdateDecalTransformBuffer(const FMatrix& WorldToDecalMatrix);
+    void UpdateDecalPropertiesBuffer(const FVector& DecalSize, float Opacity, int BlendMode, bool bProjectOnBackfaces);
+
     void IASetPrimitiveTopology() override;
     void RSSetState(EViewModeIndex ViewModeIndex) override;
     void RSSetFrontCullState() override;
@@ -152,6 +157,11 @@ private:
     ID3D11Buffer* UVScrollCB{};
     ID3D11Buffer* InvWorldCB{};
     ID3D11Buffer* ViewportCB{};
+
+    // Decal 버퍼 핸들
+    ID3D11Buffer* MeshWorldCB{};        // b0: Mesh World Matrix
+    ID3D11Buffer* DecalTransformCB{};   // b1: World → Decal Transform
+    ID3D11Buffer* DecalPropertiesCB{};  // b3: Decal Properties
 
     ID3D11Buffer* ConstantBuffer{};
 

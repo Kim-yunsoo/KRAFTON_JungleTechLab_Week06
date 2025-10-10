@@ -65,6 +65,11 @@ public:
     void EndLineBatch(const FMatrix& ModelMatrix, const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix);
     void ClearLineBatch();
 
+    // Decal Rendering
+    void UpdateDecalTransformBuffer(const FMatrix& WorldToDecalMatrix);
+    void UpdateDecalPropertiesBuffer(const FVector& DecalSize, float Opacity, int BlendMode, bool bProjectOnBackfaces);
+    void RenderDecalComponent(class UDecalComponent* DecalComp, const FMatrix& ViewMatrix, const FMatrix& ProjMatrix, FViewport* Viewport);
+
 	void EndFrame();
 
     void OMSetDepthStencilState(EComparisonFunc Func);

@@ -8,6 +8,8 @@
 #include "StaticMeshComponent.h"
 #include "RenderingStats.h"
 #include "UI/StatsOverlayD2D.h"
+#include "DecalComponent.h"
+#include "World.h"
 
 
 URenderer::URenderer(URHIDevice* InDevice) : RHIDevice(InDevice)
@@ -508,11 +510,108 @@ void URenderer::ResetRenderStateTracking()
 void URenderer::ClearLineBatch()
 {
     if (!LineBatchData) return;
-    
+
     LineBatchData->Vertices.clear();
     LineBatchData->Color.clear();
     LineBatchData->Indices.clear();
-    
+
     bLineBatchActive = false;
+}
+
+// ───────────────
+// Decal Rendering
+// ───────────────
+void URenderer::UpdateDecalTransformBuffer(const FMatrix& WorldToDecalMatrix)
+{
+    static_cast<D3D11RHI*>(RHIDevice)->UpdateDecalTransformBuffer(WorldToDecalMatrix);
+}
+
+void URenderer::UpdateDecalPropertiesBuffer(const FVector& DecalSize, float Opacity, int BlendMode, bool bProjectOnBackfaces)
+{
+    static_cast<D3D11RHI*>(RHIDevice)->UpdateDecalPropertiesBuffer(DecalSize, Opacity, BlendMode, bProjectOnBackfaces);
+}
+
+void URenderer::RenderDecalComponent(UDecalComponent* DecalComp, const FMatrix& ViewMatrix, const FMatrix& ProjMatrix, FViewport* Viewport)
+{
+    if (!DecalComp || !GWorld)
+        return;
+
+    // 1. Affected Meshes 찾기
+    TArray<UStaticMeshComponent*> AffectedMeshes = DecalComp->FindAffectedMeshes(GWorld);
+    if (AffectedMeshes.empty())
+        return;
+
+    // 2. Decal Shader 준비
+    UShader* DecalShader = UResourceManager::GetInstance().Load<UShader>("DecalShader.hlsl");
+    if (!DecalShader)
+    {
+        UE_LOG("DecalShader.hlsl not found!");
+        return;
+    }
+    PrepareShader(DecalShader);
+
+    // 3. Decal Transform 설정 (b1)
+    FMatrix WorldToDecalMatrix = DecalComp->GetWorldToDecalMatrix();
+    UpdateDecalTransformBuffer(WorldToDecalMatrix);
+
+    // 4. View/Projection 설정 (b2)
+    UpdateConstantBuffer(FMatrix::Identity(), ViewMatrix, ProjMatrix);
+
+    // 5. Decal Properties 설정 (b3)
+    UpdateDecalPropertiesBuffer(
+        DecalComp->GetDecalSize(),
+        DecalComp->GetCurrentOpacity(), // Fade 적용
+        0,  // BlendMode (현재 Translucent만 지원)
+        DecalComp->GetProjectOnBackfaces()
+    );
+
+    // 6. Decal Texture 바인딩 (t0)
+    UTexture* DecalTexture = DecalComp->GetDecalTexture();
+    if (DecalTexture && DecalTexture->GetShaderResourceView())
+    {
+        ID3D11ShaderResourceView* TextureSRV = DecalTexture->GetShaderResourceView();
+        RHIDevice->GetDeviceContext()->PSSetShaderResources(0, 1, &TextureSRV);
+        RHIDevice->PSSetDefaultSampler(0);
+    }
+
+    // 7. Blend State 설정 (Alpha Blending)
+    OMSetBlendState(true);
+    OMSetDepthStencilState(EComparisonFunc::LessEqualReadOnly);
+
+    // 8. 각 영향받는 메쉬 렌더링
+    for (UStaticMeshComponent* MeshComp : AffectedMeshes)
+    {
+        if (!MeshComp)
+            continue;
+
+        // Mesh World Matrix 설정 (b0)
+        FMatrix MeshWorldMatrix = MeshComp->GetWorldMatrix();
+        static_cast<D3D11RHI*>(RHIDevice)->UpdateMeshWorldMatrixBuffer(MeshWorldMatrix);
+
+        // 메쉬 렌더링
+        UStaticMesh* Mesh = MeshComp->GetStaticMesh();
+        if (Mesh)
+        {
+            UINT stride = sizeof(FVertexDynamic); // position + normal
+            UINT offset = 0;
+
+            ID3D11Buffer* VertexBuffer = Mesh->GetVertexBuffer();
+            ID3D11Buffer* IndexBuffer = Mesh->GetIndexBuffer();
+
+            RHIDevice->GetDeviceContext()->IASetVertexBuffers(0, 1, &VertexBuffer, &stride, &offset);
+            RHIDevice->GetDeviceContext()->IASetIndexBuffer(IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+            RHIDevice->GetDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+            // DrawCall
+            RHIDevice->GetDeviceContext()->DrawIndexed(Mesh->GetIndexCount(), 0, 0);
+
+            // Stats
+            URenderingStatsCollector::GetInstance().IncrementDrawCalls();
+        }
+    }
+
+    // 9. Blend State 복원
+    OMSetDepthStencilState(EComparisonFunc::LessEqual);
+    OMSetBlendState(false);
 }
 
