@@ -79,6 +79,7 @@ float4 mainPS(PS_INPUT input) : SV_TARGET
     // 3️⃣ NDC 계산: 뷰포트 로컬 UV 사용
     float2 viewportLocalPos = input.position.xy - ViewportRect.xy;
     float2 viewportUV = viewportLocalPos / ViewportRect.zw;
+    
       // 🐛 디버그: 깊이 값 시각화
     //return float4(depth, depth, depth, 1.0f);
     // 4️⃣ NDC 좌표 구성 (DirectX: Z 0~1 → NDC -1~1 변환)

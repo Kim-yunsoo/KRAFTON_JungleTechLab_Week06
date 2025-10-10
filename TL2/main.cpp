@@ -220,12 +220,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		EditorWorld->SetRenderer(&renderer);//렌더러 설정
 		EditorWorld->Initialize();
 
-		UWorld* ActiveWorld = GetEngine()->GetWorld();//활성화 된 월드 입니다.
-
-
-
-
-
+		UWorld* ActiveWorld = GetEngine()->GetWorld();//활성화 된 월드 입니다.  
 
 
 		//메인 뷰포트 생성

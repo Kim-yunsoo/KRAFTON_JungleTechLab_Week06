@@ -161,7 +161,7 @@ void UWorld::Initialize()
 
 
     // 액터 간 참조 설정
-    SetupActorReferences();
+    //SetupActorReferences();
     ADecalActor* DecalActor = SpawnActor<ADecalActor>();
     Level->AddActor(DecalActor);
 }
@@ -280,8 +280,8 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 
         const TArray<AActor*>& LevelActors = Level ? Level->GetActors() : TArray<AActor*>();
 
-        // Pass 1: 데칼을 제외한 모든 오브젝트 렌더링 (Depth 버퍼 채우기)
-        for (AActor* Actor : LevelActors)
+    // Pass 1: 데칼을 제외한 모든 오브젝트 렌더링 (Depth 버퍼 채우기)
+    for (AActor* Actor : LevelActors)
         {
             // 일반 액터들 렌더링
             if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives))
@@ -618,10 +618,10 @@ void UWorld::CreateNewScene()
 // 액터 인터페이스 관리 메소드들
 void UWorld::SetupActorReferences()
 {
-    if (GizmoActor && MainCameraActor)
+    /*if (GizmoActor && MainCameraActor)
     {
         GizmoActor->SetCameraActor(MainCameraActor);
-    }
+    }*/
 }
 
 //마우스 피킹관련 메소드
