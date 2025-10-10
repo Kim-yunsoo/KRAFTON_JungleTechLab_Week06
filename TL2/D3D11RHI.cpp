@@ -135,6 +135,8 @@ void D3D11RHI::Release()
 
     if (DefaultRasterizerState) { DefaultRasterizerState->Release();   DefaultRasterizerState = nullptr; }
     if (WireFrameRasterizerState) { WireFrameRasterizerState->Release();   WireFrameRasterizerState = nullptr; }
+    if (NoCullRasterizerState) { NoCullRasterizerState->Release();   NoCullRasterizerState = nullptr; }
+    if (FrontCullRasterizerState) { FrontCullRasterizerState->Release();   FrontCullRasterizerState = nullptr; }
     if (BlendState) { BlendState->Release();        BlendState = nullptr; }
 
     // RTV/DSV/FrameBuffer
@@ -524,6 +526,10 @@ void D3D11RHI::CreateFrameBuffer()
 
 void D3D11RHI::CreateRasterizerState()
 {
+    // 이미 생성된 경우 중복 생성 방지
+    if (DefaultRasterizerState)
+        return;
+
     D3D11_RASTERIZER_DESC deafultrasterizerdesc = {};
     deafultrasterizerdesc.FillMode = D3D11_FILL_SOLID; // 채우기 모드
     deafultrasterizerdesc.CullMode = D3D11_CULL_BACK; // 백 페이스 컬링
