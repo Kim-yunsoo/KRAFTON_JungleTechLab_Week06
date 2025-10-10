@@ -331,6 +331,9 @@
     <ClCompile Include="UI\Widget\PrimitiveSpawnWidget.cpp">
       <Filter>UI\Widgets</Filter>
     </ClCompile>
+    <ClCompile Include="UI\Widget\ActorSpawnWidget.cpp">
+      <Filter>UI\Widgets</Filter>
+    </ClCompile>
     <ClCompile Include="UI\Widget\SceneIOWidget.cpp">
       <Filter>UI\Widgets</Filter>
     </ClCompile>
@@ -703,6 +706,9 @@
       <Filter>UI\Widgets</Filter>
     </ClInclude>
     <ClInclude Include="UI\Widget\PrimitiveSpawnWidget.h">
+      <Filter>UI\Widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="UI\Widget\ActorSpawnWidget.h">
       <Filter>UI\Widgets</Filter>
     </ClInclude>
     <ClInclude Include="UI\Widget\SceneIOWidget.h">

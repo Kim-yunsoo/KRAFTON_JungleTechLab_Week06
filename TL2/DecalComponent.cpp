@@ -40,30 +40,20 @@ void UDecalComponent::RenderOnActor(URenderer* Renderer, AActor* TargetActor, co
     FMatrix DecalView = GetWorldTransform().ToMatrixWithScaleLocalXYZ().InverseAffine();
 
     FVector Scale = GetRelativeScale();
+
     const float OrthoWidth = Scale.Y;
     const float OrthoHeight = Scale.Z;
     const float NearZ = -0.5f * Scale.X;
     const float FarZ = 0.5f * Scale.X;
 
-    const float Left = -OrthoWidth * 0.5f;
-    const float Right1 = OrthoWidth * 0.5f;  
-    const float Bottom = -OrthoHeight * 0.5f;
-    const float Top = OrthoHeight * 0.5f;
-
-    FMatrix DecalProj = FMatrix::Identity();
-    DecalProj.M[0][0] = 2.0f / (Right1 - Left);
-    DecalProj.M[1][1] = 2.0f / (Top - Bottom);
-    DecalProj.M[2][2] = 1.0f / (FarZ - NearZ);
-    DecalProj.M[3][0] = -(Right1 + Left) / (Right1 - Left);
-    DecalProj.M[3][1] = -(Top + Bottom) / (Top - Bottom);
-    DecalProj.M[3][2] = -NearZ / (FarZ - NearZ);
-    DecalProj.M[3][3] = 1.0f;
-
+    FMatrix DecalProj = FMatrix::OrthoLH(OrthoWidth, OrthoHeight, NearZ, FarZ);
+      
     // Prepare pipeline with projection decal shader
     UShader* DecalProjShader = UResourceManager::GetInstance().Load<UShader>("ProjectionDecal.hlsl");
+
     Renderer->PrepareShader(DecalProjShader);
     Renderer->OMSetBlendState(true);
-    Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqualReadOnly);
+    Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqualReadOnly);  
 
     ID3D11DeviceContext* ctx = Renderer->GetRHIDevice()->GetDeviceContext();
 

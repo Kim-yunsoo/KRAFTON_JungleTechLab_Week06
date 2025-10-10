@@ -13,8 +13,9 @@ public:
 
 	void Initialize() override;
 	void Update() override;
-	void RenderWidget() override;
-	void SpawnActors() const;
+    void RenderWidget() override;
+    void SpawnActors() const;
+    void SpawnSelectedActor() const;
 
 	// Special Member Function
 	UPrimitiveSpawnWidget();
@@ -24,7 +25,8 @@ private:
 	UUIManager* UIManager = nullptr;
 	
 	// Spawn 설정
-	int32 SelectedPrimitiveType = 0;
+    int32 SelectedPrimitiveType = 0;
+    int32 SelectedActorType = 0; // 0:Camera,1:Grid,2:Gizmo,3:StaticMesh,4:Decal
 	int32 NumberOfSpawn = 1;
 	float SpawnRangeMin = -5.0f;
 	float SpawnRangeMax = 5.0f;

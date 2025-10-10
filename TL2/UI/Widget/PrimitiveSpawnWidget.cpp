@@ -1,10 +1,14 @@
 ﻿#include "pch.h"
 #include "PrimitiveSpawnWidget.h"
-#include "../UIManager.h"
-#include "../../ImGui/imgui.h"
-#include "../../World.h"
-#include "../../StaticMeshActor.h"
-#include "../../Vector.h"
+#include "UI/UIManager.h"
+#include "ImGui/imgui.h"
+#include "World.h"
+#include "StaticMeshActor.h"
+#include "Vector.h"
+#include "CameraActor.h"
+#include "GridActor.h"
+#include "GizmoActor.h"
+#include "DecalActor.h"
 #include "ObjManager.h"
 #include <algorithm>
 #include <cstdlib>
@@ -112,6 +116,19 @@ void UPrimitiveSpawnWidget::RenderWidget()
 {
     ImGui::Text("Primitive Actor Spawner");
     ImGui::Spacing();
+
+    // Actor Type selection (added above Primitive Type)
+    const char* ActorTypes[] = { "Decal" };
+    ImGui::Text("Actor Type:");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(120);
+    ImGui::Combo("##ActorType", &SelectedActorType, ActorTypes, IM_ARRAYSIZE(ActorTypes));
+    ImGui::SameLine();
+    if (ImGui::Button("Spawn Actor"))
+    {
+        SpawnSelectedActor();
+    }
+    ImGui::Separator();
 
     // Primitive 타입 선택: StaticMesh만 노출
     const char* PrimitiveTypes[] = { "StaticMesh" };
@@ -351,4 +368,25 @@ void UPrimitiveSpawnWidget::SpawnActors() const
     }
 
     UE_LOG("PrimitiveSpawn: Successfully spawned %d/%d actors", SuccessCount, NumberOfSpawn);
+}
+
+void UPrimitiveSpawnWidget::SpawnSelectedActor() const
+{
+    UWorld* World = GetCurrentWorld();
+    if (!World)
+        return;
+
+    switch (SelectedActorType)
+    { 
+    case 0: // Decal
+    {
+        if (auto* NewActor = World->SpawnActor<ADecalActor>())
+        {
+            NewActor->SetName(World->GenerateUniqueActorName("Decal").c_str());
+        }
+        break;
+    }
+    default:
+        break;
+    }
 }

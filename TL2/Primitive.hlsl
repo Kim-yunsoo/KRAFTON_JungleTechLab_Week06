@@ -53,9 +53,7 @@ PS_INPUT mainVS(VS_INPUT input)
     
     // change color
     float4 c = input.color;
-
-    
-    
+     
     // Picked가 1이면 전달된 하이라이트 색으로 완전 덮어쓰기
     if (Picked == 1)
     {

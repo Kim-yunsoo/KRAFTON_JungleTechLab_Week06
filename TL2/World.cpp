@@ -161,9 +161,7 @@ void UWorld::Initialize()
 
 
     // 액터 간 참조 설정
-    //SetupActorReferences();
-    ADecalActor* DecalActor = SpawnActor<ADecalActor>();
-    Level->AddActor(DecalActor);
+    //SetupActorReferences(); 
 }
 
 void UWorld::InitializeMainCamera()
@@ -480,7 +478,7 @@ void UWorld::Tick(float DeltaSeconds)
         {
             if (Actor && Actor->IsActorTickEnabled())
             {
-                Actor->Tick(DeltaSeconds);
+               Actor->Tick(DeltaSeconds);
             }
 
             // Actor의 Tick이 끝난 후에 

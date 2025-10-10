@@ -288,6 +288,7 @@
     <ClCompile Include="UI\Widget\ConsoleWidget.cpp" />
     <ClCompile Include="UI\Widget\FPSWidget.cpp" />
     <ClCompile Include="UI\Widget\InputInformationWidget.cpp" />
+    <ClCompile Include="UI\Widget\ActorSpawnWidget.cpp" />
     <ClCompile Include="UI\Widget\PrimitiveSpawnWidget.cpp" />
     <ClCompile Include="UI\Widget\SceneIOWidget.cpp" />
     <ClCompile Include="UI\Widget\SceneManagerWidget.cpp" />
@@ -451,6 +452,7 @@
     <ClInclude Include="UI\Widget\ConsoleWidget.h" />
     <ClInclude Include="UI\Widget\FPSWidget.h" />
     <ClInclude Include="UI\Widget\InputInformationWidget.h" />
+    <ClInclude Include="UI\Widget\ActorSpawnWidget.h" />
     <ClInclude Include="UI\Widget\PrimitiveSpawnWidget.h" />
     <ClInclude Include="UI\Widget\SceneIOWidget.h" />
     <ClInclude Include="UI\Widget\SceneManagerWidget.h" />

@@ -21,6 +21,7 @@
 #include "UI/Widget/FPSWidget.h"
 #include "UI/Widget/InputInformationWidget.h"
 #include "UI/Widget/PrimitiveSpawnWidget.h"
+#include "UI/Widget/ActorSpawnWidget.h"
 #include "UI/Widget/SceneIOWidget.h"
 #include "UI/Widget/TargetActorTransformWidget.h"
 #include "UI/Widget/SceneManagerWidget.h"
@@ -97,6 +98,7 @@ IMPLEMENT_CLASS(UConsoleWidget)
 IMPLEMENT_CLASS(UFPSWidget)
 IMPLEMENT_CLASS(UInputInformationWidget)
 IMPLEMENT_CLASS(UPrimitiveSpawnWidget)
+IMPLEMENT_CLASS(UActorSpawnWidget)
 IMPLEMENT_CLASS(USceneIOWidget)
 IMPLEMENT_CLASS(UTargetActorTransformWidget)
 IMPLEMENT_CLASS(USceneManagerWidget)

@@ -45,16 +45,23 @@ struct PS_INPUT
     float3 worldPos : TEXCOORD0;
 };
 
+//------------------------------------------------------
+// Vertex Shader
+//------------------------------------------------------
 PS_INPUT mainVS(VS_INPUT input)
 {
+    float4 worldPos = mul(float4(input.position, 1.0f), WorldMatrix);
+    
     PS_INPUT output;
-    float4 world = mul(float4(input.position, 1.0f), WorldMatrix);
-    output.worldPos = world.xyz;
+    output.worldPos = worldPos;
     
-    float4 clip = mul(world, mul(ViewMatrix, ProjectionMatrix));
-    output.position = clip;
+    float4 clipSpace = mul(worldPos, mul(ViewMatrix, ProjectionMatrix));
+    //float3 ndc = clipSpace.xyz / clipSpace.w;
     
-    output.position.z -= 0.001f;
+    output.position = clipSpace;
+    output.position.z -= 1e-5;
+    
+    
     return output;
 }
 
@@ -62,22 +69,21 @@ PS_INPUT mainVS(VS_INPUT input)
 // Pixel Shader
 //------------------------------------------------------
 float4 mainPS(PS_INPUT input) : SV_TARGET
-{ 
-    float4 decalLocal = mul(float4(input.worldPos, 1.0f), DecalView);
-    float4 decalClip  = mul(decalLocal, DecalProj);
-
-    float3 ndc = decalClip.xyz / decalClip.w;
-    if (any(abs(ndc.xy) > 1.0))
-        discard;
-    if(ndc.z > 1.0f || ndc.z < 0.0f)
-        discard;
-     
-    float2 uv = ndc.xy * 0.5f + 0.5f;
-    uv.y = 1.0 - uv.y;
+{   
     
-    float4 decalColor = g_DecalTexture.Sample(g_Sample, uv);
-    if (decalColor.a < 0.01f)
+    float4 decalClipSpace = mul( mul(float4(input.worldPos, 1.0f), DecalView), DecalProj);
+    float3 decalNDC = decalClipSpace.xyz / decalClipSpace.w;
+    
+    if (any(abs(decalNDC.xy) > 1))
         discard;
-
-    return decalColor;
-}
+    
+    if(decalNDC.z < 0 || decalNDC.z > 1)
+        discard; 
+       
+    float2 uv = (decalNDC * 0.5f) + 0.5f;
+    uv.y = 1 - uv.y;
+    
+    float4 color = g_DecalTexture.Sample(g_Sample, uv);
+    
+    return color;
+} 
