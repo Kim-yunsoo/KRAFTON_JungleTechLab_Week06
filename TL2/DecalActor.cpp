@@ -5,6 +5,7 @@
 #include "AABoundingBoxComponent.h"
 #include "DecalComponent.h"
 #include "ObjectFactory.h"
+#include "BillboardComponent.h"
 
 
 ADecalActor::ADecalActor()
@@ -19,6 +20,9 @@ ADecalActor::ADecalActor()
     DecalVolumeComponent = CreateDefaultSubobject< UOBoundingBoxComponent>(FName("DecalVolumeComponent"));
     DecalVolumeComponent->SetupAttachment(RootComponent);
 
+    BillboardComponent = CreateDefaultSubobject<UBillboardComponent>(FName("BillboardComponent"));
+    BillboardComponent->SetWorldLocation(FVector(0.f, 0.f, 0.f));
+    BillboardComponent->SetupAttachment(RootComponent);
 }
 
 ADecalActor::~ADecalActor()
