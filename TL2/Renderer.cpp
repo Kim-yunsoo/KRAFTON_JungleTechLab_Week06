@@ -559,7 +559,7 @@ void URenderer::RenderDecalComponent(UDecalComponent* DecalComp, const FMatrix& 
 
     // 5. Decal Properties 설정 (b3)
     UpdateDecalPropertiesBuffer(
-        DecalComp->GetDecalSize() * DecalComp->GetWorldScale(),
+        DecalComp->GetDecalSize(),
         DecalComp->GetCurrentOpacity(), // Fade 적용
         0,  // BlendMode (현재 Translucent만 지원)
         DecalComp->GetProjectOnBackfaces()

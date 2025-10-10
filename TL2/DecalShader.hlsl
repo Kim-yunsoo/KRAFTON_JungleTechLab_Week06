@@ -86,14 +86,6 @@ float4 mainPS(PS_INPUT input) : SV_TARGET
         discard;
     }
 
-    // 뒷면 투영 체크 (Optional)
-    if (!bProjectOnBackfaces)
-    {
-        // X > 0인 경우만 투영 (Forward 방향)
-        if (input.decalLocalPos.x < 0.0f)
-            discard;
-    }
-
     // Forward Projection UV 계산
     // X축: Forward (Projection 방향)
     // Y축: Width  → U

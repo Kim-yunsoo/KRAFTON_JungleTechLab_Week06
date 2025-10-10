@@ -260,7 +260,6 @@ UObject* UDecalComponent::Duplicate()
     DuplicatedComponent->DecalTexture = this->DecalTexture;
     DuplicatedComponent->DecalSize = this->DecalSize;
     DuplicatedComponent->BaseOpacity = this->BaseOpacity;
-    DuplicatedComponent->SortOrder = this->SortOrder;
     DuplicatedComponent->bProjectOnBackfaces = this->bProjectOnBackfaces;
 
     // Fade 상태는 복사하지 않음 (새로운 인스턴스는 Fade 없이 시작)
@@ -269,8 +268,6 @@ UObject* UDecalComponent::Duplicate()
     DuplicatedComponent->FadeCurrentTime = 0.0f;
     DuplicatedComponent->FadeStartOpacity = 0.0f;
     DuplicatedComponent->FadeTargetOpacity = this->BaseOpacity;
-
-    DuplicatedComponent->BlendMode = this->BlendMode;
 
     DuplicatedComponent->DuplicateSubObjects();
     return DuplicatedComponent;

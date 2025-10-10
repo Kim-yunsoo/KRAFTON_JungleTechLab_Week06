@@ -67,10 +67,6 @@ public:
     EDecalFadeState::Type GetFadeState() const { return FadeState; }
     bool IsFading() const { return FadeState != EDecalFadeState::None; }
 
-    // Rendering Options
-    void SetSortOrder(int32 InOrder) { SortOrder = InOrder; }
-    int32 GetSortOrder() const { return SortOrder; }
-
     void SetProjectOnBackfaces(bool bInProject) { bProjectOnBackfaces = bInProject; }
     bool GetProjectOnBackfaces() const { return bProjectOnBackfaces; }
 
@@ -99,9 +95,8 @@ protected:
 
     // Decal Properties
     // [PIE] 값 복사
-    FVector DecalSize = FVector(10.0f, 10.0f, 10.0f); // X=Depth, Y=Width, Z=Height
+    FVector DecalSize = FVector(5.0f, 5.0f, 5.0f); // X=Depth, Y=Width, Z=Height
     float BaseOpacity = 1.0f; // 기본 투명도 (0.0 ~ 1.0)
-    int32 SortOrder = 0; // 렌더링 순서 (높을수록 나중에)
     bool bProjectOnBackfaces = false; // 뒷면에도 투영할지 여부
 
     // Fade System
@@ -111,8 +106,4 @@ protected:
     float FadeCurrentTime = 0.0f; // 현재 경과 시간
     float FadeStartOpacity = 0.0f; // Fade 시작 시 투명도
     float FadeTargetOpacity = 1.0f; // Fade 목표 투명도
-
-    // Blend Mode (추후 확장)
-    // 0 = Translucent, 1 = Multiply, 2 = Additive
-    int32 BlendMode = 0;
 };
