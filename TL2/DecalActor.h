@@ -24,6 +24,8 @@ public:
 
     UObject* Duplicate() override;
     void DuplicateSubObjects() override;
+    
+    TArray<AActor*> GetOverlappingActors() const { return OverlappingActors; }
 
 protected:
     UDecalComponent* DecalComponent;
