@@ -26,8 +26,9 @@
 #include "StaticMeshActor.h"
 #include "StaticMeshComponent.h"
 #include "StaticMesh.h"
-#include "Triangle.h" 
+#include "Triangle.h"
 #include "RenderingStats.h"
+#include "BillboardComponent.h"
 
 FRay MakeRayFromMouse(const FMatrix& InView,
                       const FMatrix& InProj)
@@ -991,7 +992,11 @@ bool CPickingSystem::CheckActorPicking(AActor* Actor, USceneComponent*& OutCompo
 {
     if (!Actor) return false;
 
-    // 스태틱 메시 액터인지 확인
+    float ClosestDistance = FLT_MAX;
+    USceneComponent* ClosestComponent = nullptr;
+    bool bHit = false;
+
+    // 1. StaticMeshComponent 검사
     const TSet<UStaticMeshComponent*> StaticMeshComponents = Actor->GetComponents<UStaticMeshComponent>();
     for (UStaticMeshComponent* MeshComponent : StaticMeshComponents)
     {
@@ -1034,12 +1039,41 @@ bool CPickingSystem::CheckActorPicking(AActor* Actor, USceneComponent*& OutCompo
                 FVector WorldHitPoint(WorldHit4.X, WorldHit4.Y, WorldHit4.Z);
 
                 // 월드 거리 계산
-                OutDistance = (WorldHitPoint - Ray.Origin).Size();
-                OutComponent = MeshComponent;
-                return true;
+                float Distance = (WorldHitPoint - Ray.Origin).Size();
+                if (Distance < ClosestDistance)
+                {
+                    ClosestDistance = Distance;
+                    ClosestComponent = MeshComponent;
+                    bHit = true;
+                }
             }
         }
     }
+
+    // 2. BillboardComponent 검사
+    const TSet<UBillboardComponent*> BillboardComponents = Actor->GetComponents<UBillboardComponent>();
+    for (UBillboardComponent* BillboardComponent : BillboardComponents)
+    {
+        float HitDistance;
+        if (CheckBillboardComponentPicking(BillboardComponent, Ray, HitDistance))
+        {
+            if (HitDistance < ClosestDistance)
+            {
+                ClosestDistance = HitDistance;
+                ClosestComponent = BillboardComponent;
+                bHit = true;
+            }
+        }
+    }
+
+    // 가장 가까운 컴포넌트 반환
+    if (bHit)
+    {
+        OutDistance = ClosestDistance;
+        OutComponent = ClosestComponent;
+        return true;
+    }
+
     OutDistance = -1;
     return false;
 }
@@ -1140,5 +1174,71 @@ USceneComponent* CPickingSystem::PerformGlobalBVHPicking(const TArray<AActor*>& 
         UE_LOG(buf);
         return nullptr;
     }
+}
+
+bool CPickingSystem::CheckBillboardComponentPicking(const UBillboardComponent* Component, const FRay& Ray, float& OutDistance)
+{
+    if (!Component) return false;
+
+    // 빌보드의 월드 위치 (쿼드의 중심점)
+    FVector BillboardWorldPos = Component->GetWorldLocation();
+
+    // 빌보드 크기
+    float HalfWidth = Component->GetBillboardWidth() * 0.5f;
+    float HalfHeight = Component->GetBillboardHeight() * 0.5f;
+
+    // 카메라 정보 가져오기 (빌보드는 항상 카메라를 향함)
+    UWorld* World = Component->GetOwner()->GetWorld();
+    if (!World) return false;
+
+    ACameraActor* CameraActor = World->GetCameraActor();
+    if (!CameraActor) return false;
+
+    FVector CamRight = CameraActor->GetActorRight();
+    FVector CamUp = CameraActor->GetActorUp();
+    FVector CamForward = CameraActor->GetActorForward();
+
+    // 빌보드 평면의 법선 벡터 (카메라를 향하므로 -CamForward)
+    FVector PlaneNormal = -CamForward;
+    PlaneNormal.Normalize();
+
+    // Ray와 평면의 교차 검사
+    // 평면 방정식: dot(PlaneNormal, P - BillboardWorldPos) = 0
+    // Ray 방정식: P = Ray.Origin + t * Ray.Direction
+    // 교차점: dot(PlaneNormal, Ray.Origin + t * Ray.Direction - BillboardWorldPos) = 0
+    // t = dot(PlaneNormal, BillboardWorldPos - Ray.Origin) / dot(PlaneNormal, Ray.Direction)
+
+    float Denominator = FVector::Dot(PlaneNormal, Ray.Direction);
+
+    // Ray가 평면과 평행하거나 뒤를 향하면 교차하지 않음
+    if (std::abs(Denominator) < KINDA_SMALL_NUMBER)
+        return false;
+
+    float t = FVector::Dot(PlaneNormal, BillboardWorldPos - Ray.Origin) / Denominator;
+
+    // Ray가 음의 방향이면 교차하지 않음
+    if (t < 0.0f)
+        return false;
+
+    // 교차점 계산
+    FVector HitPoint = Ray.Origin + Ray.Direction * t;
+
+    // 교차점이 빌보드 쿼드 내부에 있는지 확인
+    // 빌보드 로컬 좌표계로 변환하여 검사
+    FVector LocalHitPoint = HitPoint - BillboardWorldPos;
+
+    // 카메라 오른쪽/위쪽 벡터로 투영
+    float LocalX = FVector::Dot(LocalHitPoint, CamRight);
+    float LocalY = FVector::Dot(LocalHitPoint, CamUp);
+
+    // 쿼드 경계 내부에 있는지 확인
+    if (LocalX >= -HalfWidth && LocalX <= HalfWidth &&
+        LocalY >= -HalfHeight && LocalY <= HalfHeight)
+    {
+        OutDistance = t;
+        return true;
+    }
+
+    return false;
 }
 
