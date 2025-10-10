@@ -12,7 +12,6 @@ enum class EDecalState : uint8
    Count,
 };
  
-
 class UDecalComponent : public UPrimitiveComponent
 {
 public:
@@ -32,7 +31,10 @@ public:
     // 데칼 텍스처 설정
     void SetDecalTexture(const FString& TexturePath);
      
-    void StatTick(float DeltaTime);
+    void DecalAnimTick(float DeltaTime);
+    
+    // Start fade-in → delay → fade-out sequence
+    void StartFade();
    
     // Fade 효과를 처음부터 시작시키는 함수
     void ActivateFadeEffect();
@@ -76,7 +78,7 @@ protected:
     float FadeDuration;
      
     float CurrentAlpha;
-    float CurrentStateElapsedTime[3];
+    float CurrentStateElapsedTime[4];
 
     // 데칼 블렌드 모드
     //enum class EDecalBlendMode
