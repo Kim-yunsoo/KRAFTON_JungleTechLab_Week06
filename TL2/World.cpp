@@ -321,16 +321,40 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
                     continue;
                 }
 
-                if (Cast<UAABoundingBoxComponent>(Component) &&
-                    !Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_BoundingBoxes))
+                if (UAABoundingBoxComponent* AABBComp = Cast<UAABoundingBoxComponent>(Component))
                 {
-                    continue;
+                    if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_BoundingBoxes))
+                    {
+                        continue; // BoundingBox ShowFlag가 꺼져있으면 AABB 스킵
+                    }
+
+                    // Decal Actor가 소유한 AABB인 경우에만 Decal ShowFlag 확인
+                    if (Cast<ADecalActor>(Actor))
+                    {
+                        if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals))
+                        {
+                            continue; // Decal ShowFlag가 꺼져있으면 Decal의 AABB 스킵
+                        }
+                    }
                 }
 
                 // 데칼 컴포넌트는 Pass 2에서 렌더링
                 if (Cast<UDecalComponent>(Component))
                 {
                     continue;
+                }
+
+                if (UOBoundingBoxComponent* OBBComp = Cast<UOBoundingBoxComponent>(Component))
+                {
+                    // Decal Actor가 소유한 OBB인 경우
+                    if (Cast<ADecalActor>(Actor))
+                    {
+                        if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals) || // Decal ShowFlag 꺼져 있는 경우
+							!SelectionManager.IsActorSelected(Actor)) // 선택되지 않은 경우
+                        {
+                            continue;
+                        }
+                    }
                 }
 
                 if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
