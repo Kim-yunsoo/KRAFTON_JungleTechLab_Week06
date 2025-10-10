@@ -44,12 +44,10 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{95520b77-70ba-47a8-a3c4-364bce265567}</UniqueIdentifier>
     </Filter>
-
     <!-- ==================== Core 하위 필터 ==================== -->
     <Filter Include="Core\Engine">
       <UniqueIdentifier>{E1100000-0000-0000-0000-000000000001}</UniqueIdentifier>
     </Filter>
-
     <!-- ==================== Components 하위 필터 ==================== -->
     <Filter Include="Components\Camera">
       <UniqueIdentifier>{E3100000-0000-0000-0000-000000000001}</UniqueIdentifier>
@@ -69,7 +67,6 @@
     <Filter Include="Components\Decal">
       <UniqueIdentifier>{E3600000-0000-0000-0000-000000000001}</UniqueIdentifier>
     </Filter>
-
     <!-- ==================== Rendering 하위 필터 ==================== -->
     <Filter Include="Rendering\RHI">
       <UniqueIdentifier>{E4100000-0000-0000-0000-000000000001}</UniqueIdentifier>
@@ -77,12 +74,10 @@
     <Filter Include="Rendering\Viewport">
       <UniqueIdentifier>{E4200000-0000-0000-0000-000000000001}</UniqueIdentifier>
     </Filter>
-
     <!-- ==================== Resources 하위 필터 ==================== -->
     <Filter Include="Resources\Mesh">
       <UniqueIdentifier>{E5100000-0000-0000-0000-000000000001}</UniqueIdentifier>
     </Filter>
-
     <!-- ==================== UI 하위 필터 ==================== -->
     <Filter Include="UI\Windows">
       <UniqueIdentifier>{E6100000-0000-0000-0000-000000000001}</UniqueIdentifier>
@@ -102,7 +97,6 @@
     <Filter Include="UI\Stats">
       <UniqueIdentifier>{E6600000-0000-0000-0000-000000000001}</UniqueIdentifier>
     </Filter>
-
     <!-- ==================== Utilities 하위 필터 ==================== -->
     <Filter Include="Utilities\Archive">
       <UniqueIdentifier>{EB100000-0000-0000-0000-000000000001}</UniqueIdentifier>
@@ -113,24 +107,20 @@
     <Filter Include="Utilities\Scene">
       <UniqueIdentifier>{EB300000-0000-0000-0000-000000000001}</UniqueIdentifier>
     </Filter>
-
     <!-- ==================== Math & Data 하위 필터 ==================== -->
     <Filter Include="Math &amp; Data\Primitives">
       <UniqueIdentifier>{EC100000-0000-0000-0000-000000000001}</UniqueIdentifier>
     </Filter>
-
     <!-- ==================== ThirdParty 하위 필터 ==================== -->
     <Filter Include="ThirdParty\ImGui">
       <UniqueIdentifier>{340a9369-98be-4580-af67-945e0e2bcbef}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
-
   <!-- ==================== 소스 파일 (.cpp) ==================== -->
   <ItemGroup>
     <!-- Main Entry Point -->
     <ClCompile Include="main.cpp" />
     <ClCompile Include="pch.cpp" />
-
     <!-- Core -->
     <ClCompile Include="Object.cpp">
       <Filter>Core</Filter>
@@ -147,7 +137,6 @@
     <ClCompile Include="AllClassesRegistration.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-
     <!-- Core\Engine -->
     <ClCompile Include="Engine.cpp">
       <Filter>Core\Engine</Filter>
@@ -161,7 +150,6 @@
     <ClCompile Include="EditorClipboard.cpp">
       <Filter>Core\Engine</Filter>
     </ClCompile>
-
     <!-- Actors -->
     <ClCompile Include="CameraActor.cpp">
       <Filter>Actors</Filter>
@@ -175,10 +163,6 @@
     <ClCompile Include="GridActor.cpp">
       <Filter>Actors</Filter>
     </ClCompile>
-    <ClCompile Include="DecalActor.cpp">
-      <Filter>Actors</Filter>
-    </ClCompile>
-
     <!-- Components -->
     <ClCompile Include="ActorComponent.cpp">
       <Filter>Components</Filter>
@@ -186,12 +170,10 @@
     <ClCompile Include="SceneComponent.cpp">
       <Filter>Components</Filter>
     </ClCompile>
-
     <!-- Components\Camera -->
     <ClCompile Include="CameraComponent.cpp">
       <Filter>Components\Camera</Filter>
     </ClCompile>
-
     <!-- Components\Mesh -->
     <ClCompile Include="MeshComponent.cpp">
       <Filter>Components\Mesh</Filter>
@@ -199,7 +181,6 @@
     <ClCompile Include="StaticMeshComponent.cpp">
       <Filter>Components\Mesh</Filter>
     </ClCompile>
-
     <!-- Components\Primitive -->
     <ClCompile Include="PrimitiveComponent.cpp">
       <Filter>Components\Primitive</Filter>
@@ -207,12 +188,10 @@
     <ClCompile Include="ShapeComponent.cpp">
       <Filter>Components\Primitive</Filter>
     </ClCompile>
-
     <!-- Components\Line -->
     <ClCompile Include="LineComponent.cpp">
       <Filter>Components\Line</Filter>
     </ClCompile>
-
     <!-- Components\Text -->
     <ClCompile Include="TextRenderComponent.cpp">
       <Filter>Components\Text</Filter>
@@ -220,17 +199,11 @@
     <ClCompile Include="BillboardComponent.cpp">
       <Filter>Components\Text</Filter>
     </ClCompile>
-
     <!-- Components\Decal -->
-    <ClCompile Include="DecalComponent.cpp">
-      <Filter>Components\Decal</Filter>
-    </ClCompile>
-
     <!-- Rendering -->
     <ClCompile Include="Renderer.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
-
     <!-- Rendering\RHI -->
     <ClCompile Include="RHIDevice.cpp">
       <Filter>Rendering\RHI</Filter>
@@ -238,7 +211,6 @@
     <ClCompile Include="D3D11RHI.cpp">
       <Filter>Rendering\RHI</Filter>
     </ClCompile>
-
     <!-- Rendering\Viewport -->
     <ClCompile Include="FViewport.cpp">
       <Filter>Rendering\Viewport</Filter>
@@ -246,7 +218,6 @@
     <ClCompile Include="FViewportClient.cpp">
       <Filter>Rendering\Viewport</Filter>
     </ClCompile>
-
     <!-- Resources -->
     <ClCompile Include="ResourceBase.cpp">
       <Filter>Resources</Filter>
@@ -263,7 +234,6 @@
     <ClCompile Include="TextQuad.cpp">
       <Filter>Resources</Filter>
     </ClCompile>
-
     <!-- Resources\Mesh -->
     <ClCompile Include="StaticMesh.cpp">
       <Filter>Resources\Mesh</Filter>
@@ -280,7 +250,6 @@
     <ClCompile Include="MeshLoader.cpp">
       <Filter>Resources\Mesh</Filter>
     </ClCompile>
-
     <!-- UI -->
     <ClCompile Include="UI\UIManager.cpp">
       <Filter>UI</Filter>
@@ -288,7 +257,6 @@
     <ClCompile Include="UI\GlobalConsole.cpp">
       <Filter>UI</Filter>
     </ClCompile>
-
     <!-- UI\Windows -->
     <ClCompile Include="UI\Window\UIWindow.cpp">
       <Filter>UI\Windows</Filter>
@@ -308,7 +276,6 @@
     <ClCompile Include="UI\Window\SceneWindow.cpp">
       <Filter>UI\Windows</Filter>
     </ClCompile>
-
     <!-- UI\Widgets -->
     <ClCompile Include="UI\Widget\Widget.cpp">
       <Filter>UI\Widgets</Filter>
@@ -343,17 +310,14 @@
     <ClCompile Include="UI\Widget\TargetActorTransformWidget.cpp">
       <Filter>UI\Widgets</Filter>
     </ClCompile>
-
     <!-- UI\Factory -->
     <ClCompile Include="UI\Factory\UIWindowFactory.cpp">
       <Filter>UI\Factory</Filter>
     </ClCompile>
-
     <!-- UI\ImGui -->
     <ClCompile Include="UI\ImGui\ImGuiHelper.cpp">
       <Filter>UI\ImGui</Filter>
     </ClCompile>
-
     <!-- UI\SWidget -->
     <ClCompile Include="SWindow.cpp">
       <Filter>UI\SWidget</Filter>
@@ -388,7 +352,6 @@
     <ClCompile Include="RenderViewportSwitcherWidget.cpp">
       <Filter>UI\SWidget</Filter>
     </ClCompile>
-
     <!-- UI\Stats -->
     <ClCompile Include="UI\StatsOverlayD2D.cpp">
       <Filter>UI\Stats</Filter>
@@ -396,7 +359,6 @@
     <ClCompile Include="RenderingStats.cpp">
       <Filter>UI\Stats</Filter>
     </ClCompile>
-
     <!-- Gizmo -->
     <ClCompile Include="GizmoArrowComponent.cpp">
       <Filter>Gizmo</Filter>
@@ -407,7 +369,6 @@
     <ClCompile Include="GizmoScaleComponent.cpp">
       <Filter>Gizmo</Filter>
     </ClCompile>
-
     <!-- Managers -->
     <ClCompile Include="InputManager.cpp">
       <Filter>Managers</Filter>
@@ -424,7 +385,6 @@
     <ClCompile Include="SelectionManager.cpp">
       <Filter>Managers</Filter>
     </ClCompile>
-
     <!-- Spatial -->
     <ClCompile Include="SpatialDataStructure.cpp">
       <Filter>Spatial</Filter>
@@ -438,7 +398,6 @@
     <ClCompile Include="BoundingVolumeHierarchy.cpp">
       <Filter>Spatial</Filter>
     </ClCompile>
-
     <!-- Bounding -->
     <ClCompile Include="Frustum.cpp">
       <Filter>Bounding</Filter>
@@ -449,7 +408,6 @@
     <ClCompile Include="OBoundingBoxComponent.cpp">
       <Filter>Bounding</Filter>
     </ClCompile>
-
     <!-- Utilities -->
     <ClCompile Include="Picking.cpp">
       <Filter>Utilities</Filter>
@@ -460,22 +418,18 @@
     <ClCompile Include="FName.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
-
     <!-- Utilities\Factory -->
     <ClCompile Include="ObjectFactory.cpp">
       <Filter>Utilities\Factory</Filter>
     </ClCompile>
-
     <!-- Utilities\Scene -->
     <ClCompile Include="SceneLoader.cpp">
       <Filter>Utilities\Scene</Filter>
     </ClCompile>
-
     <!-- Math & Data -->
     <ClCompile Include="UEContainer.cpp">
       <Filter>Math &amp; Data</Filter>
     </ClCompile>
-
     <!-- ThirdParty\ImGui -->
     <ClCompile Include="ImGui\imgui.cpp">
       <Filter>ThirdParty\ImGui</Filter>
@@ -498,13 +452,20 @@
     <ClCompile Include="ImGui\imgui_widgets.cpp">
       <Filter>ThirdParty\ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="DecalComponent.cpp">
+      <Filter>Components\Decal</Filter>
+    </ClCompile>
+    <ClCompile Include="OrientedBox.cpp">
+      <Filter>Bounding</Filter>
+    </ClCompile>
+    <ClCompile Include="DecalActor.cpp">
+      <Filter>Actors</Filter>
+    </ClCompile>
   </ItemGroup>
-
   <!-- ==================== 헤더 파일 (.h) ==================== -->
   <ItemGroup>
     <!-- PCH -->
     <ClInclude Include="pch.h" />
-
     <!-- Core -->
     <ClInclude Include="Object.h">
       <Filter>Core</Filter>
@@ -521,7 +482,6 @@
     <ClInclude Include="PropertyFlag.h">
       <Filter>Core</Filter>
     </ClInclude>
-
     <!-- Core\Engine -->
     <ClInclude Include="Engine.h">
       <Filter>Core\Engine</Filter>
@@ -535,7 +495,6 @@
     <ClInclude Include="EditorClipboard.h">
       <Filter>Core\Engine</Filter>
     </ClInclude>
-
     <!-- Actors -->
     <ClInclude Include="CameraActor.h">
       <Filter>Actors</Filter>
@@ -549,10 +508,6 @@
     <ClInclude Include="GridActor.h">
       <Filter>Actors</Filter>
     </ClInclude>
-    <ClInclude Include="DecalActor.h">
-      <Filter>Actors</Filter>
-    </ClInclude>
-
     <!-- Components -->
     <ClInclude Include="ActorComponent.h">
       <Filter>Components</Filter>
@@ -560,12 +515,10 @@
     <ClInclude Include="SceneComponent.h">
       <Filter>Components</Filter>
     </ClInclude>
-
     <!-- Components\Camera -->
     <ClInclude Include="CameraComponent.h">
       <Filter>Components\Camera</Filter>
     </ClInclude>
-
     <!-- Components\Mesh -->
     <ClInclude Include="MeshComponent.h">
       <Filter>Components\Mesh</Filter>
@@ -573,7 +526,6 @@
     <ClInclude Include="StaticMeshComponent.h">
       <Filter>Components\Mesh</Filter>
     </ClInclude>
-
     <!-- Components\Primitive -->
     <ClInclude Include="PrimitiveComponent.h">
       <Filter>Components\Primitive</Filter>
@@ -581,12 +533,10 @@
     <ClInclude Include="ShapeComponent.h">
       <Filter>Components\Primitive</Filter>
     </ClInclude>
-
     <!-- Components\Line -->
     <ClInclude Include="LineComponent.h">
       <Filter>Components\Line</Filter>
     </ClInclude>
-
     <!-- Components\Text -->
     <ClInclude Include="TextRenderComponent.h">
       <Filter>Components\Text</Filter>
@@ -594,17 +544,11 @@
     <ClInclude Include="BillboardComponent.h">
       <Filter>Components\Text</Filter>
     </ClInclude>
-
     <!-- Components\Decal -->
-    <ClInclude Include="DecalComponent.h">
-      <Filter>Components\Decal</Filter>
-    </ClInclude>
-
     <!-- Rendering -->
     <ClInclude Include="Renderer.h">
       <Filter>Rendering</Filter>
     </ClInclude>
-
     <!-- Rendering\RHI -->
     <ClInclude Include="RHIDevice.h">
       <Filter>Rendering\RHI</Filter>
@@ -612,7 +556,6 @@
     <ClInclude Include="D3D11RHI.h">
       <Filter>Rendering\RHI</Filter>
     </ClInclude>
-
     <!-- Rendering\Viewport -->
     <ClInclude Include="FViewport.h">
       <Filter>Rendering\Viewport</Filter>
@@ -620,7 +563,6 @@
     <ClInclude Include="FViewportClient.h">
       <Filter>Rendering\Viewport</Filter>
     </ClInclude>
-
     <!-- Resources -->
     <ClInclude Include="ResourceBase.h">
       <Filter>Resources</Filter>
@@ -637,7 +579,6 @@
     <ClInclude Include="TextQuad.h">
       <Filter>Resources</Filter>
     </ClInclude>
-
     <!-- Resources\Mesh -->
     <ClInclude Include="StaticMesh.h">
       <Filter>Resources\Mesh</Filter>
@@ -654,7 +595,6 @@
     <ClInclude Include="MeshLoader.h">
       <Filter>Resources\Mesh</Filter>
     </ClInclude>
-
     <!-- UI -->
     <ClInclude Include="UI\UIManager.h">
       <Filter>UI</Filter>
@@ -662,7 +602,6 @@
     <ClInclude Include="UI\GlobalConsole.h">
       <Filter>UI</Filter>
     </ClInclude>
-
     <!-- UI\Windows -->
     <ClInclude Include="UI\Window\UIWindow.h">
       <Filter>UI\Windows</Filter>
@@ -682,7 +621,6 @@
     <ClInclude Include="UI\Window\SceneWindow.h">
       <Filter>UI\Windows</Filter>
     </ClInclude>
-
     <!-- UI\Widgets -->
     <ClInclude Include="UI\Widget\Widget.h">
       <Filter>UI\Widgets</Filter>
@@ -717,17 +655,14 @@
     <ClInclude Include="UI\Widget\TargetActorTransformWidget.h">
       <Filter>UI\Widgets</Filter>
     </ClInclude>
-
     <!-- UI\Factory -->
     <ClInclude Include="UI\Factory\UIWindowFactory.h">
       <Filter>UI\Factory</Filter>
     </ClInclude>
-
     <!-- UI\ImGui -->
     <ClInclude Include="UI\ImGui\ImGuiHelper.h">
       <Filter>UI\ImGui</Filter>
     </ClInclude>
-
     <!-- UI\SWidget -->
     <ClInclude Include="SWindow.h">
       <Filter>UI\SWidget</Filter>
@@ -762,7 +697,6 @@
     <ClInclude Include="RenderViewportSwitcherWidget.h">
       <Filter>UI\SWidget</Filter>
     </ClInclude>
-
     <!-- UI\Stats -->
     <ClInclude Include="UI\StatsOverlayD2D.h">
       <Filter>UI\Stats</Filter>
@@ -770,7 +704,6 @@
     <ClInclude Include="RenderingStats.h">
       <Filter>UI\Stats</Filter>
     </ClInclude>
-
     <!-- Gizmo -->
     <ClInclude Include="GizmoArrowComponent.h">
       <Filter>Gizmo</Filter>
@@ -781,13 +714,6 @@
     <ClInclude Include="GizmoScaleComponent.h">
       <Filter>Gizmo</Filter>
     </ClInclude>
-    <ClInclude Include="GizmoComponent.h">
-      <Filter>Gizmo</Filter>
-    </ClInclude>
-    <ClInclude Include="GridComponent.h">
-      <Filter>Gizmo</Filter>
-    </ClInclude>
-
     <!-- Managers -->
     <ClInclude Include="InputManager.h">
       <Filter>Managers</Filter>
@@ -804,7 +730,6 @@
     <ClInclude Include="SelectionManager.h">
       <Filter>Managers</Filter>
     </ClInclude>
-
     <!-- Spatial -->
     <ClInclude Include="SpatialDataStructure.h">
       <Filter>Spatial</Filter>
@@ -818,7 +743,6 @@
     <ClInclude Include="BoundingVolumeHierarchy.h">
       <Filter>Spatial</Filter>
     </ClInclude>
-
     <!-- Bounding -->
     <ClInclude Include="Frustum.h">
       <Filter>Bounding</Filter>
@@ -829,7 +753,6 @@
     <ClInclude Include="OBoundingBoxComponent.h">
       <Filter>Bounding</Filter>
     </ClInclude>
-
     <!-- Utilities -->
     <ClInclude Include="Picking.h">
       <Filter>Utilities</Filter>
@@ -843,12 +766,10 @@
     <ClInclude Include="SceneRotationUtils.h">
       <Filter>Utilities</Filter>
     </ClInclude>
-
     <!-- Utilities\Factory -->
     <ClInclude Include="ObjectFactory.h">
       <Filter>Utilities\Factory</Filter>
     </ClInclude>
-
     <!-- Utilities\Archive -->
     <ClInclude Include="Archive.h">
       <Filter>Utilities\Archive</Filter>
@@ -859,12 +780,10 @@
     <ClInclude Include="WindowsBinReader.h">
       <Filter>Utilities\Archive</Filter>
     </ClInclude>
-
     <!-- Utilities\Scene -->
     <ClInclude Include="SceneLoader.h">
       <Filter>Utilities\Scene</Filter>
     </ClInclude>
-
     <!-- Math & Data -->
     <ClInclude Include="Vector.h">
       <Filter>Math &amp; Data</Filter>
@@ -878,7 +797,6 @@
     <ClInclude Include="ObjectIterator.h">
       <Filter>Math &amp; Data</Filter>
     </ClInclude>
-
     <!-- Math & Data\Primitives -->
     <ClInclude Include="Triangle.h">
       <Filter>Math &amp; Data\Primitives</Filter>
@@ -889,10 +807,6 @@
     <ClInclude Include="Sphere.h">
       <Filter>Math &amp; Data\Primitives</Filter>
     </ClInclude>
-    <ClInclude Include="Grid.h">
-      <Filter>Math &amp; Data\Primitives</Filter>
-    </ClInclude>
-
     <!-- ThirdParty\ImGui -->
     <ClInclude Include="ImGui\imconfig.h">
       <Filter>ThirdParty\ImGui</Filter>
@@ -918,11 +832,16 @@
     <ClInclude Include="ImGui\imstb_truetype.h">
       <Filter>ThirdParty\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="ImGuiConsole.h">
-      <Filter>ThirdParty\ImGui</Filter>
+    <ClInclude Include="DecalComponent.h">
+      <Filter>Components\Decal</Filter>
+    </ClInclude>
+    <ClInclude Include="OrientedBox.h">
+      <Filter>Bounding</Filter>
+    </ClInclude>
+    <ClInclude Include="DecalActor.h">
+      <Filter>Actors</Filter>
     </ClInclude>
   </ItemGroup>
-
   <!-- ==================== 셰이더 파일 (.hlsl) ==================== -->
   <ItemGroup>
     <FxCompile Include="Primitive.hlsl">
@@ -946,11 +865,7 @@
     <FxCompile Include="Billboard.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="DecalShader.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
   </ItemGroup>
-
   <!-- ==================== 리소스 파일 ==================== -->
   <ItemGroup>
     <Content Include="Editor\Icon\Pawn_64x.dds" />

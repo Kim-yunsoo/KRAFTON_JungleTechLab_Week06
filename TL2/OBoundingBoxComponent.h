@@ -10,8 +10,7 @@ struct FBox
     FBox(const FVector& InMin, const FVector& InMax) : Min(InMin), Max(InMax) {}
 };
 
-class UOBoundingBoxComponent :
-    public UShapeComponent
+class UOBoundingBoxComponent : public UShapeComponent
 {
     DECLARE_CLASS(UOBoundingBoxComponent,UShapeComponent)
 public:
