@@ -95,22 +95,6 @@ FOrientedBox UDecalComponent::GetDecalOrientedBox() const
     );
 }
 
-FOrientedBox UDecalComponent::GetActorOrientedBox(AStaticMeshActor* Actor) const
-{
-    if (!Actor)
-        return FOrientedBox();
-
-    UAABoundingBoxComponent* CollisionComp = Actor->CollisionComponent;
-    if (!CollisionComp)
-        return FOrientedBox();
-
-    FBound AABB = CollisionComp->GetWorldBoundFromCube();
-    FVector Center = (AABB.Max + AABB.Min) * 0.5f;
-    FVector HalfExtents = (AABB.Max - AABB.Min) * 0.5f;
-
-    return FOrientedBox(Center, HalfExtents, Actor->GetActorRotation());
-}
-
 // Find Affected Meshes
 TArray<UStaticMeshComponent*> UDecalComponent::FindAffectedMeshes(UWorld* World)
 {
