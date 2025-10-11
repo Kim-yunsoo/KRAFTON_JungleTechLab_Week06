@@ -38,12 +38,19 @@ UDecalComponent::UDecalComponent()
     BillboardQuad = ResourceManager.Get<UTextQuad>("Billboard");
     BillboardTexture = ResourceManager.Load<UTexture>("Editor/Decal/DecalActor_64x.dds");
     BillboardMaterial = ResourceManager.Load<UMaterial>("Billboard.hlsl");
+
+    SetTickEnabled(true);
 }
 
 UDecalComponent::~UDecalComponent()
 {
 
-}  
+}
+
+void UDecalComponent::TickComponent(float DeltaSeconds)
+{
+    DecalAnimTick(DeltaSeconds);
+}
 
 FBound UDecalComponent::GetDecalBoundingBox() const
 {

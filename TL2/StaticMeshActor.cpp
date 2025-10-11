@@ -27,6 +27,8 @@ AStaticMeshActor::AStaticMeshActor()
 
 void AStaticMeshActor::Tick(float DeltaTime)
 {
+    Super_t::Tick(DeltaTime);
+
     static float times;
     times += DeltaTime;
 

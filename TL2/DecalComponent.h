@@ -28,6 +28,8 @@ public:
 
     UDecalComponent();
     virtual ~UDecalComponent() override;
+
+    virtual void TickComponent(float DeltaSeconds) override;
     
     void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
 
