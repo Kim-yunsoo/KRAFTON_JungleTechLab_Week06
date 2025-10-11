@@ -21,10 +21,11 @@
 #include "UI/Widget/FPSWidget.h"
 #include "UI/Widget/InputInformationWidget.h"
 #include "UI/Widget/PrimitiveSpawnWidget.h"
- #include "UI/Widget/SceneIOWidget.h"
+#include "UI/Widget/SceneIOWidget.h"
 #include "UI/Widget/TargetActorTransformWidget.h"
 #include "UI/Widget/SceneManagerWidget.h"
 #include "UI/Widget/ShowFlagWidget.h"
+#include "UI/Widget//ActorSpawnWidget.h"
 #include "UI/Widget/Widget.h"
 #include "UI/Window/ConsoleWindow.h"
 #include "UI/Window/ControlPanelWindow.h"
@@ -100,6 +101,7 @@ IMPLEMENT_CLASS(USceneIOWidget)
 IMPLEMENT_CLASS(UTargetActorTransformWidget)
 IMPLEMENT_CLASS(USceneManagerWidget)
 IMPLEMENT_CLASS(UShowFlagWidget)
+IMPLEMENT_CLASS(UActorSpawnWidget)
 
 IMPLEMENT_CLASS(UUIWindow)
 IMPLEMENT_CLASS(UConsoleWindow)
