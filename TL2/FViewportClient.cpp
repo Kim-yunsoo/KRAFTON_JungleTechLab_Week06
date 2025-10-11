@@ -2,11 +2,12 @@
 #include "FViewportClient.h"
 #include "FViewport.h"
 #include "CameraComponent.h"
-#include"CameraActor.h"
+#include "CameraActor.h"
 #include "World.h"
 #include "Picking.h"
 #include "SelectionManager.h"
-#include"GizmoActor.h"
+#include "GizmoActor.h"
+#include "UI/UIManager.h"
 FVector FViewportClient::CameraAddPosition{};
 
 FViewportClient::FViewportClient()
@@ -239,6 +240,7 @@ void FViewportClient::MouseButtonDown(FViewport* Viewport, int32 X, int32 Y, int
             PickedActor->SetIsPicked(true);
 
             USelectionManager::GetInstance().SelectActor(PickedActor);
+            UUIManager::GetInstance().SetPickedActor(PickedActor);
             if (World->GetGizmoActor())
             {
                 World->GetGizmoActor()->SetTargetActor(PickedActor);
@@ -249,6 +251,7 @@ void FViewportClient::MouseButtonDown(FViewport* Viewport, int32 X, int32 Y, int
         {
             // Clear selection if nothing was picked
             USelectionManager::GetInstance().ClearSelection();
+            UUIManager::GetInstance().ResetPickedActor();
         }
     }
     else if (Button == 1) {//우클릭시
