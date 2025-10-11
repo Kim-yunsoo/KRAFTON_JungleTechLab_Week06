@@ -12,6 +12,8 @@ class UWorld;
 // ── UClass: 간단한 타입 디스크립터 ─────────────────────────────
 struct UClass
 {
+    typedef UObject* (*ClassConstructorType)();
+
     const char* Name = nullptr;
     const UClass* Super = nullptr;   // 루트(UObject)는 nullptr
     std::size_t   Size = 0;
@@ -27,12 +29,70 @@ struct UClass
             if (c == Base) return true;
         return false;
     }
+
+    UObject* CreateDefaultObject() const; 
+private:
+    ClassConstructorType Constructor;
 };
 
+/** StaticDuplicateObject()와 관련 함수에서 사용되는 Enum */
+namespace EDuplicateMode
+{
+    enum Type
+    {
+        /** 복제에 구체적인 정보가 없는경우 */
+        Normal,
+        /** 월드 복제의 일부로 오브젝트가 복제되는 경우 */
+        World,
+        /** PIE(Play In Editor)를 위해 오브젝트가 복사되는 경우 */
+        PIE
+    };
+}
+
+struct FObjectDuplicationParameters
+{
+    /** 복사될 오브젝트 */
+    UObject* SourceObject;
+
+    /** 복사될 오브젝트를 사용할 오브젝트*/
+    UObject* DestOuter;
+
+    /** SourceObject의 복제에 사용될 이름 */
+    FName DestName;
+
+    /** 복제될 클래스의 타입 */
+    UClass* DestClass;
+
+    EDuplicateMode::Type DuplicateMode;
+    
+    /**
+     * StaticDuplicateObject에서 사용하는 복제 매핑 테이블을 미리 채워넣기 위한 용도.
+     * 특정 오브젝트를 복제하지 않고, 이미 존재하는 다른 오브젝트를 그 복제본으로 사용하고 싶을 때 활용한다.
+     *
+     * 이 맵에 들어간 오브젝트들은 실제로 복제되지 않는다.
+     * Key는 원본 오브젝트, Value는 복제본으로 사용될 오브젝트이다.
+     */
+    TMap<UObject*, UObject*>& DuplicationSeed;
+  
+    /**
+     * null이 아니라면, StaticDuplicateObject 호출 시 생성된 모든 복제 오브젝트들이 이 맵에 기록된다.
+     *
+     * Key는 원본 오브젝트, Value는 새로 생성된 복제 오브젝트이다.
+     * DuplicationSeed에 의해 미리 매핑된 오브젝트들은 여기에는 들어가지 않는다.
+     */
+    TMap<UObject*, UObject*>& CreatedObjects;
+
+    /** 생성자 */
+    FObjectDuplicationParameters(UObject* InSourceObject, UObject* InDestOuter, TMap<UObject*, UObject*>& InDuplicationSeed, TMap<UObject*, UObject*>& InCreatedObjects)
+        : SourceObject(InSourceObject), DestOuter(InDestOuter), DuplicationSeed(InDuplicationSeed), CreatedObjects(InCreatedObjects)
+    {
+
+    } 
+};
 class UObject
 {
 public:
-    UObject() : UUID(GenerateUUID()), InternalIndex(UINT32_MAX), ObjectName("UObject") {}
+    UObject() : UUID(GenerateUUID()), InternalIndex(UINT32_MAX), ObjectName("UObject"), Outer(nullptr) {}
 
 protected:
     virtual ~UObject() = default;
@@ -50,14 +110,14 @@ public:
     FString GetComparisonName(); // lower-case
 
     UObject* GetOuter() const;
-    virtual UWorld* GetWorld() const;
+    void SetOuter(UObject* InObject);
 
-    // Duplicate for PIE
-    template<typename T>
-    T* Duplicate();
-    
+    virtual UWorld* GetWorld() const;
+      
+    virtual UObject* Duplicate(FObjectDuplicationParameters Parameters);
     virtual UObject* Duplicate();
     virtual void DuplicateSubObjects();
+     
 
 public:
 
@@ -123,7 +183,25 @@ public:                                                                       \
     }                                                                         \
     virtual UClass* GetClass() const override { return ThisClass::StaticClass(); }
 
-//template<typename T>
+
+// ㅡㅡ Duplication ─────────────────────────────────────
+
+inline FObjectDuplicationParameters InitStaticDuplicateObjectParams(UObject const* SourceObject, UObject* DestOuter, const FName DestName,
+    TMap<UObject*, UObject*>& DuplicationSeed, TMap<UObject*, UObject*>& CreatedObjects, EDuplicateMode::Type DuplicateMode = EDuplicateMode::Normal) 
+{
+    FObjectDuplicationParameters Parameters(const_cast<UObject*>(SourceObject), DestOuter, DuplicationSeed, CreatedObjects);
+    if (DestName != FName::GetNone())
+    {
+        Parameters.DestName = DestName;
+    }
+
+    Parameters.DestClass = SourceObject->GetClass();
+    Parameters.DuplicateMode = DuplicateMode;
+
+    return Parameters;
+}
+ 
+//template<typename T> 
 //T* UObject::Duplicate()
 //{
 //    T* NewObject;
@@ -153,4 +231,4 @@ public:                                                                       \
 //    }
 //    
 //    return NewObject;
-//}
+//} 

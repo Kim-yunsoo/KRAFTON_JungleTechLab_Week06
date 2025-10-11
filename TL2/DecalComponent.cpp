@@ -415,6 +415,32 @@ UObject* UDecalComponent::Duplicate()
     return DuplicatedComponent;
 }
 
+UObject* UDecalComponent::Duplicate(FObjectDuplicationParameters Parameters)
+{ 
+    auto DupObject = static_cast<UDecalComponent*>(Super_t::Duplicate(Parameters));
+
+    //얕복
+    DupObject->DecalTexture = DecalTexture;
+    DupObject->DecalSize = DecalSize;
+    DupObject->SortOrder = SortOrder;
+
+    DupObject->FadeInDuration = FadeInDuration;
+    DupObject->FadeStartDelay = FadeStartDelay;
+    DupObject->FadeDuration = FadeDuration;
+     
+    DupObject->CurrentAlpha = 0.0f;
+    DupObject->DecalCurrentState = EDecalState::FadeIn;
+    
+    //시작은 0에서  시작 
+    for (int i = 0; i < 4; ++i)
+    {
+        DupObject->CurrentStateElapsedTime[i] = 0.0f;
+    }
+
+
+    return DupObject;
+}
+
 void UDecalComponent::DuplicateSubObjects()
 {
     // 부모의 깊은 복사 수행 (AttachChildren 재귀 복제)

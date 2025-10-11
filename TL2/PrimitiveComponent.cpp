@@ -48,9 +48,17 @@ UObject* UPrimitiveComponent::Duplicate()
     return DuplicatedComponent;
 }
 
+UObject* UPrimitiveComponent::Duplicate(FObjectDuplicationParameters Parameters)
+{
+    auto DupObject = static_cast<UPrimitiveComponent*>(Super_t::Duplicate(Parameters));
+    
+    // Material 얕은 복사
+    DupObject->Material = Material;
+
+    return DupObject;
+}
+
 void UPrimitiveComponent::DuplicateSubObjects()
 {
-    Super_t::DuplicateSubObjects();
-
-
+    Super_t::DuplicateSubObjects(); 
 }

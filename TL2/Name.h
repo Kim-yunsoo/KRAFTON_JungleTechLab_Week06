@@ -67,6 +67,8 @@ struct FName
     {
         return FName(A + B.ToString());
     }
+    
+    static const FName& GetNone();
 };
 
 namespace std

@@ -79,6 +79,7 @@ public:
 
     // Duplicate function
     UObject* Duplicate() override;
+    UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
     void DuplicateSubObjects() override;
 
 protected:

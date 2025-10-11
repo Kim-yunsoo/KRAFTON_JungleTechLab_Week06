@@ -20,6 +20,7 @@ public:
 	void SetCollisionComponent(EPrimitiveType InType = EPrimitiveType::Default);
 
     UObject* Duplicate() override;
+    UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
     void DuplicateSubObjects() override;
 
 protected:

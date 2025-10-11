@@ -40,7 +40,8 @@ public:
     AActor* GetOwner() const { return Owner; }
 
     UObject* Duplicate() override;
-    void DuplicateSubObjects() override;
+    UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
+    void DuplicateSubObjects() override; 
 
 protected:
     // [PIE] 외부에서 초기화 필요

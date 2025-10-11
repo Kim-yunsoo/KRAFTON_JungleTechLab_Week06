@@ -275,31 +275,46 @@ bool AActor::DeleteComponent(USceneComponent* ComponentToDelete)
 
 UObject* AActor::Duplicate()
 {
-    // 원본(this)의 RootComponent 저장
-    USceneComponent* OriginalRoot = this->RootComponent;
+    return nullptr;
+}
 
-    // 얕은 복사 수행 (생성자 실행됨)
-    AActor* DuplicateActor = NewObject<AActor>(*this);
+UObject* AActor::Duplicate(FObjectDuplicationParameters Parameters)
+{
+    auto DupObject = static_cast<AActor*>(Super_t::Duplicate(Parameters));
 
-    // 생성자가 만든 RootComponent 삭제
-    if (DuplicateActor->RootComponent)
+    /** @note 기본 생성자가 생성하는 컴포넌트를 맵에 업데이트 */
+    if (RootComponent)
     {
-        DuplicateActor->OwnedComponents.Remove(DuplicateActor->RootComponent);
-        ObjectFactory::DeleteObject(DuplicateActor->RootComponent);
-        DuplicateActor->RootComponent = nullptr;
-    }
-    DuplicateActor->OwnedComponents.clear();
+        auto Params = InitStaticDuplicateObjectParams(RootComponent, DupObject, FName::GetNone(), Parameters.DuplicationSeed, Parameters.CreatedObjects);
+        Params.DuplicationSeed.Emplace(RootComponent, DupObject->RootComponent);
 
-    // 원본의 RootComponent 복제
-    if (OriginalRoot)
+        RootComponent->Duplicate(Params);
+    }
+ 
+    /** @todo 이후 다른 AActor를 상속받는 클래스들이 생성하는 컴포넌트를 어떻게 복제할 것인지 생각 */
+    
+    for (auto& Component : OwnedComponents)
     {
-        DuplicateActor->RootComponent = Cast<USceneComponent>(OriginalRoot->Duplicate());
+        // 이미 위에서 처리했음
+        if (Component == RootComponent)
+        {
+            continue;
+        }
+        
+        if (auto It = Parameters.DuplicationSeed.find(Component); It != Parameters.DuplicationSeed.end()) 
+        {
+            DupObject->OwnedComponents.Add(static_cast<UActorComponent*>(It->second));
+        }
+        else
+        {
+            auto Params = InitStaticDuplicateObjectParams(Component, DupObject, FName::GetNone(), Parameters.DuplicationSeed, Parameters.CreatedObjects);
+            auto DupComponent = static_cast<UActorComponent*>(Component->Duplicate(Params));
+
+            DupObject->OwnedComponents.emplace(DupComponent);
+        }
     }
 
-    // OwnedComponents 재구성
-    DuplicateActor->DuplicateSubObjects();
-
-    return DuplicateActor;
+    return DupObject;
 }
 
 /**

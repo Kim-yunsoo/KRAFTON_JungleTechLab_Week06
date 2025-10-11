@@ -39,6 +39,8 @@ public:
     const TArray<FMaterialSlot>& GetMaterailSlots() const { return MaterailSlots; }
     
     UObject* Duplicate() override;
+    UObject* Duplicate(FObjectDuplicationParameters Parameter) override;
+   
     void DuplicateSubObjects() override;
 
 protected:

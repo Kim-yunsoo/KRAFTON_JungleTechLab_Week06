@@ -1278,7 +1278,20 @@ UWorld* UWorld::DuplicateWorldForPIE(UWorld* EditorWorld)
             {
                 if (EditorActor)
                 {
-                    AActor* PIEActor = Cast<AActor>(EditorActor->Duplicate());//체크!
+                    // Duplication seed/context per-actor
+                    TMap<UObject*, UObject*> DuplicationSeed;
+                    TMap<UObject*, UObject*> CreatedObjects;
+
+                    auto Params = InitStaticDuplicateObjectParams(
+                        EditorActor,
+                        PIEWorld,                 // DestOuter
+                        FName::GetNone(),
+                        DuplicationSeed,
+                        CreatedObjects,
+                        EDuplicateMode::PIE       // Duplicate mode for PIE
+                    );
+
+                    AActor* PIEActor = Cast<AActor>(EditorActor->Duplicate(Params));
 
                     if (PIEActor)
                     {
