@@ -27,6 +27,7 @@ void FBVH::Build(const TArray<AActor*>& Actors)
     if (Actors.Num() == 0)
         return;
 
+
     // 1. 액터들의 AABB 정보 수집
     ActorBounds.Reserve(Actors.Num());
     ActorIndices.Reserve(Actors.Num());

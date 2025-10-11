@@ -379,7 +379,7 @@ void UDecalComponent::StartFade()
 UObject* UDecalComponent::Duplicate()
 {
     UDecalComponent* DuplicatedComponent = Cast<UDecalComponent>(NewObject(GetClass()));
-   
+
     // 공통 속성 복사 (Transform, AttachChildren)
     CopyCommonProperties(DuplicatedComponent);
     
@@ -408,4 +408,6 @@ void UDecalComponent::DuplicateSubObjects()
 {
     // 부모의 깊은 복사 수행 (AttachChildren 재귀 복제)
     Super_t::DuplicateSubObjects();
+
+    //TODO: Decal Component 복제해야하지  않나?
 }

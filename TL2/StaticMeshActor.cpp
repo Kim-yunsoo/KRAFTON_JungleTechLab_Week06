@@ -29,10 +29,13 @@ void AStaticMeshActor::Tick(float DeltaTime)
 {
     static float times;
     times += DeltaTime;
+
+    //TODO: bTickEditor를 추가해서 Tick안에서 분기문을 없애야됨
     if (World->WorldType == EWorldType::PIE) {
-        RootComponent->AddLocalRotation({ 0.01f, 0.0f,0.0f });
-        RootComponent->AddLocalOffset({ sin(times)/100, sin(times)/100,sin(times)/100 });
+        //RootComponent->AddLocalRotation({ 0.01f, 0.0f,0.0f });
+        //RootComponent->AddLocalOffset({ sin(times)/100, sin(times)/100,sin(times)/100 });
     }
+
     if(bIsPicked&& CollisionComponent)
     CollisionComponent->SetFromVertices(StaticMeshComponent->GetStaticMesh()->GetStaticMeshAsset()->Vertices);
 }
