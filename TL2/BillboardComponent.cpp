@@ -13,17 +13,6 @@ UBillboardComponent::UBillboardComponent()
     // 빌보드용 메시 가져오기 (단일 쿼드)
     BillboardQuad = ResourceManager.Get<UTextQuad>("Billboard");
 
-    // 머티리얼 생성 또는 가져오기
-   /* if (auto* M = ResourceManager.Get<UMaterial>("Billboard"))
-    {
-        Material = M;
-        SetMaterial("Billboard.hlsl");
-    }
-    else
-    {
-        Material = NewObject<UMaterial>();
-        ResourceManager.Add<UMaterial>("Billboard", Material);
-    }*/
     SetMaterial("Billboard.hlsl");//메테리얼 자동 매칭
 }
 

@@ -29,6 +29,7 @@
 #include "Triangle.h"
 #include "RenderingStats.h"
 #include "BillboardComponent.h"
+#include "DecalComponent.h"
 
 FRay MakeRayFromMouse(const FMatrix& InView,
                       const FMatrix& InProj)
@@ -927,6 +928,22 @@ bool CPickingSystem::CheckActorPicking(AActor* Actor, USceneComponent*& OutCompo
         }
     }
 
+    // 3. DecalComponent 검사
+    const TSet<UDecalComponent*> DecalComponents = Actor->GetComponents<UDecalComponent>();
+    for (UDecalComponent* DecalComponent : DecalComponents)
+    {
+        float HitDistance;
+        if (CheckDecalComponentPicking(DecalComponent, Ray, HitDistance))
+        {
+            if (HitDistance < ClosestDistance)
+            {
+                ClosestDistance = HitDistance;
+                ClosestComponent = DecalComponent;
+                bHit = true;
+            }
+        }
+    }
+
     // 가장 가까운 컴포넌트 반환
     if (bHit)
     {
@@ -1044,9 +1061,35 @@ bool CPickingSystem::CheckBillboardComponentPicking(const UBillboardComponent* C
     // 빌보드의 월드 위치 (쿼드의 중심점)
     FVector BillboardWorldPos = Component->GetWorldLocation();
 
-    // 빌보드 크기
-    float HalfWidth = Component->GetBillboardWidth() * 0.5f;
-    float HalfHeight = Component->GetBillboardHeight() * 0.5f;
+    // 카메라 정보 가져오기 (빌보드는 항상 카메라를 향함)
+    UWorld* World = Component->GetOwner()->GetWorld();
+    if (!World) return false;
+
+    ACameraActor* CameraActor = World->GetCameraActor();
+    if (!CameraActor) return false;
+
+    // 빌보드 크기를 기반으로 구의 반경 계산
+    float BillboardRadius = std::max(Component->GetBillboardWidth(), Component->GetBillboardHeight()) * 0.5f;
+    // 피킹을 쉽게 하기 위해 반경을 2배로 확장 (조정 가능)
+    float PickingRadius = BillboardRadius * 1.0f;
+
+    // Ray-Sphere 교차 검사
+    float SphereHitDistance;
+    if (IntersectRaySphere(Ray, BillboardWorldPos, PickingRadius, SphereHitDistance))
+    {
+        OutDistance = SphereHitDistance;
+        return true;
+    }
+
+    return false;
+}
+
+bool CPickingSystem::CheckDecalComponentPicking(const UDecalComponent* Component, const FRay& Ray, float& OutDistance)
+{
+    if (!Component) return false;
+
+    // 데칼의 월드 위치 (빌보드의 중심점)
+    FVector DecalWorldPos = Component->GetWorldLocation();
 
     // 카메라 정보 가져오기 (빌보드는 항상 카메라를 향함)
     UWorld* World = Component->GetOwner()->GetWorld();
@@ -1055,48 +1098,16 @@ bool CPickingSystem::CheckBillboardComponentPicking(const UBillboardComponent* C
     ACameraActor* CameraActor = World->GetCameraActor();
     if (!CameraActor) return false;
 
-    FVector CamRight = CameraActor->GetActorRight();
-    FVector CamUp = CameraActor->GetActorUp();
-    FVector CamForward = CameraActor->GetActorForward();
+    // 빌보드 크기를 기반으로 구의 반경 계산 (기본 크기 1.0 사용)
+    float BillboardRadius = 0.5f; // 기본 빌보드 크기의 절반
+    // 피킹을 쉽게 하기 위해 반경을 확장 (조정 가능)
+    float PickingRadius = BillboardRadius * 1.0f;
 
-    // 빌보드 평면의 법선 벡터 (카메라를 향하므로 -CamForward)
-    FVector PlaneNormal = -CamForward;
-    PlaneNormal.Normalize();
-
-    // Ray와 평면의 교차 검사
-    // 평면 방정식: dot(PlaneNormal, P - BillboardWorldPos) = 0
-    // Ray 방정식: P = Ray.Origin + t * Ray.Direction
-    // 교차점: dot(PlaneNormal, Ray.Origin + t * Ray.Direction - BillboardWorldPos) = 0
-    // t = dot(PlaneNormal, BillboardWorldPos - Ray.Origin) / dot(PlaneNormal, Ray.Direction)
-
-    float Denominator = FVector::Dot(PlaneNormal, Ray.Direction);
-
-    // Ray가 평면과 평행하거나 뒤를 향하면 교차하지 않음
-    if (std::abs(Denominator) < KINDA_SMALL_NUMBER)
-        return false;
-
-    float t = FVector::Dot(PlaneNormal, BillboardWorldPos - Ray.Origin) / Denominator;
-
-    // Ray가 음의 방향이면 교차하지 않음
-    if (t < 0.0f)
-        return false;
-
-    // 교차점 계산
-    FVector HitPoint = Ray.Origin + Ray.Direction * t;
-
-    // 교차점이 빌보드 쿼드 내부에 있는지 확인
-    // 빌보드 로컬 좌표계로 변환하여 검사
-    FVector LocalHitPoint = HitPoint - BillboardWorldPos;
-
-    // 카메라 오른쪽/위쪽 벡터로 투영
-    float LocalX = FVector::Dot(LocalHitPoint, CamRight);
-    float LocalY = FVector::Dot(LocalHitPoint, CamUp);
-
-    // 쿼드 경계 내부에 있는지 확인
-    if (LocalX >= -HalfWidth && LocalX <= HalfWidth &&
-        LocalY >= -HalfHeight && LocalY <= HalfHeight)
+    // Ray-Sphere 교차 검사
+    float SphereHitDistance;
+    if (IntersectRaySphere(Ray, DecalWorldPos, PickingRadius, SphereHitDistance))
     {
-        OutDistance = t;
+        OutDistance = SphereHitDistance;
         return true;
     }
 
