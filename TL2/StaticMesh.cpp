@@ -26,10 +26,7 @@ void UStaticMesh::Load(const FString& InFilePath, ID3D11Device* InDevice, EVerte
     CreateIndexBuffer(StaticMeshAsset, InDevice);
     VertexCount = static_cast<uint32>(StaticMeshAsset->Vertices.size());
     IndexCount = static_cast<uint32>(StaticMeshAsset->Indices.size());
-#ifndef _DEBUG
-    // Debug 빌드가 아닐 때만 BVH 생성
     BuildMeshBVH();
-#endif
 }
 
 void UStaticMesh::Load(FMeshData* InData, ID3D11Device* InDevice, EVertexLayoutType InVertexType)
