@@ -5,7 +5,6 @@
 #include "../Widget/TargetActorTransformWidget.h"
 #include "../Widget/ActorTerminationWidget.h"
 #include "../Widget/PrimitiveSpawnWidget.h"
-#include "../Widget/ActorSpawnWidget.h"
 #include "../Widget/SceneIOWidget.h"
 #include "../Widget/SceneManagerWidget.h"
 #include "UI/Widget/ShowFlagWidget.h"
@@ -48,11 +47,7 @@ UControlPanelWindow::UControlPanelWindow()
     UPrimitiveSpawnWidget* PrimitiveSpawnWidget = NewObject<UPrimitiveSpawnWidget>();
     PrimitiveSpawnWidget->Initialize();
     AddWidget(PrimitiveSpawnWidget);
-
-    UActorSpawnWidget* ActorSpawnWidget = NewObject<UActorSpawnWidget>();
-    ActorSpawnWidget->Initialize();
-    AddWidget(ActorSpawnWidget);
-
+	   
 	USceneIOWidget* SceneIOWidget = NewObject<USceneIOWidget>();
 	SceneIOWidget->Initialize();
 	AddWidget(SceneIOWidget);

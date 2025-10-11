@@ -12,7 +12,12 @@ cbuffer ViewProjBuffer : register(b1)
     row_major float4x4 ViewMatrix;
     row_major float4x4 ProjectionMatrix;
 }
- 
+
+cbuffer ColorBuffer : register(b3)
+{
+    float4 LerpColor;
+}
+
 //------------------------------------------------------
 // Resources
 //------------------------------------------------------
@@ -84,6 +89,7 @@ float4 mainPS(PS_INPUT input) : SV_TARGET
     uv.y = 1 - uv.y;
     
     float4 color = g_DecalTexture.Sample(g_Sample, uv);
-    
+    // Apply fade alpha from ColorBuffer.a
+    color *= LerpColor;
     return color;
 } 

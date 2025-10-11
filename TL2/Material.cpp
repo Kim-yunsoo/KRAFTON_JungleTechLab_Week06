@@ -17,6 +17,10 @@ void UMaterial::Load(const FString& InFilePath, ID3D11Device* InDevice)
         }*/
         Texture = UResourceManager::GetInstance().Load<UTexture>(InFilePath);
     }
+    else if (InFilePath.find(".png") != std::string::npos || InFilePath.find(".jpg") !=  std::string::npos)
+    {
+        Texture = UResourceManager::GetInstance().Load<UTexture>(InFilePath);
+    }
     else if (InFilePath.find(".hlsl") != std::string::npos)
     {
         Shader = UResourceManager::GetInstance().Load<UShader>(InFilePath);

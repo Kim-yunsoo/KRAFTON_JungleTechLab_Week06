@@ -20,18 +20,22 @@ UDecalComponent::UDecalComponent()
     SetMaterial("ProjectionDecal.hlsl");
     if (Material)
     {
-        Material->Load("Editor/Decal/SpotLight_64x.dds", UResourceManager::GetInstance().GetDevice());
+        //Material->Load("Editor/Decal/SpotLight_64x.dds", UResourceManager::GetInstance().GetDevice());
+        Material->Load("Editor/Decal/After.png", UResourceManager::GetInstance().GetDevice());
     }
 
     //Decal Stat  Init
-    DecalStat.SortOrder = 0;
-    DecalStat.FadeInDuration = 0;
-    DecalStat.FadeStartDelay = 0;
-    DecalStat.FadeDuration = 0; 
+    SortOrder = 0;
+    FadeInDuration = 3;
+    FadeStartDelay = 3;
+    FadeDuration = 3; 
 
     CurrentAlpha = 1.0f;
-    CurrentStateElapsedTime = 0.0f;
-    DecalCurrentState = EDecalState::Finished;
+    for (int i = 0; i < 4; ++i)
+    {
+        CurrentStateElapsedTime[i] = 0.0f;
+    }
+    DecalCurrentState = EDecalState::FadeIn;
 }
 
 UDecalComponent::~UDecalComponent()
@@ -84,7 +88,8 @@ void UDecalComponent::RenderOnActor(URenderer* Renderer, AActor* TargetActor, co
         // Per-mesh constant buffers
         Renderer->UpdateConstantBuffer(SMC->GetWorldMatrix(), View, Proj);
         // Reuse b4 to carry decal view/proj
-        Renderer->UpdateInvWorldBuffer(DecalView, DecalProj);
+        Renderer->UpdateInvWorldBuffer(DecalView, DecalProj); 
+        Renderer->UpdateColorBuffer(FVector4{ 1.0f, 1.0f, 1.0f, CurrentAlpha });
 
         UINT stride = 0;
         switch (Mesh->GetVertexType())
@@ -120,26 +125,94 @@ void UDecalComponent::SetDecalTexture(const FString& TexturePath)
     Material->Load(TexturePath, UResourceManager::GetInstance().GetDevice());
 }
 
-void UDecalComponent::StatTick(float DeltaTime)
-{
-    if (GetFadeInDuration() >= 0) 
-    {
+void UDecalComponent::DecalAnimTick(float DeltaTime)
+{ 
+    const uint8 stateIndex = static_cast<uint8>(DecalCurrentState);
 
+    if (DecalCurrentState != EDecalState::Finished)
+    {
+        if (stateIndex < (uint8)4)
+        {
+            CurrentStateElapsedTime[stateIndex] += DeltaTime;
+        }
     }
 
+    ActivateFadeEffect();
 }
 
 void UDecalComponent::ActivateFadeEffect()
 {
-    /*switch (DecalCurrentState)
+    switch (DecalCurrentState)
     {
     case EDecalState::FadeIn:
+    {
+        const float Duration = FMath::Max(0.0f, GetFadeInDuration());
+        if (Duration == 0.0f)
+        {
+            CurrentAlpha = 1.0f;
+            DecalCurrentState = EDecalState::Delay;
+            CurrentStateElapsedTime[static_cast<uint8>(EDecalState::Delay)] = 0.0f;
+        }
+        else
+        {
+            CurrentAlpha = FMath::Clamp(CurrentStateElapsedTime[static_cast<uint8>(EDecalState::FadeIn)] / Duration, 0.0f, 1.0f);
+            if (CurrentAlpha == 1.0f)
+            {
+                DecalCurrentState = EDecalState::Delay;
+                CurrentStateElapsedTime[static_cast<uint8>(EDecalState::Delay)] = 0.0f; 
+            }
+
+        }
+         
         break;
-    case EDecalState::FadeIn:
+    }
+    case EDecalState::Delay:
+    {
+        CurrentAlpha = 1.0f;
+        if (CurrentStateElapsedTime[static_cast<uint8>(EDecalState::Delay)] > GetFadeStartDelay())
+        {
+            DecalCurrentState = EDecalState::FadingOut;
+            CurrentStateElapsedTime[static_cast<uint8>(EDecalState::FadingOut)] = 0.0f;
+        }
         break;
-    case EDecalState::FadeIn:
+    }
+
+    case EDecalState::FadingOut:
+    {
+        const float Duration = FMath::Max(0.0f, GetFadeDuration());
+        if (Duration == 0.0f)
+        {
+            CurrentAlpha = 0.0f;
+            DecalCurrentState = EDecalState::Finished;
+        }
+        else
+        {
+            const float InvAlpha = FMath::Clamp(CurrentStateElapsedTime[static_cast<uint8>(EDecalState::FadingOut)] / Duration, 0.0f, 1.0f);
+            CurrentAlpha = 1.0f - InvAlpha;
+           if (InvAlpha >= 1.0f)
+            {
+                DecalCurrentState = EDecalState::Finished;  
+            }
+        }
         break;
-    }*/
+    }
+    case EDecalState::Finished:
+    {
+        CurrentAlpha = 0.0f; 
+        break;
+    }
+    }
+}
+
+void UDecalComponent::StartFade()
+{
+    // Reset Timers
+    for (int i = 0; i < 4; ++i)
+    {
+        CurrentStateElapsedTime[i] = 0.0f;
+    }
+    CurrentAlpha = 0.0f;
+    DecalCurrentState = EDecalState::FadeIn;
 }
 
 UObject* UDecalComponent::Duplicate()
@@ -149,7 +222,9 @@ UObject* UDecalComponent::Duplicate()
     
     if (DuplicatedComponent)
     {
-        DuplicatedComponent->SetDecalStat(GetDecalStat());
+        DuplicatedComponent->SetFadeInDuration(GetFadeInDuration());
+        DuplicatedComponent->SetFadeStartDelay(GetFadeStartDelay());
+        DuplicatedComponent->SetFadeDuration(GetFadeDuration());
 
         //DuplicatedComponent->DecalSize = DecalSize;
         //DuplicatedComponent->BlendMode = BlendMode;

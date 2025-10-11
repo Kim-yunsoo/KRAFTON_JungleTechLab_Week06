@@ -5,30 +5,13 @@
  
 enum class EDecalState : uint8
 {
-   FadeIn,
+   FadeIn = 0,
    Delay,
    FadingOut,
    Finished,
+   Count,
 };
-
-struct FDecalStat
-{ 
-    /** Decal이 그려지는 순서, 값이 클 수록 나중에 그려진다. */
-    int32 SortOrder;
-
-    /** Decal이 나타나는데 걸리는 시간 (투명 -> 불투명) */
-    float FadeInDuration;
-
-    /** Decal 지속 시간 */
-    float FadeStartDelay;
-
-    /** Decal이 Fadeout으로 사라지는데 걸리는 시간 */
-    float FadeDuration;
-
-    /** Decal Space에서의 크기 */
-    FVector DecalSize;
-};
-
+ 
 class UDecalComponent : public UPrimitiveComponent
 {
 public:
@@ -48,7 +31,10 @@ public:
     // 데칼 텍스처 설정
     void SetDecalTexture(const FString& TexturePath);
      
-    void StatTick(float DeltaTime);
+    void DecalAnimTick(float DeltaTime);
+    
+    // Start fade-in → delay → fade-out sequence
+    void StartFade();
    
     // Fade 효과를 처음부터 시작시키는 함수
     void ActivateFadeEffect();
@@ -61,16 +47,14 @@ public:
 
     UStaticMesh* GetDecalBoxMesh() const { return DecalBoxMesh; }
 
-    float GetFadeInDuration() { return DecalStat.FadeInDuration; }
-    float GetFadeStartDelay() { return DecalStat.FadeStartDelay; }
-    float GetFadeDuration() { return DecalStat.FadeInDuration; }
+    float GetFadeInDuration() { return FadeInDuration; }
+    float GetFadeStartDelay() { return FadeStartDelay; }
+    float GetFadeDuration() { return FadeDuration; }
 
-    void SetFadeInDuration(float Value) { DecalStat.FadeInDuration = Value; }
-    void SetFadeStartDelay(float Value) { DecalStat.FadeStartDelay = Value; }
-    void SetFadeDuration(float Value) { DecalStat.FadeInDuration = Value; }
-
-    FDecalStat GetDecalStat() { return DecalStat; }
-    void SetDecalStat(FDecalStat Stat) { DecalStat = Stat; }
+    void SetFadeInDuration(float Value) { FadeInDuration = Value; }
+    void SetFadeStartDelay(float Value) { FadeStartDelay = Value; }
+    void SetFadeDuration(float Value) { FadeDuration = Value; }
+     
 protected:
     // 데칼 박스 메쉬 (큐브)
     UStaticMesh* DecalBoxMesh = nullptr;
@@ -78,12 +62,23 @@ protected:
     // 데칼 크기
     FVector DecalSize = FVector(1.0f, 1.0f, 1.0f);
 
-
+    /** Fade State */
     EDecalState DecalCurrentState;
-    FDecalStat DecalStat;
     
+    /** Decal이 그려지는 순서, 값이 클 수록 나중에 그려진다. */
+    int32 SortOrder;
+
+    /** Decal이 나타나는데 걸리는 시간 (투명 -> 불투명) */
+    float FadeInDuration;
+
+    /** Decal 지속 시간 */
+    float FadeStartDelay;
+
+    /** Decal이 Fadeout으로 사라지는데 걸리는 시간 */
+    float FadeDuration;
+     
     float CurrentAlpha;
-    float CurrentStateElapsedTime;
+    float CurrentStateElapsedTime[4];
 
     // 데칼 블렌드 모드
     //enum class EDecalBlendMode

@@ -53,7 +53,10 @@ void ADecalActor::Tick(float DeltaTime)
         }
     } 
 
-    //StatTick(DeltaTime);
+    if (DecalComponent)
+    {
+        DecalComponent->DecalAnimTick(DeltaTime);
+    }
 }
 
 void ADecalActor::SetDecalComponent(UDecalComponent* InDecalComponent)
