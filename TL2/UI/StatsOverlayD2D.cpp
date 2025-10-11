@@ -292,7 +292,10 @@ void UStatsOverlayD2D::Draw()
             D2D1::ColorF(D2D1::ColorF::Cyan));
     }
 
-   
+    if (bShowDecal)
+    {
+		// TODO: 데칼 관련 통계 표시
+    }
 
     d2dCtx->EndDraw();
     d2dCtx->SetTarget(nullptr);
@@ -326,6 +329,11 @@ void UStatsOverlayD2D::SetShowRenderStats(bool b)
     bShowRenderStats = b;
 }
 
+void UStatsOverlayD2D::SetShowDecal(bool b)
+{
+    bShowDecal = b;
+}
+
 void UStatsOverlayD2D::ToggleFPS()
 {
     bShowFPS = !bShowFPS;
@@ -344,4 +352,9 @@ void UStatsOverlayD2D::TogglePicking()
 void UStatsOverlayD2D::ToggleRenderStats()
 {
     bShowRenderStats = !bShowRenderStats;
+}
+
+void UStatsOverlayD2D::ToggleDecal()
+{
+	bShowDecal = !bShowDecal;
 }

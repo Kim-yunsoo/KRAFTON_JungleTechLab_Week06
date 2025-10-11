@@ -269,6 +269,7 @@ void UConsoleWidget::ExecCommand(const char* command_line)
         AddLog("- STAT MEMORY");
         AddLog("- STAT PICKING");
 		AddLog("- STAT RENDER");
+		AddLog("_ STAT DECAL");
         AddLog("- STAT NONE");
     }
     else if (Stricmp(command_line, "STAT FPS") == 0)
@@ -291,12 +292,18 @@ void UConsoleWidget::ExecCommand(const char* command_line)
 		UStatsOverlayD2D::Get().SetShowRenderStats(true);
 		AddLog("STAT RENDER: ON");
 	}
+    else if (Stricmp(command_line, "STAT DECAL") == 0)
+    {
+        UStatsOverlayD2D::Get().SetShowDecal(true);
+        AddLog("STAT DECAL: ON");
+	}
     else if (Stricmp(command_line, "STAT NONE") == 0)
     {
         UStatsOverlayD2D::Get().SetShowFPS(false);
         UStatsOverlayD2D::Get().SetShowMemory(false);
 		UStatsOverlayD2D::Get().SetShowPicking(false);
 		UStatsOverlayD2D::Get().SetShowRenderStats(false);
+		UStatsOverlayD2D::Get().SetShowDecal(false);
         AddLog("STAT: OFF");
     }
     else
