@@ -1,7 +1,16 @@
 ﻿// DecalComponent.h
 #pragma once
-#include "PrimitiveComponent.h"
-#include "StaticMesh.h"
+#include "SceneComponent.h"
+#include "Texture.h"
+#include "OrientedBox.h"
+
+class URenderer;
+class FViewport;
+class UWorld;
+class UStaticMeshComponent;
+class AStaticMeshActor;
+class UTextQuad;
+class UMaterial;
  
 enum class EDecalState : uint8
 {
@@ -12,24 +21,26 @@ enum class EDecalState : uint8
    Count,
 };
  
-class UDecalComponent : public UPrimitiveComponent
+class UDecalComponent : public USceneComponent
 {
 public:
-    DECLARE_CLASS(UDecalComponent, UPrimitiveComponent)
+    DECLARE_CLASS(UDecalComponent, USceneComponent)
 
     UDecalComponent();
     virtual ~UDecalComponent() override;
     
-    //void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj) override;
+    virtual void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
 
-    void RenderOnActor(URenderer* Renderer, AActor* TargetActor, const FMatrix& View, const FMatrix& Proj);
+    // Decal Box와 충돌하는 Static Mesh 컴포넌트 찾기
+    TArray<UStaticMeshComponent*> FindAffectedMeshes(UWorld* World);
     
     // 데칼 크기 설정 (박스 볼륨의 크기)
     void SetDecalSize(const FVector& InSize) { DecalSize = InSize; }
     FVector GetDecalSize() const { return DecalSize; }
 
-    // 데칼 텍스처 설정
+    // Texture
     void SetDecalTexture(const FString& TexturePath);
+    UTexture* GetDecalTexture() const { return DecalTexture; }
      
     void DecalAnimTick(float DeltaTime);
     
@@ -42,10 +53,15 @@ public:
     // 현재 계산된 투명도 값을 반환하는 함수
     float GetCurrentAlpha() const { return CurrentAlpha; }
 
+    // Decal Bounding Box (AABB for culling)
+    FBound GetDecalBoundingBox() const;
+
+    // Decal OBB (정밀 충돌 검사용)
+    FOrientedBox GetDecalOrientedBox() const;
+
+    // Duplicate
     UObject* Duplicate() override;
     void DuplicateSubObjects() override;
-
-    UStaticMesh* GetDecalBoxMesh() const { return DecalBoxMesh; }
 
     float GetFadeInDuration() { return FadeInDuration; }
     float GetFadeStartDelay() { return FadeStartDelay; }
@@ -54,10 +70,15 @@ public:
     void SetFadeInDuration(float Value) { FadeInDuration = Value; }
     void SetFadeStartDelay(float Value) { FadeStartDelay = Value; }
     void SetFadeDuration(float Value) { FadeDuration = Value; }
+
+private:
+    // Actor에서 OBB 생성
+    FOrientedBox GetActorOrientedBox(AStaticMeshActor* Actor) const;
      
 protected:
-    // 데칼 박스 메쉬 (큐브)
-    UStaticMesh* DecalBoxMesh = nullptr;
+    // Texture
+    // [PIE] 주소 복사
+    UTexture* DecalTexture = nullptr;
 
     // 데칼 크기
     FVector DecalSize = FVector(1.0f, 1.0f, 1.0f);
@@ -79,13 +100,4 @@ protected:
      
     float CurrentAlpha;
     float CurrentStateElapsedTime[4];
-
-    // 데칼 블렌드 모드
-    //enum class EDecalBlendMode
-    //{
-    //    Translucent,    // 반투명 블렌딩
-    //    Stain,          // 곱셈 블렌딩
-    //    Normal,         // 노멀맵
-    //    Emissive        // 발광
-    //};
 };

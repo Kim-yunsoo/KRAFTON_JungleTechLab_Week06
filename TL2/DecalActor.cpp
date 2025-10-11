@@ -5,7 +5,6 @@
 #include "AABoundingBoxComponent.h"
 #include "DecalComponent.h"
 #include "ObjectFactory.h"
-#include "BillboardComponent.h"
 
 
 ADecalActor::ADecalActor()
@@ -13,12 +12,6 @@ ADecalActor::ADecalActor()
     // DecalComponent 생성 및 컴포넌트 생성
     DecalComponent = CreateDefaultSubobject<UDecalComponent>(FName("DecalComponent")); 
     DecalComponent->SetupAttachment(RootComponent);
-
-    CollisionComponent = CreateDefaultSubobject<UAABoundingBoxComponent>(FName("CollisionBox"));
-    CollisionComponent->SetupAttachment(RootComponent);
-
-    DecalVolumeComponent = CreateDefaultSubobject< UOBoundingBoxComponent>(FName("DecalVolumeComponent"));
-    DecalVolumeComponent->SetupAttachment(RootComponent);
 
     BillboardComponent = CreateDefaultSubobject<UBillboardComponent>(FName("BillboardComponent"));
     BillboardComponent->SetWorldLocation(FVector(0.f, 0.f, 0.f));
@@ -31,28 +24,9 @@ ADecalActor::~ADecalActor()
 
 void ADecalActor::Tick(float DeltaTime)
 {
-    AActor::Tick(DeltaTime);
-    if (CollisionComponent && DecalComponent && DecalComponent->GetDecalBoxMesh() && DecalComponent->GetDecalBoxMesh()->GetStaticMeshAsset())
-    {
-        CollisionComponent->SetFromVertices(DecalComponent->GetDecalBoxMesh()->GetStaticMeshAsset()->Vertices);
-    }
+    Super_t::Tick(DeltaTime);
 
-    // OBB update
-    if (DecalVolumeComponent)
-    {
-        DecalVolumeComponent->UpdateFromWorld(GetWorldMatrix());
-    }
-     
-    // TODO Duplcate할 때 DecalVolumeComponent가 사라짐
-    if (!DecalVolumeComponent)
-    {
-        DecalVolumeComponent = CreateDefaultSubobject<UOBoundingBoxComponent>(FName("DecalVolumeComponent"));
-        if (DecalVolumeComponent)
-        {
-            DecalVolumeComponent->SetupAttachment(RootComponent);
-        }
-    } 
-
+    // Fade 업데이트
     if (DecalComponent)
     {
         DecalComponent->DecalAnimTick(DeltaTime);
@@ -63,31 +37,6 @@ void ADecalActor::SetDecalComponent(UDecalComponent* InDecalComponent)
 {
     DecalComponent = InDecalComponent;
     DecalComponent->SetupAttachment(RootComponent);
-}
-
-void ADecalActor::CheckAndAddOverlappingActors(AActor* OverlappingActor)
-{
-    if (!OverlappingActor)
-    {
-        return;
-    }
-
-    if (!OverlappingActor->CollisionComponent)
-    {
-        return;
-    } 
-
-    if ( OverlappingActor->IsA<ADecalActor>())
-    {
-        return;
-    }
-
-    FBound AABB = OverlappingActor->CollisionComponent->GetWorldBoundFromCube();
-   
-    if (DecalVolumeComponent->IntersectWithAABB(AABB))
-    { 
-        OverlappingActors.AddUnique(OverlappingActor); 
-    }  
 }
 
 bool ADecalActor::DeleteComponent(USceneComponent* ComponentToDelete)
@@ -102,89 +51,41 @@ bool ADecalActor::DeleteComponent(USceneComponent* ComponentToDelete)
 
 UObject* ADecalActor::Duplicate()
 {
-    ADecalActor* NewActor = NewObject<ADecalActor>(*this);
+    // 원본(this)의 컴포넌트들 저장
+    USceneComponent* OriginalRoot = this->RootComponent;
 
-    if (NewActor)
+    // 얕은 복사 수행 (생성자 실행됨 - DecalComponent 생성)
+    ADecalActor* DuplicatedActor = NewObject<ADecalActor>(*this);
+
+    // 생성자가 만든 컴포넌트 삭제
+    if (DuplicatedActor->DecalComponent)
     {
-        NewActor->OverlappingActors.Empty();
-        // DecalComponent는 부모가 Duplicate에서 처리됨
-       // NewActor->DecalComponent = static_cast<UDecalComponent*>(NewActor->GetRootComponent());
-
-        // 생성자가 만든 컴포넌트 삭제 
-        if (NewActor->DecalComponent)
-        {
-            NewActor->OwnedComponents.Remove(NewActor->DecalComponent);
-            ObjectFactory::DeleteObject(NewActor->DecalComponent);
-            NewActor->DecalComponent = nullptr;
-        }
-        if (NewActor->DecalVolumeComponent)
-        {
-            NewActor->OwnedComponents.Remove(NewActor->DecalVolumeComponent);
-            ObjectFactory::DeleteObject(NewActor->DecalVolumeComponent);
-            NewActor->DecalVolumeComponent = nullptr;
-        }
-        if (NewActor->CollisionComponent)
-        {
-            NewActor->OwnedComponents.Remove(NewActor->CollisionComponent);
-            ObjectFactory::DeleteObject(NewActor->CollisionComponent);
-            NewActor->CollisionComponent = nullptr;
-        }
-        if (NewActor->RootComponent)
-        {
-            NewActor->OwnedComponents.Remove(NewActor->RootComponent);
-            ObjectFactory::DeleteObject(NewActor->RootComponent);
-            NewActor->RootComponent = nullptr;
-        }
-        NewActor->OwnedComponents.clear();
-
-        if (this->GetRootComponent())
-        {
-            NewActor->RootComponent = Cast<USceneComponent>(this->GetRootComponent()->Duplicate());
-        }
-
-        // Rebuild owned components and rebind cached pointers
-        NewActor->DuplicateSubObjects();
+        DuplicatedActor->OwnedComponents.Remove(DuplicatedActor->DecalComponent);
+        ObjectFactory::DeleteObject(DuplicatedActor->DecalComponent);
+        DuplicatedActor->DecalComponent = nullptr;
     }
 
-    return NewActor; 
-}
+    DuplicatedActor->RootComponent = nullptr;
+    DuplicatedActor->OwnedComponents.clear();
 
+    // 원본의 RootComponent(DecalComponent) 복제
+    if (OriginalRoot)
+    {
+        DuplicatedActor->RootComponent = Cast<USceneComponent>(OriginalRoot->Duplicate());
+    }
+
+    // OwnedComponents 재구성 및 타입별 포인터 재설정
+    DuplicatedActor->DuplicateSubObjects();
+
+    return DuplicatedActor;
+}
 
 void ADecalActor::DuplicateSubObjects()
 {
+    // Duplicate()에서 이미 RootComponent를 복제했으므로
+    // 부모 클래스가 OwnedComponents를 재구성
     Super_t::DuplicateSubObjects();
 
-    // Rebind component cache after duplication
-    DecalComponent = nullptr;
-    DecalVolumeComponent = nullptr;
-    CollisionComponent = nullptr;
-
-    for (UActorComponent* Comp : OwnedComponents)
-    {
-        if (!Comp) continue;
-        if (!DecalComponent)
-        {
-            if (auto* DC = Cast<UDecalComponent>(Comp))
-            {
-                DecalComponent = DC;
-                continue;
-            }
-        }
-        if (!DecalVolumeComponent)
-        {
-            if (auto* OBB = Cast<UOBoundingBoxComponent>(Comp))
-            {
-                DecalVolumeComponent = OBB;
-                continue;
-            }
-        }
-        if (!CollisionComponent)
-        {
-            if (auto* AABB = Cast<UAABoundingBoxComponent>(Comp))
-            {
-                CollisionComponent = AABB;
-                continue;
-            }
-        }
-    }
+    // 타입별 포인터 재설정
+    DecalComponent = Cast<UDecalComponent>(RootComponent);
 }

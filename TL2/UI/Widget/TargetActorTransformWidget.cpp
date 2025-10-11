@@ -565,13 +565,10 @@ void UTargetActorTransformWidget::RenderWidget()
 				ImGui::Text("Decal Texture");
 				FString CurrentTexturePath;
 
-				if (UMaterial* Material = DecalComp->GetMaterial())
+				if (UTexture* Texture = DecalComp->GetDecalTexture())
 				{
-					if (UTexture* Texture = Material->GetTexture())
-					{
-						CurrentTexturePath = Texture->GetFilePath();
-					}
-				} 
+					CurrentTexturePath = Texture->GetFilePath();
+				}
 				ImGui::Text("Current: %s", (CurrentTexturePath.empty() ? FString("<None>") : CurrentTexturePath).c_str());
 
 				static TArray<FString> DecalOptions;

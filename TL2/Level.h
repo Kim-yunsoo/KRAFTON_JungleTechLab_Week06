@@ -18,9 +18,7 @@ public:
 	const TArray<AActor*>& GetActors() const;
 	TArray<AActor*>& GetActors();
 	
-	const TArray<ADecalActor*>& GetDecalActors() const;
 private:
 	TArray<AActor*> Actors;
-	TArray<ADecalActor*> DecalActors;
 };
 
