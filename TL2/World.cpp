@@ -17,10 +17,10 @@
 #include "Frustum.h"
 #include "Octree.h"
 #include "BVH.h"
-#include"UEContainer.h"
-#include"DecalComponent.h"
-#include"DecalActor.h"
-
+#include "UEContainer.h"
+#include "DecalComponent.h"
+#include "DecalActor.h"
+#include "RenderingStats.h"
 
 extern float CLIENTWIDTH;
 extern float CLIENTHEIGHT;
@@ -249,218 +249,235 @@ void UWorld::Render()
 
 void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 {
-    // 뷰포트의 실제 크기로 aspect ratio 계산
-    float ViewportAspectRatio = static_cast<float>(Viewport->GetSizeX()) / static_cast<float>(
-        Viewport->GetSizeY());
-    if (Viewport->GetSizeY() == 0)
-    {
-        ViewportAspectRatio = 1.0f;
-    } // 0으로 나누기 방지
+	// 뷰포트의 실제 크기로 aspect ratio 계산
+	float ViewportAspectRatio = static_cast<float>(Viewport->GetSizeX()) / static_cast<float>(
+		Viewport->GetSizeY());
+	if (Viewport->GetSizeY() == 0)
+	{
+		ViewportAspectRatio = 1.0f;
+	} // 0으로 나누기 방지
 
-    FMatrix ViewMatrix = Camera->GetViewMatrix();
-    FMatrix ProjectionMatrix = Camera->GetProjectionMatrix(ViewportAspectRatio, Viewport);
-    if (!Renderer)
-    {
-        return;
-    }
-    FVector rgb(1.0f, 1.0f, 1.0f);
+	FMatrix ViewMatrix = Camera->GetViewMatrix();
+	FMatrix ProjectionMatrix = Camera->GetProjectionMatrix(ViewportAspectRatio, Viewport);
+	if (!Renderer)
+	{
+		return;
+	}
+	FVector rgb(1.0f, 1.0f, 1.0f);
 
-    FFrustum ViewFrustum;
-    ViewFrustum.Update(ViewMatrix * ProjectionMatrix);
+	FFrustum ViewFrustum;
+	ViewFrustum.Update(ViewMatrix * ProjectionMatrix);
 
-    Renderer->BeginLineBatch();
-    Renderer->SetViewModeType(ViewModeIndex);
+	Renderer->BeginLineBatch();
+	Renderer->SetViewModeType(ViewModeIndex);
 
-        int AllActorCount = 0;
-        int FrustumCullCount = 0;
+	int AllActorCount = 0;
+	int FrustumCullCount = 0;
 
-        const TArray<AActor*>& LevelActors = Level ? Level->GetActors() : TArray<AActor*>();
-       
-    // Pass 1: 데칼을 제외한 모든 오브젝트 렌더링 (Depth 버퍼 채우기)
-    for (AActor* Actor : LevelActors)
-        {
-            // 일반 액터들 렌더링
-            if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives))
-            {
-                continue;
-            }
-            if (!Actor)
-            {
-                continue;
-            }
-            if (Actor->GetActorHiddenInGame())
-            {
-                continue;
-            }
-            if (Cast<AStaticMeshActor>(Actor) &&
-                !Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
-            {
-                continue;
-            }
-            AllActorCount++;
-            for (UActorComponent* Component : Actor->GetComponents())
-            {
-                if (!Component)
-                {
-                    continue;
-                }
+	const TArray<AActor*>& LevelActors = Level ? Level->GetActors() : TArray<AActor*>();
 
-                if (UActorComponent* ActorComp = Cast<UActorComponent>(Component))
-                {
-                    if (!ActorComp->IsActive())
-                    {
-                        continue;
-                    }
-                }
+	// Pass 1: 데칼을 제외한 모든 오브젝트 렌더링 (Depth 버퍼 채우기)
+	for (AActor* Actor : LevelActors)
+	{
+		// 일반 액터들 렌더링
+		if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives))
+		{
+			continue;
+		}
+		if (!Actor)
+		{
+			continue;
+		}
+		if (Actor->GetActorHiddenInGame())
+		{
+			continue;
+		}
+		if (Cast<AStaticMeshActor>(Actor) &&
+			!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
+		{
+			continue;
+		}
+		AllActorCount++;
+		for (UActorComponent* Component : Actor->GetComponents())
+		{
+			if (!Component)
+			{
+				continue;
+			}
 
-                if (Cast<UTextRenderComponent>(Component) &&
-                    !Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_BillboardText))
-                {
-                    continue;
-                }
+			if (UActorComponent* ActorComp = Cast<UActorComponent>(Component))
+			{
+				if (!ActorComp->IsActive())
+				{
+					continue;
+				}
+			}
 
-                if (UAABoundingBoxComponent* AABBComp = Cast<UAABoundingBoxComponent>(Component))
-                {
-                    if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_BoundingBoxes))
-                    {
-                        continue; // BoundingBox ShowFlag가 꺼져있으면 AABB 스킵
-                    }
+			if (Cast<UTextRenderComponent>(Component) &&
+				!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_BillboardText))
+			{
+				continue;
+			}
 
-                    // Decal Actor가 소유한 AABB인 경우에만 Decal ShowFlag 확인
-                    if (Cast<ADecalActor>(Actor))
-                    {
-                        if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals))
-                        {
-                            continue; // Decal ShowFlag가 꺼져있으면 Decal의 AABB 스킵
-                        }
-                    }
-                }
-
-                // 데칼 컴포넌트는 Pass 2에서 렌더링
-                if (Cast<UDecalComponent>(Component))
-                {
-                    continue;
-                }
-
-                if (UOBoundingBoxComponent* OBBComp = Cast<UOBoundingBoxComponent>(Component))
-                {
-                    // Decal Actor가 소유한 OBB인 경우
-                    if (Cast<ADecalActor>(Actor))
-                    {
-                        if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals) || // Decal ShowFlag 꺼져 있는 경우
-							!SelectionManager.IsActorSelected(Actor)) // 선택되지 않은 경우
-                        {
-                            continue;
-                        }
-                    }
-                }
-
-				// Decal Actor의 Billboard Component인 경우 SF_Decals 확인
-                if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Component))
-                {
-                    // Decal Actor가 소유한 Billboard인 경우
-                    if (Cast<ADecalActor>(Actor))
-                    {
-						if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals)) // Decal ShowFlag 꺼져 있는 경우
-						{
-							continue;
-                        }
-                    }
+			if (UAABoundingBoxComponent* AABBComp = Cast<UAABoundingBoxComponent>(Component))
+			{
+				if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_BoundingBoxes))
+				{
+					continue; // BoundingBox ShowFlag가 꺼져있으면 AABB 스킵
 				}
 
-                if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
-                {
-                    bool bIsSelected = SelectionManager.IsActorSelected(Actor);
+				// Decal Actor가 소유한 AABB인 경우에만 Decal ShowFlag 확인
+				if (Cast<ADecalActor>(Actor))
+				{
+					if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals))
+					{
+						continue; // Decal ShowFlag가 꺼져있으면 Decal의 AABB 스킵
+					}
+				}
+			}
 
-                    //// 선택된 액터는 항상 앞에 보이도록 depth test를 Always로 설정
-                    //if (bIsSelected)//나중에 추가구현
-                    //{
-                    //    Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
-                    //}
+			// 데칼 컴포넌트는 Pass 2에서 렌더링
+			if (Cast<UDecalComponent>(Component))
+			{
+				continue;
+			}
 
-                    Renderer->UpdateHighLightConstantBuffer(bIsSelected, rgb, 0, 0, 0, 0);
-                    Primitive->Render(Renderer, ViewMatrix, ProjectionMatrix);
+			if (UOBoundingBoxComponent* OBBComp = Cast<UOBoundingBoxComponent>(Component))
+			{
+				// Decal Actor가 소유한 OBB인 경우
+				if (Cast<ADecalActor>(Actor))
+				{
+					if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals) || // Decal ShowFlag 꺼져 있는 경우
+						!SelectionManager.IsActorSelected(Actor)) // 선택되지 않은 경우
+					{
+						continue;
+					}
+				}
+			}
 
-                    //// depth test 원래대로 복원
-                    //if (bIsSelected)
-                    //{
-                    //    Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
-                    //}
-                }
-            }
-            Renderer->OMSetBlendState(false);
-        }
+			// Decal Actor의 Billboard Component인 경우 SF_Decals 확인
+			if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Component))
+			{
+				// Decal Actor가 소유한 Billboard인 경우
+				if (Cast<ADecalActor>(Actor))
+				{
+					if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals)) // Decal ShowFlag 꺼져 있는 경우
+					{
+						continue;
+					}
+				}
+			}
 
-    // Pass 2: 데칼 렌더링 (Depth 버퍼를 읽어서 다른 오브젝트 위에 투영) 
+			if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
+			{
+				bool bIsSelected = SelectionManager.IsActorSelected(Actor);
 
+				//// 선택된 액터는 항상 앞에 보이도록 depth test를 Always로 설정
+				//if (bIsSelected)//나중에 추가구현
+				//{
+				//    Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
+				//}
+
+				Renderer->UpdateHighLightConstantBuffer(bIsSelected, rgb, 0, 0, 0, 0);
+				Primitive->Render(Renderer, ViewMatrix, ProjectionMatrix);
+
+				//// depth test 원래대로 복원
+				//if (bIsSelected)
+				//{
+				//    Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
+				//}
+			}
+		}
+		Renderer->OMSetBlendState(false);
+	}
+
+	// ============================================
+	// Pass 2: 데칼 렌더링
+	// ============================================
 	if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals) &&
 		Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives))
-    {
-        const TArray<ADecalActor*>& LevelDecalActors = Level ? Level->GetDecalActors() : TArray<ADecalActor*>();
-        for (ADecalActor* DecalActor : LevelDecalActors)
-        {
-            //TODO  Render 
-            if (UDecalComponent* DecalComp = DecalActor->GetDecalComponent())
-            {
-                //TODO: HighLight를 처리해줘야됨 => 안해도 될 것 같음, Decal 구현하고 부자연스러우면 생각해보자.
+	{
+		// ✅ 데칼 패스 시작 (타이머 시작 + 통계 초기화)
+		URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
+		StatsCollector.BeginDecalPass();
 
-                //bool bIsSelected = SelectionManager.IsActorSelected(Actor);
-                //Renderer->UpdateHighLightConstantBuffer(bIsSelected, rgb, 0, 0, 0, 0);
-                for (AActor* Actor : DecalActor->GetOverlappingActors())
-                {
-                    DecalComp->RenderOnActor(Renderer, Viewport, Actor, ViewMatrix, ProjectionMatrix);
-                }
+		const TArray<ADecalActor*>& LevelDecalActors = Level ? Level->GetDecalActors() : TArray<ADecalActor*>();
+        
+		FDecalRenderingStats& CurrentDecalStats = StatsCollector.GetDecalStats();
 
-            }
-        }
-    }
-     
-    //for (AActor* Actor : LevelActors)
-    //{
-    //    
-    //    if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives))
-    //    {
-    //        continue;
-    //    }
-    //    if (!Actor)
-    //    {
-    //        continue;
-    //    }
-    //    if (Actor->GetActorHiddenInGame())
-    //    {
-    //        continue;
-    //    }
-    //
-    //    for (UActorComponent* Component : Actor->GetComponents())
-    //    {
-    //        if (!Component)
-    //        {
-    //            continue;
-    //        }
-    //
-    //        if (UActorComponent* ActorComp = Cast<UActorComponent>(Component))
-    //        {
-    //            if (!ActorComp->IsActive())
-    //            {
-    //                continue;
-    //            }
-    //        }
-    //
-    //        // 데칼 컴포넌트만 렌더링
-    //        if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
-    //        {
-    //            bool bIsSelected = SelectionManager.IsActorSelected(Actor);
-    //            Renderer->UpdateHighLightConstantBuffer(bIsSelected, rgb, 0, 0, 0, 0);
-    //            DecalComp->Render(Renderer, Actor->GetWorldMatrix(), ProjectionMatrix, Viewport);
-    //        }
-    //    }
-    //}
+		// 기본 카운트 설정
+		CurrentDecalStats.TotalDecalCount = static_cast<uint32>(LevelDecalActors.Num());
+
+		for (ADecalActor* DecalActor : LevelDecalActors)
+		{
+			if (UDecalComponent* DecalComp = DecalActor->GetDecalComponent())
+			{
+				const TArray<AActor*>& OverlappingActors = DecalActor->GetOverlappingActors();
+
+				if (OverlappingActors.Num() > 0)
+				{
+					CurrentDecalStats.ActiveDecalCount++;
+					CurrentDecalStats.AffectedActorsCount += static_cast<uint32>(OverlappingActors.Num());
+
+					for (AActor* Actor : OverlappingActors)
+					{
+						DecalComp->RenderOnActor(Renderer, Viewport, Actor, ViewMatrix, ProjectionMatrix);
+						StatsCollector.IncrementDecalDrawCalls();
+					}
+				}
+			}
+		}
+
+		// ✅ 데칼 패스 종료 (타이머 종료 + 평균 계산 + 히스토리 업데이트)
+		StatsCollector.EndDecalPass();
+	}
+
+	//for (AActor* Actor : LevelActors)
+	//{
+	//    
+	//    if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives))
+	//    {
+	//        continue;
+	//    }
+	//    if (!Actor)
+	//    {
+	//        continue;
+	//    }
+	//    if (Actor->GetActorHiddenInGame())
+	//    {
+	//        continue;
+	//    }
+	//
+	//    for (UActorComponent* Component : Actor->GetComponents())
+	//    {
+	//        if (!Component)
+	//        {
+	//            continue;
+	//        }
+	//
+	//        if (UActorComponent* ActorComp = Cast<UActorComponent>(Component))
+	//        {
+	//            if (!ActorComp->IsActive())
+	//            {
+	//                continue;
+	//            }
+	//        }
+	//
+	//        // 데칼 컴포넌트만 렌더링
+	//        if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
+	//        {
+	//            bool bIsSelected = SelectionManager.IsActorSelected(Actor);
+	//            Renderer->UpdateHighLightConstantBuffer(bIsSelected, rgb, 0, 0, 0, 0);
+	//            DecalComp->Render(Renderer, Actor->GetWorldMatrix(), ProjectionMatrix, Viewport);
+	//        }
+	//    }
+	//}
 
 
-    // 엔진 액터들 (그리드 등) 렌더링
-    RenderEngineActors(ViewMatrix, ProjectionMatrix, Viewport);
+	// 엔진 액터들 (그리드 등) 렌더링
+	RenderEngineActors(ViewMatrix, ProjectionMatrix, Viewport);
 
-    Renderer->EndLineBatch(FMatrix::Identity(), ViewMatrix, ProjectionMatrix);
+	Renderer->EndLineBatch(FMatrix::Identity(), ViewMatrix, ProjectionMatrix);
 }
 
 void UWorld::RenderEngineActors(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport)
@@ -584,6 +601,8 @@ bool UWorld::FrustumCullActors(const FFrustum& ViewFrustum, const AActor* Actor,
             return true;
         }
     }
+
+	return false;
 }
 
 FString UWorld::GenerateUniqueActorName(const FString& ActorType)

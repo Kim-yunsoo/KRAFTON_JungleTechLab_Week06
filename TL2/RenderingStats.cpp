@@ -85,6 +85,77 @@ void URenderingStatsCollector::ResetStats()
     ValidFrameCount = 0;
 }
 
+void URenderingStatsCollector::UpdateDecalStats(const FDecalRenderingStats& InStats)
+{
+    if (!bEnabled)
+        return;
+
+    // 현재 프레임 통계 업데이트
+    CurrentDecalStats = InStats;
+
+    // 히스토리에 추가
+    DecalStatsHistory[DecalStatsHistoryIndex] = InStats;
+    DecalStatsHistoryIndex = (DecalStatsHistoryIndex + 1) % AVERAGE_FRAME_COUNT;
+
+    // 평균 계산
+    FDecalRenderingStats SumStats;
+    for (uint32 i = 0; i < AVERAGE_FRAME_COUNT; ++i)
+    {
+        SumStats.TotalDecalCount += DecalStatsHistory[i].TotalDecalCount;
+        SumStats.ActiveDecalCount += DecalStatsHistory[i].ActiveDecalCount;
+        SumStats.AffectedActorsCount += DecalStatsHistory[i].AffectedActorsCount;
+        SumStats.DecalDrawCalls += DecalStatsHistory[i].DecalDrawCalls;
+        SumStats.DecalPassTimeMs += DecalStatsHistory[i].DecalPassTimeMs;
+        SumStats.CollisionCheckTimeMs += DecalStatsHistory[i].CollisionCheckTimeMs;
+        SumStats.DecalShaderChanges += DecalStatsHistory[i].DecalShaderChanges;
+        SumStats.DecalBlendStateChanges += DecalStatsHistory[i].DecalBlendStateChanges;
+        SumStats.DecalDepthStateChanges += DecalStatsHistory[i].DecalDepthStateChanges;
+    }
+
+    // 평균값 계산
+    AverageDecalStats.TotalDecalCount = SumStats.TotalDecalCount / AVERAGE_FRAME_COUNT;
+    AverageDecalStats.ActiveDecalCount = SumStats.ActiveDecalCount / AVERAGE_FRAME_COUNT;
+    AverageDecalStats.AffectedActorsCount = SumStats.AffectedActorsCount / AVERAGE_FRAME_COUNT;
+    AverageDecalStats.DecalDrawCalls = SumStats.DecalDrawCalls / AVERAGE_FRAME_COUNT;
+    AverageDecalStats.DecalPassTimeMs = SumStats.DecalPassTimeMs / static_cast<float>(AVERAGE_FRAME_COUNT);
+    AverageDecalStats.CollisionCheckTimeMs = SumStats.CollisionCheckTimeMs / static_cast<float>(AVERAGE_FRAME_COUNT);
+    AverageDecalStats.DecalShaderChanges = SumStats.DecalShaderChanges / AVERAGE_FRAME_COUNT;
+    AverageDecalStats.DecalBlendStateChanges = SumStats.DecalBlendStateChanges / AVERAGE_FRAME_COUNT;
+    AverageDecalStats.DecalDepthStateChanges = SumStats.DecalDepthStateChanges / AVERAGE_FRAME_COUNT;
+
+    // 평균의 평균값 계산
+    AverageDecalStats.CalculateAverages();
+}
+
+void URenderingStatsCollector::BeginDecalPass()
+{
+    if (!bEnabled)
+        return;
+
+    // 데칼 패스 통계 초기화
+    CurrentDecalStats.Reset();
+
+    // 타이머 시작
+    DecalPassStartTime = std::chrono::high_resolution_clock::now();
+}
+
+void URenderingStatsCollector::EndDecalPass()
+{
+    if (!bEnabled)
+        return;
+
+    // 타이머 종료 및 시간 계산
+    auto DecalPassEndTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float, std::milli> Duration = DecalPassEndTime - DecalPassStartTime;
+    CurrentDecalStats.DecalPassTimeMs = Duration.count();
+
+    // 평균값 계산
+    CurrentDecalStats.CalculateAverages();
+
+    // 통계 업데이트 (히스토리에 저장 및 평균 계산)
+    UpdateDecalStats(CurrentDecalStats);
+}
+
 void URenderingStatsCollector::CalculateAverageStats()
 {
     if (ValidFrameCount == 0)
