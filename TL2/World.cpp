@@ -1046,6 +1046,19 @@ void UWorld::SaveSceneV2(const FString& SceneName)
                 }
                 // TODO: Materials 수집
             }
+            else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Comp))
+            {
+                // DecalComponent 속성 저장
+                if (DecalComp->GetDecalTexture())
+                {
+                    CompData.DecalTexture = DecalComp->GetDecalTexture()->GetFilePath();
+                }
+                CompData.DecalSize = DecalComp->GetDecalSize();
+                CompData.FadeInDuration = DecalComp->GetFadeInDuration();
+                CompData.FadeStartDelay = DecalComp->GetFadeStartDelay();
+                CompData.FadeDuration = DecalComp->GetFadeDuration();
+                // SortOrder는 기본값 0 사용
+            }
 
             SceneData.Components.push_back(CompData);
         }
@@ -1159,6 +1172,18 @@ void UWorld::LoadSceneV2(const FString& SceneName)
             }
             // TODO: Materials 복원
         }
+        else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(NewComp))
+        {
+            // DecalComponent 속성 복원
+            if (!CompData.DecalTexture.empty())
+            {
+                DecalComp->SetDecalTexture(CompData.DecalTexture);
+            }
+            DecalComp->SetDecalSize(CompData.DecalSize);
+            DecalComp->SetFadeInDuration(CompData.FadeInDuration);
+            DecalComp->SetFadeStartDelay(CompData.FadeStartDelay);
+            DecalComp->SetFadeDuration(CompData.FadeDuration);
+        }
 
         // Owner Actor 설정
         if (AActor** OwnerActor = ActorMap.Find(CompData.OwnerActorUUID))
@@ -1241,6 +1266,7 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         UObject::SetNextUUID(MaxUUID);
     }
 
+    BVH->Build(Level->GetActors());
     UE_LOG("Scene V2 loaded successfully: %s", SceneName.c_str());
 }
 
