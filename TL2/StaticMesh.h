@@ -3,6 +3,7 @@
 #include "Enums.h"
 #include <d3d11.h>
 #include "BoundingVolumeHierarchy.h"
+#include "AABoundingBoxComponent.h"
 
 class UStaticMesh : public UResourceBase
 {
@@ -34,12 +35,16 @@ public:
     void BuildMeshBVH();
     FNarrowPhaseBVHNode* GetMeshBVH() const { return MeshBVH; }
 
+	FBound GetLocalBound() const { return LocalBound; }
+
 private:
     void CreateVertexBuffer(FMeshData* InMeshData, ID3D11Device* InDevice, EVertexLayoutType InVertexType);
 	void CreateVertexBuffer(FStaticMesh* InStaticMesh, ID3D11Device* InDevice, EVertexLayoutType InVertexType);
     void CreateIndexBuffer(FMeshData* InMeshData, ID3D11Device* InDevice);
 	void CreateIndexBuffer(FStaticMesh* InStaticMesh, ID3D11Device* InDevice);
     void ReleaseResources();
+
+	void CalculateLocalBound();
 
     // GPU 리소스
     ID3D11Buffer* VertexBuffer = nullptr;
@@ -53,4 +58,7 @@ private:
 
     // mesh 단위 BVH 루트 노드
     FNarrowPhaseBVHNode* MeshBVH = nullptr;
+
+	// Mesh 로드 시 계산하여 저장하는 로컬 바운딩 박스
+    FBound LocalBound;
 };

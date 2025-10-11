@@ -74,9 +74,6 @@ public:
     void SetFadeDuration(float Value) { FadeDuration = Value; }
 
 private:
-    // Actor에서 OBB 생성
-    FOrientedBox GetActorOrientedBox(AStaticMeshActor* Actor) const;
-
     // Billboard rendering (Editor only)
     void RenderBillboard(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
     void CreateBillboardVertices();

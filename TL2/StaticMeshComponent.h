@@ -2,6 +2,8 @@
 #include "MeshComponent.h"
 #include "Enums.h"
 #include "StaticMesh.h"
+#include "AABoundingBoxComponent.h"
+#include "OrientedBox.h"
 
 class UStaticMesh;
 class UShader;
@@ -28,6 +30,12 @@ public:
 
     void SetStaticMesh(const FString& PathFileName);
     UStaticMesh* GetStaticMesh() const { return StaticMesh; }
+
+    // World AABB 계산
+    FBound GetWorldBoundingBox() const;
+
+    // World OBB 계산
+    FOrientedBox GetWorldOrientedBox() const;
 
     // 씬 포맷(FPrimitiveData)을 이용한 컴포넌트 직렬화/역직렬화
     // - bIsLoading == true  : InOut로부터 읽어서 컴포넌트 상태(메시) 설정
