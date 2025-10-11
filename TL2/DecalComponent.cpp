@@ -161,10 +161,43 @@ TArray<UStaticMeshComponent*> UDecalComponent::FindAffectedMeshes(UWorld* World)
 // Rendering
 void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj)
 {
-    if (!DecalTexture || !Renderer)
+    if (!Renderer)
+    {
         return;
+    }
 
-    // 1. Affected Meshes 찾기
+    // 1. --- OBB Drawing ---
+    FOrientedBox OBB = GetDecalOrientedBox();
+    TArray<FVector> Corners = OBB.GetCorners();
+    const FVector4 Yellow(1.0f, 1.0f, 0.0f, 1.0f);
+
+    if (Corners.size() == 8)
+    {
+        // Draw bottom face
+        Renderer->AddLine(Corners[0], Corners[1], Yellow);
+        Renderer->AddLine(Corners[1], Corners[3], Yellow);
+        Renderer->AddLine(Corners[3], Corners[2], Yellow);
+        Renderer->AddLine(Corners[2], Corners[0], Yellow);
+
+        // Draw top face
+        Renderer->AddLine(Corners[4], Corners[5], Yellow);
+        Renderer->AddLine(Corners[5], Corners[7], Yellow);
+        Renderer->AddLine(Corners[7], Corners[6], Yellow);
+        Renderer->AddLine(Corners[6], Corners[4], Yellow);
+
+        // Draw vertical edges
+        Renderer->AddLine(Corners[0], Corners[4], Yellow);
+        Renderer->AddLine(Corners[1], Corners[5], Yellow);
+        Renderer->AddLine(Corners[2], Corners[6], Yellow);
+        Renderer->AddLine(Corners[3], Corners[7], Yellow);
+    }
+
+    if (!DecalTexture)
+    {
+        return;
+    }
+
+    // 2. Affected Meshes 찾기
     TArray<UStaticMeshComponent*> AffectedMeshes = FindAffectedMeshes(GWorld);
     if (AffectedMeshes.empty())
         return;
@@ -175,7 +208,7 @@ void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMa
 	DecalStats.ActiveDecalCount++;
     DecalStats.AffectedMeshesCount += static_cast<uint32>(AffectedMeshes.size());
 
-    // 2. Decal Shader 및 파이프라인 준비
+    // 3. Decal Shader 및 파이프라인 준비
     UShader* DecalProjShader = UResourceManager::GetInstance().Load<UShader>("ProjectionDecal.hlsl");
 
     Renderer->PrepareShader(DecalProjShader);
@@ -252,32 +285,6 @@ void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMa
 
     Renderer->OMSetBlendState(false);
     Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
-
-    // --- OBB Drawing ---
-    FOrientedBox OBB = GetDecalOrientedBox();
-    TArray<FVector> Corners = OBB.GetCorners();
-    const FVector4 Yellow(1.0f, 1.0f, 0.0f, 1.0f);
-
-    if (Corners.size() == 8)
-    {
-        // Draw bottom face
-        Renderer->AddLine(Corners[0], Corners[1], Yellow);
-        Renderer->AddLine(Corners[1], Corners[3], Yellow);
-        Renderer->AddLine(Corners[3], Corners[2], Yellow);
-        Renderer->AddLine(Corners[2], Corners[0], Yellow);
-
-        // Draw top face
-        Renderer->AddLine(Corners[4], Corners[5], Yellow);
-        Renderer->AddLine(Corners[5], Corners[7], Yellow);
-        Renderer->AddLine(Corners[7], Corners[6], Yellow);
-        Renderer->AddLine(Corners[6], Corners[4], Yellow);
-
-        // Draw vertical edges
-        Renderer->AddLine(Corners[0], Corners[4], Yellow);
-        Renderer->AddLine(Corners[1], Corners[5], Yellow);
-        Renderer->AddLine(Corners[2], Corners[6], Yellow);
-        Renderer->AddLine(Corners[3], Corners[7], Yellow);
-    }
 }
 
 void UDecalComponent::SetDecalTexture(const FString& TexturePath)

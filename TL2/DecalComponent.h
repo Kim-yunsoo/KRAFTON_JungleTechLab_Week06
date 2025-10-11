@@ -29,7 +29,7 @@ public:
     UDecalComponent();
     virtual ~UDecalComponent() override;
     
-    virtual void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
+    void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
 
     // Decal Box와 충돌하는 Static Mesh 컴포넌트 찾기
     TArray<UStaticMeshComponent*> FindAffectedMeshes(UWorld* World);
