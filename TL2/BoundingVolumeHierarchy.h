@@ -66,6 +66,7 @@ private:
 	template<typename TNode, typename TPrimitive>
 	TNode* RecursiveBuild(TArray<TPrimitive> Primitives)
 	{
+
 		// 종료 조건: 프리미티브 수가 임계값 이하면 리프노드 생성
 		if (Primitives.Num() <= 4)
 		{

@@ -97,8 +97,7 @@ void UEditorEngine::StartPIE()
 
     UWorld* PIEWorld = UWorld::DuplicateWorldForPIE(EditorWorld);
     if (!PIEWorld) return;
-
-
+     
 
     FWorldContext PieCtx;
     PieCtx.SetWorld(PIEWorld, EWorldType::PIE);
@@ -139,6 +138,8 @@ void UEditorEngine::EndPIE()
 
     // ViewportClient의 World를 에디터 월드로 복원
     UWorld* EditorWorld = GetWorld(EWorldType::Editor);
+    GWorld = EditorWorld;
+
     if (EditorWorld && EditorWorld->GetMainViewport())
     {
         if (FViewportClient* ViewportClient = EditorWorld->GetMainViewport()->GetViewportClient())

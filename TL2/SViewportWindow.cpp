@@ -323,6 +323,7 @@ void SViewportWindow::RenderToolbar()
 				ImGui::PopStyleVar(2);
 				ImGui::PopStyleColor(3);
 			}
+
 			else
 			{
 				// PIE가 실행 중이 아니면 Play 버튼 표시

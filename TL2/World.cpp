@@ -344,19 +344,6 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 				continue;
 			}
 
-			if (UOBoundingBoxComponent* OBBComp = Cast<UOBoundingBoxComponent>(Component))
-			{
-				// Decal Actor가 소유한 OBB인 경우
-				if (Cast<ADecalActor>(Actor))
-				{
-					if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals) || // Decal ShowFlag 꺼져 있는 경우
-						!SelectionManager.IsActorSelected(Actor)) // 선택되지 않은 경우
-					{
-						continue;
-					}
-				}
-			}
-
 			// Decal Actor의 Billboard Component인 경우 SF_Decals 확인
 			if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Component))
 			{
@@ -396,8 +383,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
     // 엔진 액터들 (그리드 등) 렌더링
     RenderEngineActors(ViewMatrix, ProjectionMatrix, Viewport);
     // Pass 2: 데칼 렌더링 (Depth 버퍼를 읽어서 다른 오브젝트 위에 투영)
-    if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals) &&
-        Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives))
+    if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals))
     {
         URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
         StatsCollector.BeginDecalPass();

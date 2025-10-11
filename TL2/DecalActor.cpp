@@ -62,7 +62,14 @@ UObject* ADecalActor::Duplicate()
     {
         DuplicatedActor->OwnedComponents.Remove(DuplicatedActor->DecalComponent);
         ObjectFactory::DeleteObject(DuplicatedActor->DecalComponent);
-        DuplicatedActor->DecalComponent = nullptr;
+        DuplicatedActor->DecalComponent = nullptr; 
+    }
+
+    if (DuplicatedActor->BillboardComponent)
+    {
+        DuplicatedActor->OwnedComponents.Remove(DuplicatedActor->BillboardComponent);
+        ObjectFactory::DeleteObject(DuplicatedActor->BillboardComponent);
+        DuplicatedActor->BillboardComponent = nullptr;
     }
 
     DuplicatedActor->RootComponent = nullptr;
@@ -88,4 +95,14 @@ void ADecalActor::DuplicateSubObjects()
 
     // 타입별 포인터 재설정
     DecalComponent = Cast<UDecalComponent>(RootComponent);
+
+    // DecalComponent 찾기
+    for (UActorComponent* Comp : OwnedComponents)
+    {
+        if (UDecalComponent* Decal = Cast<UDecalComponent>(Comp))
+        {
+            DecalComponent = Decal;
+            break;
+        }
+    } 
 }

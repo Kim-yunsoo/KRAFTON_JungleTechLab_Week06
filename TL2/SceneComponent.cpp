@@ -306,6 +306,9 @@ void USceneComponent::DuplicateSubObjects()
     {
         USceneComponent* Child = Cast<USceneComponent>(Component->Duplicate());
         Child->AttachParent = this;
+
+        UE_LOG("Child Name is %s", Child->GetName().c_str());
+
         DuplicatedChildren.push_back(Child);
     }
     AttachChildren = DuplicatedChildren;
