@@ -355,6 +355,19 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
                     }
                 }
 
+				// Decal Actor의 Billboard Component인 경우 SF_Decals 확인
+                if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Component))
+                {
+                    // Decal Actor가 소유한 Billboard인 경우
+                    if (Cast<ADecalActor>(Actor))
+                    {
+						if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals)) // Decal ShowFlag 꺼져 있는 경우
+						{
+							continue;
+                        }
+                    }
+				}
+
                 if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
                 {
                     bool bIsSelected = SelectionManager.IsActorSelected(Actor);
