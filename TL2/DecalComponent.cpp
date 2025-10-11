@@ -14,7 +14,6 @@
 #include "CameraActor.h"
 #include "World.h"
 #include "VertexData.h"
-#include "BVH.h"
 
 UDecalComponent::UDecalComponent()
 {
@@ -103,22 +102,6 @@ FOrientedBox UDecalComponent::GetDecalOrientedBox() const
     );
 }
 
-FOrientedBox UDecalComponent::GetActorOrientedBox(AStaticMeshActor* Actor) const
-{
-    if (!Actor)
-        return FOrientedBox();
-
-    UAABoundingBoxComponent* CollisionComp = Actor->CollisionComponent;
-    if (!CollisionComp)
-        return FOrientedBox();
-
-    FBound AABB = CollisionComp->GetWorldBoundFromCube();
-    FVector Center = (AABB.Max + AABB.Min) * 0.5f;
-    FVector HalfExtents = (AABB.Max - AABB.Min) * 0.5f;
-
-    return FOrientedBox(Center, HalfExtents, Actor->GetActorRotation());
-}
-
 // Find Affected Meshes
 TArray<UStaticMeshComponent*> UDecalComponent::FindAffectedMeshes(UWorld* World)
 {
@@ -133,49 +116,45 @@ TArray<UStaticMeshComponent*> UDecalComponent::FindAffectedMeshes(UWorld* World)
     // 2단계: Decal OBB 계산 (정밀 검사용)
     FOrientedBox DecalOBB = GetDecalOrientedBox();
 
-    // BVH를 사용한 Broad Phase (후보군 필터링)
-    TArray<AActor*> CandidateActors;
-    FBVH* BVH = World->GetBVH();
+    // World의 모든 Actor 순회
+    ULevel* Level = World->GetLevel();
+    if (!Level)
+        return AffectedMeshes;
 
-    if (BVH && BVH->GetNodeCount() > 0)
-    {
-        // BVH를 사용하여 Decal AABB와 교차하는 Actor들만 가져옴
-        BVH->IntersectAABB(DecalAABB, CandidateActors);
-    }
-    else
-    {
-        // BVH가 없으면 모든 Actor 검사 (폴백)
-        ULevel* Level = World->GetLevel();
-        if (Level)
-        {
-            CandidateActors = Level->GetActors();
-        }
-    }
+    const TArray<AActor*>& Actors = Level->GetActors();
 
-    // Narrow Phase: 후보군에 대해 정밀 검사
-    for (AActor* Actor : CandidateActors)
+    for (AActor* Actor : Actors)
     {
         if (!Actor || Actor->GetActorHiddenInGame())
             continue;
 
-        // StaticMeshActor만 검사
-        AStaticMeshActor* StaticMeshActor = Cast<AStaticMeshActor>(Actor);
-        if (!StaticMeshActor)
-            continue;
+        // Actor의 모든 컴포넌트 검사
+        const TSet<UActorComponent*>& Components = Actor->GetComponents();
 
-        // Collision Component로 충돌 검사
-        UAABoundingBoxComponent* CollisionComp = StaticMeshActor->CollisionComponent;
-        if (!CollisionComp)
-            continue;
-
-        // OBB vs OBB (정밀 검사 - SAT)
-        FOrientedBox ActorOBB = GetActorOrientedBox(StaticMeshActor);
-        if (DecalOBB.Intersects(ActorOBB))
+        for (UActorComponent* Component : Components)
         {
-            UStaticMeshComponent* MeshComp = StaticMeshActor->GetStaticMeshComponent();
-            if (MeshComp)
+            if (!Component)
+                continue;
+
+            // StaticMeshComponent인지 확인
+            UStaticMeshComponent* StaticMeshComp = Cast<UStaticMeshComponent>(Component);
+            if (!StaticMeshComp)
+                continue;
+
+            // StaticMesh가 없으면 스킵
+            if (!StaticMeshComp->GetStaticMesh())
+                continue;
+
+            // 1단계: AABB vs AABB (빠른 필터링)
+            FBound ComponentAABB = StaticMeshComp->GetWorldBoundingBox();
+            if (!DecalAABB.IsIntersect(ComponentAABB))
+                continue;
+
+            // 2단계: OBB vs OBB (정밀 검사 - SAT)
+            FOrientedBox ComponentOBB = StaticMeshComp->GetWorldOrientedBox();
+            if (DecalOBB.Intersects(ComponentOBB))
             {
-                AffectedMeshes.push_back(MeshComp);
+                AffectedMeshes.push_back(StaticMeshComp);
             }
         }
     }
