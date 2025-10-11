@@ -21,12 +21,6 @@ ADecalActor::~ADecalActor()
 void ADecalActor::Tick(float DeltaTime)
 {
     Super_t::Tick(DeltaTime);
-
-    // Fade 업데이트
-    if (DecalComponent)
-    {
-        DecalComponent->DecalAnimTick(DeltaTime);
-    }
 }
 
 void ADecalActor::SetDecalComponent(UDecalComponent* InDecalComponent)
