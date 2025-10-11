@@ -11,6 +11,9 @@
 #include "AABoundingBoxComponent.h"
 #include "RenderingStats.h"
 #include "SelectionManager.h"
+#include "CameraActor.h"
+#include "World.h"
+#include "VertexData.h"
 
 UDecalComponent::UDecalComponent()
 {
@@ -29,6 +32,12 @@ UDecalComponent::UDecalComponent()
         CurrentStateElapsedTime[i] = 0.0f;
     }
     DecalCurrentState = EDecalState::FadeIn;
+
+    // Billboard setup (Editor only)
+    auto& ResourceManager = UResourceManager::GetInstance();
+    BillboardQuad = ResourceManager.Get<UTextQuad>("Billboard");
+    BillboardTexture = ResourceManager.Load<UTexture>("Editor/Decal/DecalActor_64x.dds");
+    BillboardMaterial = ResourceManager.Load<UMaterial>("Billboard.hlsl");
 }
 
 UDecalComponent::~UDecalComponent()
@@ -167,33 +176,39 @@ void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMa
         return;
     }
 
-    // 1. Owner가 선택된 경우에만 OBB Drawing
-    if (Owner && USelectionManager::GetInstance().IsActorSelected(Owner))
+    if (GWorld && GWorld->WorldType == EWorldType::Editor)
     {
-        FOrientedBox OBB = GetDecalOrientedBox();
-        TArray<FVector> Corners = OBB.GetCorners();
-        const FVector4 Yellow(1.0f, 1.0f, 0.0f, 1.0f);
-
-        if (Corners.size() == 8)
+        // 1. Owner가 선택된 경우에만 OBB Drawing
+        if (Owner && USelectionManager::GetInstance().IsActorSelected(Owner))
         {
-            // Bottom face
-            Renderer->AddLine(Corners[0], Corners[1], Yellow);
-            Renderer->AddLine(Corners[1], Corners[3], Yellow);
-            Renderer->AddLine(Corners[3], Corners[2], Yellow);
-            Renderer->AddLine(Corners[2], Corners[0], Yellow);
+            FOrientedBox OBB = GetDecalOrientedBox();
+            TArray<FVector> Corners = OBB.GetCorners();
+            const FVector4 Yellow(1.0f, 1.0f, 0.0f, 1.0f);
 
-            // Top face
-            Renderer->AddLine(Corners[4], Corners[5], Yellow);
-            Renderer->AddLine(Corners[5], Corners[7], Yellow);
-            Renderer->AddLine(Corners[7], Corners[6], Yellow);
-            Renderer->AddLine(Corners[6], Corners[4], Yellow);
+            if (Corners.size() == 8)
+            {
+                // Bottom face
+                Renderer->AddLine(Corners[0], Corners[1], Yellow);
+                Renderer->AddLine(Corners[1], Corners[3], Yellow);
+                Renderer->AddLine(Corners[3], Corners[2], Yellow);
+                Renderer->AddLine(Corners[2], Corners[0], Yellow);
 
-            // Vertical edges
-            Renderer->AddLine(Corners[0], Corners[4], Yellow);
-            Renderer->AddLine(Corners[1], Corners[5], Yellow);
-            Renderer->AddLine(Corners[2], Corners[6], Yellow);
-            Renderer->AddLine(Corners[3], Corners[7], Yellow);
+                // Top face
+                Renderer->AddLine(Corners[4], Corners[5], Yellow);
+                Renderer->AddLine(Corners[5], Corners[7], Yellow);
+                Renderer->AddLine(Corners[7], Corners[6], Yellow);
+                Renderer->AddLine(Corners[6], Corners[4], Yellow);
+
+                // Vertical edges
+                Renderer->AddLine(Corners[0], Corners[4], Yellow);
+                Renderer->AddLine(Corners[1], Corners[5], Yellow);
+                Renderer->AddLine(Corners[2], Corners[6], Yellow);
+                Renderer->AddLine(Corners[3], Corners[7], Yellow);
+            }
         }
+
+        // Billboard rendering
+        RenderBillboard(Renderer, View, Proj);
     }
 
     if (!DecalTexture)
@@ -385,6 +400,122 @@ void UDecalComponent::StartFade()
     }
     CurrentAlpha = 0.0f;
     DecalCurrentState = EDecalState::FadeIn;
+}
+
+void UDecalComponent::CreateBillboardVertices()
+{
+    TArray<FBillboardVertexInfo_GPU> vertices;
+
+    // 단일 쿼드의 4개 정점 생성 (카메라를 향하는 평면)
+    float halfW = BillboardWidth * 0.5f;
+    float halfH = BillboardHeight * 0.5f;
+
+    FBillboardVertexInfo_GPU Info;
+
+    // UV 좌표 (전체 텍스처 사용)
+    float UCoord = 0.0f;
+    float VCoord = 0.0f;
+    float ULength = 1.0f;
+    float VLength = 1.0f;
+
+    // 정점 0: 좌상단
+    Info.Position[0] = -halfW;
+    Info.Position[1] = halfH;
+    Info.Position[2] = 0.0f;
+    Info.CharSize[0] = BillboardWidth;
+    Info.CharSize[1] = BillboardHeight;
+    Info.UVRect[0] = UCoord;
+    Info.UVRect[1] = VCoord;
+    Info.UVRect[2] = ULength;
+    Info.UVRect[3] = VLength;
+    vertices.push_back(Info);
+
+    // 정점 1: 우상단
+    Info.Position[0] = halfW;
+    Info.Position[1] = halfH;
+    Info.Position[2] = 0.0f;
+    vertices.push_back(Info);
+
+    // 정점 2: 좌하단
+    Info.Position[0] = -halfW;
+    Info.Position[1] = -halfH;
+    Info.Position[2] = 0.0f;
+    vertices.push_back(Info);
+
+    // 정점 3: 우하단
+    Info.Position[0] = halfW;
+    Info.Position[1] = -halfH;
+    Info.Position[2] = 0.0f;
+    vertices.push_back(Info);
+
+    // 동적 버텍스 버퍼 업데이트
+    UResourceManager::GetInstance().UpdateDynamicVertexBuffer("Billboard", vertices);
+}
+
+void UDecalComponent::RenderBillboard(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj)
+{
+    if (!BillboardMaterial || !BillboardTexture || !BillboardQuad)
+        return;
+
+    // 카메라 정보 가져오기
+    UWorld* World = GetOwner() ? GetOwner()->GetWorld() : nullptr;
+    if (!World)
+        return;
+
+    ACameraActor* CameraActor = World->GetCameraActor();
+    if (!CameraActor)
+        return;
+
+    FVector CamRight = CameraActor->GetActorRight();
+    FVector CamUp = CameraActor->GetActorUp();
+
+    // 빌보드 위치 설정 (데칼 액터의 위치)
+    FVector BillboardPos = GetWorldLocation();
+
+    // 텍스처 로드 
+    BillboardMaterial->Load("Editor/Decal/DecalActor_64x.dds", Renderer->GetRHIDevice()->GetDevice());
+
+    // 상수 버퍼 업데이트
+    Renderer->UpdateBillboardConstantBuffers(BillboardPos, View, Proj, CamRight, CamUp);
+
+    // 셰이더 준비
+    UShader* CompShader = BillboardMaterial->GetShader();
+    Renderer->PrepareShader(CompShader);
+
+    ID3D11DeviceContext* DeviceContext = Renderer->GetRHIDevice()->GetDeviceContext();
+
+    // InputLayout 설정 (중요!)
+    DeviceContext->IASetInputLayout(CompShader->GetInputLayout());
+
+    // 빌보드 정점 생성 및 버퍼 업데이트
+    CreateBillboardVertices();
+
+    // 렌더링
+    Renderer->OMSetBlendState(true);
+    Renderer->RSSetState(EViewModeIndex::VMI_Unlit);
+
+    // 버퍼 및 텍스처 바인딩
+    UINT Stride = sizeof(FBillboardVertexInfo_GPU);
+    UINT Offset = 0;
+    ID3D11Buffer* VertexBuffer = BillboardQuad->GetVertexBuffer();
+    ID3D11Buffer* IndexBuffer = BillboardQuad->GetIndexBuffer();
+
+    DeviceContext->IASetVertexBuffers(0, 1, &VertexBuffer, &Stride, &Offset);
+    DeviceContext->IASetIndexBuffer(IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+    // 텍스처 바인딩 (중요!)
+    UTexture* CompTexture = BillboardMaterial->GetTexture();
+    if (CompTexture && CompTexture->GetShaderResourceView())
+    {
+        ID3D11ShaderResourceView* TextureSRV = CompTexture->GetShaderResourceView();
+        Renderer->GetRHIDevice()->PSSetDefaultSampler(0);
+        DeviceContext->PSSetShaderResources(0, 1, &TextureSRV);
+    }
+
+    DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    DeviceContext->DrawIndexed(BillboardQuad->GetIndexCount(), 0, 0);
+
+    Renderer->OMSetBlendState(false);
 }
 
 UObject* UDecalComponent::Duplicate()

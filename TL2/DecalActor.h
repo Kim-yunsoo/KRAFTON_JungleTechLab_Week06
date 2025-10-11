@@ -26,5 +26,4 @@ public:
 
 protected:
     UDecalComponent* DecalComponent;
-    UBillboardComponent* BillboardComponent;
 };

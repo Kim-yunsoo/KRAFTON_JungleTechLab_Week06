@@ -74,7 +74,11 @@ public:
 private:
     // Actor에서 OBB 생성
     FOrientedBox GetActorOrientedBox(AStaticMeshActor* Actor) const;
-     
+
+    // Billboard rendering (Editor only)
+    void RenderBillboard(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
+    void CreateBillboardVertices();
+
 protected:
     // Texture
     // [PIE] 주소 복사
@@ -100,4 +104,11 @@ protected:
      
     float CurrentAlpha;
     float CurrentStateElapsedTime[4];
+
+    // Billboard properties
+    UTextQuad* BillboardQuad = nullptr;
+    UTexture* BillboardTexture = nullptr;
+    UMaterial* BillboardMaterial = nullptr;
+    float BillboardWidth = 1.0f;
+    float BillboardHeight = 1.0f;
 };

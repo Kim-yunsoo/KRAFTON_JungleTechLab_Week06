@@ -12,10 +12,6 @@ ADecalActor::ADecalActor()
     // DecalComponent 생성 및 컴포넌트 생성
     DecalComponent = CreateDefaultSubobject<UDecalComponent>(FName("DecalComponent")); 
     DecalComponent->SetupAttachment(RootComponent);
-
-    BillboardComponent = CreateDefaultSubobject<UBillboardComponent>(FName("BillboardComponent"));
-    BillboardComponent->SetWorldLocation(FVector(0.f, 0.f, 0.f));
-    BillboardComponent->SetupAttachment(RootComponent);
 }
 
 ADecalActor::~ADecalActor()
@@ -63,13 +59,6 @@ UObject* ADecalActor::Duplicate()
         DuplicatedActor->OwnedComponents.Remove(DuplicatedActor->DecalComponent);
         ObjectFactory::DeleteObject(DuplicatedActor->DecalComponent);
         DuplicatedActor->DecalComponent = nullptr; 
-    }
-
-    if (DuplicatedActor->BillboardComponent)
-    {
-        DuplicatedActor->OwnedComponents.Remove(DuplicatedActor->BillboardComponent);
-        ObjectFactory::DeleteObject(DuplicatedActor->BillboardComponent);
-        DuplicatedActor->BillboardComponent = nullptr;
     }
 
     DuplicatedActor->RootComponent = nullptr;
