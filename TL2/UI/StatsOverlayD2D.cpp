@@ -203,6 +203,8 @@ void UStatsOverlayD2D::Draw()
 
         nextY += panelHeight + 8.0f;
     }
+
+    if (bShowPicking)
     {
         wchar_t buf[256];
         const URenderingStatsCollector& Instance = URenderingStatsCollector::GetInstance();
@@ -225,6 +227,7 @@ void UStatsOverlayD2D::Draw()
         );
         nextY += panelHeight + 4.0f;
     }
+
     if (bShowMemory)
     {
         // 1) 커스텀 메모리 매니저
@@ -313,6 +316,11 @@ void UStatsOverlayD2D::SetShowMemory(bool b)
     bShowMemory = b;
 }
 
+void UStatsOverlayD2D::SetShowPicking(bool b)
+{
+    bShowPicking = b;
+}
+
 void UStatsOverlayD2D::SetShowRenderStats(bool b)
 {
     bShowRenderStats = b;
@@ -326,6 +334,11 @@ void UStatsOverlayD2D::ToggleFPS()
 void UStatsOverlayD2D::ToggleMemory()
 {
     bShowMemory = !bShowMemory;
+}
+
+void UStatsOverlayD2D::TogglePicking()
+{
+    bShowPicking = !bShowPicking;
 }
 
 void UStatsOverlayD2D::ToggleRenderStats()

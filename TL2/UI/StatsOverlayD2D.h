@@ -13,12 +13,15 @@ public:
 
     void SetShowFPS(bool b); 
     void SetShowMemory(bool b);
+    void SetShowPicking(bool b);
     void SetShowRenderStats(bool b);
     void ToggleFPS();
     void ToggleMemory();
+	void TogglePicking();
     void ToggleRenderStats();
     bool IsFPSVisible() const { return bShowFPS; }
     bool IsMemoryVisible() const { return bShowMemory; }
+	bool IsPickingVisible() const { return bShowPicking; }
     bool IsRenderStatsVisible() const { return bShowRenderStats; }
     
     // 렌더링 통계 업데이트
@@ -38,6 +41,7 @@ private:
     bool bInitialized = false;
     bool bShowFPS = true;
     bool bShowMemory = true;
+    bool bShowPicking = true;
     bool bShowRenderStats = true;
     
     // 렌더링 통계 데이터
