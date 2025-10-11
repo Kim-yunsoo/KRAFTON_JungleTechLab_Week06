@@ -43,6 +43,42 @@ struct FRenderingStats
     }
 };
 
+struct FDecalRenderingStats
+{
+    // 기본 카운트
+    uint32 TotalDecalCount = 0;
+    uint32 ActiveDecalCount = 0;
+    uint32 AffectedMeshesCount = 0;
+    uint32 DecalDrawCalls = 0;
+
+    // 성능 측정
+    float DecalPassTimeMs = 0.0;
+    float CollisionCheckTimeMs = 0.0;
+
+    // 평균값
+    float AvgTimePerDecalMs = 0.0;
+    float AvgMeshesPerDecal = 0.0f;
+
+    // 렌더 상태
+    uint32 DecalShaderChanges = 0;
+    uint32 DecalBlendStateChanges = 0;
+    uint32 DecalDepthStateChanges = 0;
+
+    void Reset()
+    {
+        *this = FDecalRenderingStats();
+    }
+
+    void CalculateAverages()
+    {
+        if (ActiveDecalCount > 0)
+        {
+            AvgTimePerDecalMs = DecalPassTimeMs / ActiveDecalCount;
+            AvgMeshesPerDecal = static_cast<float>(AffectedMeshesCount) / static_cast<float>(ActiveDecalCount);
+        }
+    }
+};
+
 /**
  * @brief 렌더링 통계 수집 및 관리 싱글톤
  */
@@ -96,6 +132,18 @@ public:
     // 통계 리셋
     void ResetStats();
 
+    // 데칼 통계 접근
+    const FDecalRenderingStats& GetDecalStats() const { return CurrentDecalStats; }
+    FDecalRenderingStats& GetDecalStats() { return CurrentDecalStats; }
+
+    void UpdateDecalStats(const FDecalRenderingStats& InStats);
+    void BeginDecalPass();
+    void EndDecalPass();
+
+    // 데칼 통계 카운터 증분
+    void IncrementDecalDrawCalls() { CurrentDecalStats.DecalDrawCalls++; }
+    void IncrementDecalShaderChanges() { CurrentDecalStats.DecalShaderChanges++; }
+
 private:
     URenderingStatsCollector() = default;
     ~URenderingStatsCollector() = default;
@@ -129,4 +177,14 @@ private:
 
     // 최적화 효과 계산용
     uint32 PreviousUnoptimizedStateChanges = 0;
+
+    FDecalRenderingStats CurrentDecalStats;
+    FDecalRenderingStats AverageDecalStats;
+
+    // 평균 계산용 히스토리
+    FDecalRenderingStats DecalStatsHistory[AVERAGE_FRAME_COUNT];
+    uint32 DecalStatsHistoryIndex = 0;
+
+    // 타이머
+    std::chrono::high_resolution_clock::time_point DecalPassStartTime;
 };

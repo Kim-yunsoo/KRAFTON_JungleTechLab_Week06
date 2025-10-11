@@ -14,6 +14,7 @@
 #include "ResourceManager.h"    
 #include "SceneComponent.h"    
 #include "TextRenderComponent.h"    
+#include "DecalComponent.h"
 #include <filesystem>
 #include <vector>
 
@@ -72,6 +73,33 @@ static TArray<FString> GetIconFiles()
 		iconFiles.push_back("Editor/Icon/SpotLight_64x.dds");
 	}
 	return iconFiles;
+}
+
+// Editor/Decal 폴더의 사용 가능한 텍스처(.dds/.png/.jpg)를 수집
+static TArray<FString> GetDecalFiles()
+{
+	TArray<FString> decalFiles;
+
+	fs::path DecalPath = "Editor/Decal/";
+	if (fs::exists(DecalPath) && fs::is_directory(DecalPath))
+	{
+		for (const auto& File : fs::directory_iterator(DecalPath))
+		{
+			//data 인지 파악
+			if (File.is_regular_file())
+			{
+				auto Filename = File.path().filename().string();
+
+				if (Filename.ends_with(".dds") || Filename.ends_with(".png") || Filename.ends_with(".jpg"))
+				{
+					FString RelativePath = DecalPath.string() + Filename;
+					decalFiles.Push(RelativePath);
+
+				}
+			}
+		}
+	}
+		return decalFiles;
 }
 
 UTargetActorTransformWidget::UTargetActorTransformWidget()
@@ -483,6 +511,111 @@ void UTargetActorTransformWidget::RenderWidget()
 			}
 		}
 			// Billboard Component가 선택된 경우 Sprite UI
+			else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(SelectedComponent))
+			{
+				ImGui::Separator();
+				ImGui::Text("Decal Component Settings");
+				
+				float FadeIn = DecalComp->GetFadeInDuration();
+				float StartDelay = DecalComp->GetFadeStartDelay();
+				float FadeOut = DecalComp->GetFadeDuration();
+				bool bChanged = false; 
+
+				if (ImGui::DragFloat("Fade In Duration", &FadeIn, 0.05f, 0.0f, 100.0f, "%.2f"))
+				{
+					bChanged = true;
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("이 값은 Fade In 지속 시간을 초 단위로 설정합니다.");
+				}
+
+				if (ImGui::DragFloat("Fade Start Delay", &StartDelay, 0.05f, 0.0f, 100.0f, "%.2f"))
+				{
+					bChanged = true;
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("이 값은 Decal 지속 시간을 초 단위로 설정합니다.");
+
+				}
+				if (ImGui::DragFloat("Fade Out Duration", &FadeOut, 0.05f, 0.0f, 100.0f, "%.2f"))
+				{
+					bChanged = true;
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("이 값은 Fade Out 지속 시간을 초 단위로 설정합니다.");
+				}
+				if (bChanged)
+				{
+					DecalComp->SetFadeInDuration(FadeIn);
+					DecalComp->SetFadeStartDelay(StartDelay);
+					DecalComp->SetFadeDuration(FadeOut);
+
+				}
+				ImGui::Text("Current Alpha: %.2f", DecalComp->GetCurrentAlpha());
+				if (ImGui::Button("Start Fade"))
+				{
+					DecalComp->StartFade();
+				}
+
+				// Texture selection for Decal
+				ImGui::Separator();
+				ImGui::Text("Decal Texture");
+				FString CurrentTexturePath;
+
+				if (UTexture* Texture = DecalComp->GetDecalTexture())
+				{
+					CurrentTexturePath = Texture->GetFilePath();
+				}
+				ImGui::Text("Current: %s", (CurrentTexturePath.empty() ? FString("<None>") : CurrentTexturePath).c_str());
+
+				static TArray<FString> DecalOptions;
+				static bool bDecalOptionsLoaded = false;
+				static int currentDecalIndex = -1;
+
+				if (!bDecalOptionsLoaded)
+				{
+					DecalOptions = GetDecalFiles();
+					bDecalOptionsLoaded = true;
+					currentDecalIndex = -1;
+					for (int i = 0; i < (int)DecalOptions.size(); ++i)
+					{
+						if (!CurrentTexturePath.empty() && DecalOptions[i] == CurrentTexturePath)
+						{
+							currentDecalIndex = i;
+							break;
+						}
+					}
+				}
+
+				FString DecalDisplayName = (currentDecalIndex >= 0 && currentDecalIndex < (int)DecalOptions.size())
+					? GetBaseNameNoExt(DecalOptions[currentDecalIndex])
+					: "Select Texture";
+
+				if (ImGui::BeginCombo("##DecalTextureCombo", DecalDisplayName.c_str()))
+				{
+					for (int i = 0; i < (int)DecalOptions.size(); ++i)
+					{
+						FString displayName = GetBaseNameNoExt(DecalOptions[i]);
+						bool selected = (currentDecalIndex == i);
+						if (ImGui::Selectable(displayName.c_str(), selected))
+						{
+							currentDecalIndex = i;
+							DecalComp->SetDecalTexture(DecalOptions[i]);
+						}
+						if (selected) ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+
+				ImGui::SameLine();
+				if (ImGui::Button("Refresh Textures"))
+				{
+					bDecalOptionsLoaded = false;
+				}
+			}
 			else if (UBillboardComponent* BBC = Cast<UBillboardComponent>(SelectedComponent))
 			{
 				ImGui::Separator();

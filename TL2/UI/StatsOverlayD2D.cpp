@@ -101,8 +101,12 @@ void UStatsOverlayD2D::UpdateRenderingStats(uint32 InDrawCalls, uint32 InMateria
 
 void UStatsOverlayD2D::Draw()
 {
-    if (!bInitialized || (!bShowFPS && !bShowMemory && !bShowRenderStats) || !SwapChain)
+    if (!bInitialized || 
+        (!bShowFPS && !bShowMemory && !bShowPicking && !bShowRenderStats && !bShowDecal) || 
+        !SwapChain)
+    {
         return;
+    }
 
     ID2D1Factory1* d2dFactory = nullptr;
     D2D1_FACTORY_OPTIONS opts{};
@@ -182,15 +186,13 @@ void UStatsOverlayD2D::Draw()
     const float margin = 12.0f;
     const float panelWidth = 200.0f;
     const float panelHeight = 48.0f;
-    float nextY = margin;
+    float nextY = margin + 55.0f;
 
     if (bShowFPS)
     {
         float dt = UUIManager::GetInstance().GetDeltaTime();
         float fps = dt > 0.0f ? (1.0f / dt) : 0.0f;
         float ms = dt * 1000.0f;
-
-        
 
         wchar_t buf[256];
         swprintf_s(buf, L"FPS: %.1f\nFrame time: %.2f ms",fps,ms);
@@ -203,6 +205,8 @@ void UStatsOverlayD2D::Draw()
 
         nextY += panelHeight + 8.0f;
     }
+
+    if (bShowPicking)
     {
         wchar_t buf[256];
         const URenderingStatsCollector& Instance = URenderingStatsCollector::GetInstance();
@@ -223,8 +227,9 @@ void UStatsOverlayD2D::Draw()
             D2D1::ColorF(0, 0, 0, 0.6f),
             D2D1::ColorF(D2D1::ColorF::Green)
         );
-        nextY += panelHeight + 4.0f;
+        nextY += panelHeight / 2.0f + 8.0f;
     }
+
     if (bShowMemory)
     {
         // 1) 커스텀 메모리 매니저
@@ -287,9 +292,42 @@ void UStatsOverlayD2D::Draw()
             d2dCtx, dwrite, Buffer, rc, 14.0f,
             D2D1::ColorF(0, 0, 0, 0.6f),
             D2D1::ColorF(D2D1::ColorF::Cyan));
+
+		nextY += panelHeight * 1.5f + 8.0f;
     }
 
-   
+    if (bShowDecal)
+    {
+        const URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
+        const FDecalRenderingStats& DecalStats = StatsCollector.GetDecalStats();
+
+        wchar_t Buffer[512];
+        swprintf_s(Buffer,
+            L"=== Decal Rendering ===\n"
+            L"Active: %u / %u\n"
+            L"Affected Meshes: %u\n"
+            L"DrawCalls: %u\n"
+            L"Pass Time: %.2f ms\n"
+            L"Avg Time/Decal: %.3f ms\n"
+            L"Avg Meshes/Decal: %.1f",
+            DecalStats.ActiveDecalCount,
+            DecalStats.TotalDecalCount,
+            DecalStats.AffectedMeshesCount,
+            DecalStats.DecalDrawCalls,
+            DecalStats.DecalPassTimeMs,
+            DecalStats.AvgTimePerDecalMs,
+            DecalStats.AvgMeshesPerDecal
+        );
+
+        D2D1_RECT_F rc = D2D1::RectF(margin, nextY, margin + panelWidth, nextY + panelHeight * 2.5f + 10.0f);
+        DrawTextBlock(
+            d2dCtx, dwrite, Buffer, rc, 14.0f,
+            D2D1::ColorF(0, 0, 0, 0.6f),
+            D2D1::ColorF(D2D1::ColorF::Magenta)
+        );
+
+        nextY += panelHeight * 2.5f + 8.0f;
+    }
 
     d2dCtx->EndDraw();
     d2dCtx->SetTarget(nullptr);
@@ -313,9 +351,19 @@ void UStatsOverlayD2D::SetShowMemory(bool b)
     bShowMemory = b;
 }
 
+void UStatsOverlayD2D::SetShowPicking(bool b)
+{
+    bShowPicking = b;
+}
+
 void UStatsOverlayD2D::SetShowRenderStats(bool b)
 {
     bShowRenderStats = b;
+}
+
+void UStatsOverlayD2D::SetShowDecal(bool b)
+{
+    bShowDecal = b;
 }
 
 void UStatsOverlayD2D::ToggleFPS()
@@ -328,7 +376,17 @@ void UStatsOverlayD2D::ToggleMemory()
     bShowMemory = !bShowMemory;
 }
 
+void UStatsOverlayD2D::TogglePicking()
+{
+    bShowPicking = !bShowPicking;
+}
+
 void UStatsOverlayD2D::ToggleRenderStats()
 {
     bShowRenderStats = !bShowRenderStats;
+}
+
+void UStatsOverlayD2D::ToggleDecal()
+{
+	bShowDecal = !bShowDecal;
 }

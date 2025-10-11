@@ -126,5 +126,7 @@ float4 mainPS(PS_INPUT input) : SV_TARGET
         discard;
    // return float4(decalLocalPos * 0.5f + 0.5f, 1.0f);
     // 🔟 최종 색상 출력 (하드웨어 블렌딩)
+    // Apply fade alpha from ColorBuffer.a
+    decalColor.a *= LerpColor.a;
     return decalColor;
 }
