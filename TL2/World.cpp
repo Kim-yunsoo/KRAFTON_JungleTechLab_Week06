@@ -92,11 +92,17 @@ UWorld::~UWorld()
     }
     else if (WorldType == EWorldType::PIE)
     {
+        // PIE 월드의 BVH 정리 (PIE 전용으로 새로 생성했으므로 삭제 필요)
+        if (BVH)
+        {
+            delete BVH;
+            BVH = nullptr;
+        }
+
         // PIE 월드는 공유 포인터만 nullptr로 설정 (삭제하지 않음)
         MainCameraActor = nullptr;
         GridActor = nullptr;
         GizmoActor = nullptr;
-        BVH = nullptr;
         Renderer = nullptr;
         MainViewport = nullptr;
         MultiViewport = nullptr;
@@ -1274,6 +1280,9 @@ UWorld* UWorld::DuplicateWorldForPIE(UWorld* EditorWorld)
     // GridActor 공유 (선택적)
     PIEWorld->GridActor = nullptr;
 
+    // BVH 초기화 (PIE 월드용으로 새로 생성)
+    PIEWorld->BVH = new FBVH();
+
     // Level 복제
     if (EditorWorld->GetLevel())
     {
@@ -1305,6 +1314,12 @@ UWorld* UWorld::DuplicateWorldForPIE(UWorld* EditorWorld)
 
 void UWorld::InitializeActorsForPlay()
 {
+    // PIE 월드의 BVH 빌드
+    if (BVH && Level)
+    {
+        BVH->Build(Level->GetActors());
+    }
+
     // 모든 액터의 BeginPlay 호출
     if (Level)
     {
