@@ -75,10 +75,10 @@ void FBVH::Build(const TArray<AActor*>& Actors)
     uint64_t BuildCycles = BVHBuildTimer.Finish();
     double BuildTimeMs = FPlatformTime::ToMilliseconds(BuildCycles);
 
-    char buf[256];
+    /*char buf[256];
     sprintf_s(buf, "[BVH] Built for %d actors, %d nodes, depth %d (Time: %.3fms)\n",
         ActorBounds.Num(), Nodes.Num(), MaxDepth, BuildTimeMs);
-    UE_LOG(buf);
+    UE_LOG(buf);*/
 
     // 빌드 완료 후 더티 플래그 해제
     bIsDirty = false;

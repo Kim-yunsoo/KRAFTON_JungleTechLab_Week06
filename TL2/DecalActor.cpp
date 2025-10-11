@@ -11,7 +11,9 @@ ADecalActor::ADecalActor()
 {
     // DecalComponent 생성 및 컴포넌트 생성
     DecalComponent = CreateDefaultSubobject<UDecalComponent>(FName("DecalComponent")); 
-    DecalComponent->SetupAttachment(RootComponent);
+    //DecalComponent->SetupAttachment(RootComponent);
+
+    RootComponent = DecalComponent;
 }
 
 ADecalActor::~ADecalActor()
