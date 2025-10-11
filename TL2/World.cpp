@@ -422,7 +422,6 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 					for (AActor* Actor : OverlappingActors)
 					{
 						DecalComp->RenderOnActor(Renderer, Viewport, Actor, ViewMatrix, ProjectionMatrix);
-						StatsCollector.IncrementDecalDrawCalls();
 					}
 				}
 			}
@@ -431,48 +430,6 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 		// ✅ 데칼 패스 종료 (타이머 종료 + 평균 계산 + 히스토리 업데이트)
 		StatsCollector.EndDecalPass();
 	}
-
-	//for (AActor* Actor : LevelActors)
-	//{
-	//    
-	//    if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives))
-	//    {
-	//        continue;
-	//    }
-	//    if (!Actor)
-	//    {
-	//        continue;
-	//    }
-	//    if (Actor->GetActorHiddenInGame())
-	//    {
-	//        continue;
-	//    }
-	//
-	//    for (UActorComponent* Component : Actor->GetComponents())
-	//    {
-	//        if (!Component)
-	//        {
-	//            continue;
-	//        }
-	//
-	//        if (UActorComponent* ActorComp = Cast<UActorComponent>(Component))
-	//        {
-	//            if (!ActorComp->IsActive())
-	//            {
-	//                continue;
-	//            }
-	//        }
-	//
-	//        // 데칼 컴포넌트만 렌더링
-	//        if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
-	//        {
-	//            bool bIsSelected = SelectionManager.IsActorSelected(Actor);
-	//            Renderer->UpdateHighLightConstantBuffer(bIsSelected, rgb, 0, 0, 0, 0);
-	//            DecalComp->Render(Renderer, Actor->GetWorldMatrix(), ProjectionMatrix, Viewport);
-	//        }
-	//    }
-	//}
-
 
 	// 엔진 액터들 (그리드 등) 렌더링
 	RenderEngineActors(ViewMatrix, ProjectionMatrix, Viewport);

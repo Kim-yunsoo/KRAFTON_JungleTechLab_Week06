@@ -8,7 +8,7 @@
 #include "Actor.h"
 #include "StaticMeshComponent.h"
 #include "StaticMesh.h"
-
+#include "RenderingStats.h"
 
 UDecalComponent::UDecalComponent()
 {
@@ -73,6 +73,8 @@ void UDecalComponent::RenderOnActor(URenderer* Renderer, FViewport* Viewport, AA
     }
     Renderer->GetRHIDevice()->PSSetDefaultSampler(0);
 
+    URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
+
     // Draw each static mesh component of the target actor
     for (UActorComponent* Comp : TargetActor->GetComponents())
     {
@@ -108,6 +110,9 @@ void UDecalComponent::RenderOnActor(URenderer* Renderer, FViewport* Viewport, AA
         DevieContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
         DevieContext->DrawIndexed(Mesh->GetIndexCount(), 0, 0);
+
+		// Decal 드로우콜 통계 증가
+        StatsCollector.IncrementDecalDrawCalls();
     }
 
     // Unbind SRVs
