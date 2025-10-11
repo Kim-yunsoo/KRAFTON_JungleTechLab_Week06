@@ -39,7 +39,7 @@ public:
     
     //void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj) override;
 
-    void RenderOnActor(URenderer* Renderer, AActor* TargetActor, const FMatrix& View, const FMatrix& Proj);
+    void RenderOnActor(URenderer* Renderer, FViewport* Viewport, AActor* TargetActor, const FMatrix& View, const FMatrix& Proj);
     
     // 데칼 크기 설정 (박스 볼륨의 크기)
     void SetDecalSize(const FVector& InSize) { DecalSize = InSize; }

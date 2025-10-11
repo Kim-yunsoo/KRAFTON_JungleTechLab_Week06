@@ -408,7 +408,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
                 //Renderer->UpdateHighLightConstantBuffer(bIsSelected, rgb, 0, 0, 0, 0);
                 for (AActor* Actor : DecalActor->GetOverlappingActors())
                 {
-                    DecalComp->RenderOnActor(Renderer, Actor, ViewMatrix, ProjectionMatrix);
+                    DecalComp->RenderOnActor(Renderer, Viewport, Actor, ViewMatrix, ProjectionMatrix);
                 }
 
             }

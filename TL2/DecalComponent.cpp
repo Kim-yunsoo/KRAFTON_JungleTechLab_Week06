@@ -39,7 +39,7 @@ UDecalComponent::~UDecalComponent()
 
 }  
   
-void UDecalComponent::RenderOnActor(URenderer* Renderer, AActor* TargetActor, const FMatrix& View, const FMatrix& Proj)
+void UDecalComponent::RenderOnActor(URenderer* Renderer, FViewport* Viewport, AActor* TargetActor, const FMatrix& View, const FMatrix& Proj)
 {
     if (!Renderer || !TargetActor || !Material)
         return;
@@ -78,6 +78,12 @@ void UDecalComponent::RenderOnActor(URenderer* Renderer, AActor* TargetActor, co
     {
         UStaticMeshComponent* SMC = Cast<UStaticMeshComponent>(Comp);
         if (!SMC) continue;
+
+        if (Viewport && !Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
+        {
+            continue;
+        }
+
         UStaticMesh* Mesh = SMC->GetStaticMesh();
         if (!Mesh) continue;
 
