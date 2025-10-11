@@ -112,6 +112,9 @@ public:
     // 빠른 레이 교차 검사 - 가장 가까운 액터 반환
     AActor* Intersect(const FVector& RayOrigin, const FVector& RayDirection, float& OutDistance) const;
 
+    // AABB와 교차하는 모든 액터 찾기 (Broad Phase용)
+    void IntersectAABB(const FBound& QueryAABB, TArray<AActor*>& OutActors) const;
+
     // 통계 정보
     int GetNodeCount() const { return Nodes.Num(); }
     int GetActorCount() const { return ActorBounds.Num(); }
@@ -120,6 +123,14 @@ public:
     // 렌더링을 위한 노드 접근
     const TArray<FBVHNode>& GetNodes() const { return Nodes; }
 
+    // 더티 플래그 관리
+    void MarkDirty() { bIsDirty = true; }
+    bool IsDirty() const { return bIsDirty; }
+    void ClearDirty() { bIsDirty = false; }
+
+    // BVH 재빌드 (액터 배열을 다시 받아서 빌드)
+    void Rebuild(const TArray<AActor*>& Actors);
+
     static float SurfaceArea(const FBound& b);
 private:
     TArray<FBVHNode> Nodes;
@@ -127,6 +138,7 @@ private:
     TArray<int> ActorIndices; // 정렬된 액터 인덱스
 
     int MaxDepth;
+    bool bIsDirty; // BVH가 재빌드되어야 하는지 여부
 
     // 재귀 구축 함수
     int BuildRecursive(int FirstActor, int ActorCount, int Depth = 0);
@@ -143,6 +155,9 @@ private:
     int PartitionActors(int FirstActor, int ActorCount, int Axis, float SplitPos);
 
     bool IntersectNode(int NodeIndex, const FOptimizedRay& Ray, float& InOutDistance, AActor*& OutActor) const;
+
+    // AABB 교차 검사용 재귀 함수
+    void IntersectAABBNode(int NodeIndex, const FBound& QueryAABB, TArray<AActor*>& OutActors) const;
 
     //// 재귀 교차 검사 (깊이 제한 추가)
     //bool IntersectNode(int NodeIndex, const FVector& RayOrigin, const FVector& RayDirection,

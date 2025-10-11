@@ -14,6 +14,7 @@
 #include "CameraActor.h"
 #include "World.h"
 #include "VertexData.h"
+#include "BVH.h"
 
 UDecalComponent::UDecalComponent()
 {
@@ -132,14 +133,27 @@ TArray<UStaticMeshComponent*> UDecalComponent::FindAffectedMeshes(UWorld* World)
     // 2단계: Decal OBB 계산 (정밀 검사용)
     FOrientedBox DecalOBB = GetDecalOrientedBox();
 
-    // World의 모든 Actor 순회
-    ULevel* Level = World->GetLevel();
-    if (!Level)
-        return AffectedMeshes;
+    // BVH를 사용한 Broad Phase (후보군 필터링)
+    TArray<AActor*> CandidateActors;
+    FBVH* BVH = World->GetBVH();
 
-    const TArray<AActor*>& Actors = Level->GetActors();
+    if (BVH && BVH->GetNodeCount() > 0)
+    {
+        // BVH를 사용하여 Decal AABB와 교차하는 Actor들만 가져옴
+        BVH->IntersectAABB(DecalAABB, CandidateActors);
+    }
+    else
+    {
+        // BVH가 없으면 모든 Actor 검사 (폴백)
+        ULevel* Level = World->GetLevel();
+        if (Level)
+        {
+            CandidateActors = Level->GetActors();
+        }
+    }
 
-    for (AActor* Actor : Actors)
+    // Narrow Phase: 후보군에 대해 정밀 검사
+    for (AActor* Actor : CandidateActors)
     {
         if (!Actor || Actor->GetActorHiddenInGame())
             continue;
@@ -154,13 +168,7 @@ TArray<UStaticMeshComponent*> UDecalComponent::FindAffectedMeshes(UWorld* World)
         if (!CollisionComp)
             continue;
 
-        FBound ActorAABB = CollisionComp->GetWorldBoundFromCube();
-
-        // 1단계: AABB vs AABB (빠른 필터링)
-        if (!DecalAABB.IsIntersect(ActorAABB))
-            continue;
-
-        // 2단계: OBB vs OBB (정밀 검사 - SAT)
+        // OBB vs OBB (정밀 검사 - SAT)
         FOrientedBox ActorOBB = GetActorOrientedBox(StaticMeshActor);
         if (DecalOBB.Intersects(ActorOBB))
         {

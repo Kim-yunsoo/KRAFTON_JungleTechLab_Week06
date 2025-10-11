@@ -115,6 +115,14 @@ public:
 	UOctree* GetOctree() { return Octree; }
 	FBVH* GetBVH() { return BVH; }
 
+	// BVH 관리
+	void MarkBVHDirty();
+	void UpdateBVHIfNeeded();
+
+	// BVH 주기적 재빌드 설정
+	void SetBVHRebuildInterval(int32 FrameInterval) { BVHRebuildInterval = FrameInterval; }
+	int32 GetBVHRebuildInterval() const { return BVHRebuildInterval; }
+
 	ULevel* GetLevel() { return Level; };
 
 	/** === 레벨 / 월드 구성 === */
@@ -170,6 +178,10 @@ private:
 
 	UOctree* Octree;
 	FBVH* BVH;
+
+	// BVH 주기적 재빌드 관련
+	int32 BVHRebuildInterval = 30; // 0 = 더티 플래그만 사용, N = N프레임마다 재빌드
+	int32 BVHFrameCounter = 0;
 };
 template<class T>
 inline T* UWorld::SpawnActor()
@@ -195,6 +207,9 @@ inline T* UWorld::SpawnActor(const FTransform& Transform)
 	{
 		Level->AddActor(NewActor);
 	}
+
+	// BVH 더티 플래그 설정
+	MarkBVHDirty();
 
 	return NewActor;
 }

@@ -8,7 +8,7 @@
 #include <cfloat>
 
 
-FBVH::FBVH() : MaxDepth(0)
+FBVH::FBVH() : MaxDepth(0), bIsDirty(false)
 {
 }
 
@@ -79,6 +79,23 @@ void FBVH::Build(const TArray<AActor*>& Actors)
     sprintf_s(buf, "[BVH] Built for %d actors, %d nodes, depth %d (Time: %.3fms)\n",
         ActorBounds.Num(), Nodes.Num(), MaxDepth, BuildTimeMs);
     UE_LOG(buf);
+
+    // 빌드 완료 후 더티 플래그 해제
+    bIsDirty = false;
+}
+
+void FBVH::Rebuild(const TArray<AActor*>& Actors)
+{
+    if (!bIsDirty)
+    {
+        return; // 더티 플래그가 없으면 재빌드 불필요
+    }
+
+    char buf[128];
+    sprintf_s(buf, "[BVH] Rebuilding BVH...\n");
+    UE_LOG(buf);
+
+    Build(Actors);
 }
 
 void FBVH::Clear()
@@ -87,6 +104,7 @@ void FBVH::Clear()
     ActorBounds.Empty();
     ActorIndices.Empty();
     MaxDepth = 0;
+    bIsDirty = false;
 }
 
 AActor* FBVH::Intersect(const FVector& RayOrigin, const FVector& RayDirection, float& OutDistance) const
@@ -489,4 +507,59 @@ bool FBVH::IntersectActor(const AActor* Actor, const FVector& RayOrigin, const F
 
     //return CPickingSystem::CheckActorPicking(Actor, Ray, OutDistance);
     return false;
+}
+
+// AABB와 교차하는 모든 액터 찾기
+void FBVH::IntersectAABB(const FBound& QueryAABB, TArray<AActor*>& OutActors) const
+{
+    if (Nodes.Num() == 0)
+        return;
+
+    // 루트 노드부터 재귀 탐색
+    IntersectAABBNode(0, QueryAABB, OutActors);
+}
+
+// AABB 교차 검사용 재귀 함수
+void FBVH::IntersectAABBNode(int NodeIndex, const FBound& QueryAABB, TArray<AActor*>& OutActors) const
+{
+    if (NodeIndex < 0 || NodeIndex >= Nodes.Num())
+        return;
+
+    const FBVHNode& Node = Nodes[NodeIndex];
+
+    // 노드의 AABB와 Query AABB가 교차하는지 확인
+    if (!Node.BoundingBox.IsIntersect(QueryAABB))
+        return;
+
+    // 리프 노드인 경우 액터들 추가
+    if (Node.IsLeaf())
+    {
+        for (int i = 0; i < Node.ActorCount; ++i)
+        {
+            int ActorIndex = ActorIndices[Node.FirstActor + i];
+            AActor* Actor = ActorBounds[ActorIndex].Actor;
+
+            if (Actor && !Actor->GetActorHiddenInGame())
+            {
+                // 액터의 실제 AABB와 Query AABB가 교차하는지 확인
+                const FBound& ActorAABB = ActorBounds[ActorIndex].Bounds;
+                if (ActorAABB.IsIntersect(QueryAABB))
+                {
+                    OutActors.Add(Actor);
+                }
+            }
+        }
+        return;
+    }
+
+    // 내부 노드인 경우 자식 노드들 재귀 탐색
+    if (Node.LeftChild >= 0)
+    {
+        IntersectAABBNode(Node.LeftChild, QueryAABB, OutActors);
+    }
+
+    if (Node.RightChild >= 0)
+    {
+        IntersectAABBNode(Node.RightChild, QueryAABB, OutActors);
+    }
 }

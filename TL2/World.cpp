@@ -159,9 +159,14 @@ void UWorld::Initialize()
     InitializeGrid();
     InitializeGizmo();
 
+    // BVH 초기화 (빈 상태로 시작)
+    if (!BVH)
+    {
+        BVH = new FBVH();
+    }
 
     // 액터 간 참조 설정
-    //SetupActorReferences(); 
+    //SetupActorReferences();
 }
 
 void UWorld::InitializeMainCamera() 
@@ -514,6 +519,9 @@ void UWorld::Tick(float DeltaSeconds)
 
     //InputManager.Update();
     UIManager.Update(DeltaSeconds);
+
+    // BVH 업데이트 (Transform 변경이 있을 경우)
+    UpdateBVHIfNeeded();
 }
 
 float UWorld::GetTimeSeconds() const
@@ -576,6 +584,9 @@ bool UWorld::DestroyActor(AActor* Actor)
         ObjectFactory::DeleteObject(Actor);
         // 삭제된 액터 정리
         USelectionManager::GetInstance().CleanupInvalidActors();
+
+        // BVH 더티 플래그 설정
+        MarkBVHDirty();
 
         return true; // 성공적으로 삭제
     }
@@ -882,8 +893,6 @@ void UWorld::LoadScene(const FString& SceneName)
     const uint32 DuringLoadNext = UObject::PeekNextUUID();
     const uint32 SafeNext = std::max({DuringLoadNext, MaxAssignedUUID + 1, PreLoadNext});
     UObject::SetNextUUID(SafeNext);
-
-
 
     if (Level)
     {
@@ -1330,8 +1339,8 @@ void UWorld::CleanupWorld()
 void UWorld::SpawnActor(AActor* InActor)
 {
     InActor->SetWorld(this);
-  
- 
+
+
         if (UStaticMeshComponent* ActorComp = Cast<UStaticMeshComponent>(InActor->RootComponent))
         {
             FString ActorName = GenerateUniqueActorName(
@@ -1339,6 +1348,56 @@ void UWorld::SpawnActor(AActor* InActor)
             );
             InActor->SetName(ActorName);
         }
-   
+
     Level->GetActors().Add(InActor);
+
+    // BVH 더티 플래그 설정
+    MarkBVHDirty();
+}
+
+void UWorld::MarkBVHDirty()
+{
+    if (BVH)
+    {
+        BVH->MarkDirty();
+    }
+}
+
+void UWorld::UpdateBVHIfNeeded()
+{
+    // BVH가 없으면 생성
+    if (!BVH)
+    {
+        BVH = new FBVH();
+    }
+
+    if (!Level)
+    {
+        return;
+    }
+
+    bool bShouldRebuild = false;
+
+    // 1. 더티 플래그 체크
+    if (BVH->IsDirty())
+    {
+        bShouldRebuild = true;
+    }
+
+    // 2. 주기적 재빌드 체크 (BVHRebuildInterval > 0일 때만)
+    if (BVHRebuildInterval > 0)
+    {
+        BVHFrameCounter++;
+        if (BVHFrameCounter >= BVHRebuildInterval)
+        {
+            BVHFrameCounter = 0;
+            bShouldRebuild = true;
+        }
+    }
+
+    // 재빌드 수행
+    if (bShouldRebuild)
+    {
+        BVH->Build(Level->GetActors()); // Rebuild 대신 Build 사용 (더티 플래그 체크 없이 무조건 빌드)
+    }
 }
