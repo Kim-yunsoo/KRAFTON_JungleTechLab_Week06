@@ -2,11 +2,12 @@
 #include "FViewportClient.h"
 #include "FViewport.h"
 #include "CameraComponent.h"
-#include"CameraActor.h"
+#include "CameraActor.h"
 #include "World.h"
 #include "Picking.h"
 #include "SelectionManager.h"
-#include"GizmoActor.h"
+#include "GizmoActor.h"
+#include "UI/UIManager.h"
 FVector FViewportClient::CameraAddPosition{};
 
 FViewportClient::FViewportClient()
@@ -194,59 +195,72 @@ void FViewportClient::MouseButtonDown(FViewport* Viewport, int32 X, int32 Y, int
     if (!Viewport || !World) // Only handle left mouse button
         return;
 
+    // PIE 모드에서는 피킹을 비활성화 (Editor 전용 기능)
+    if (World->IsPIEWorld())
+    {
+        if (Button == 1)
+        {
+            bIsMouseRightButtonDown = true;
+            MouseLastX = X;
+            MouseLastY = Y;
+        }
+        return;
+    }
 
     // Get viewport size
-    FVector2D ViewportSize(static_cast<float>(Viewport->GetSizeX()),
-                           static_cast<float>(Viewport->GetSizeY()));
-    FVector2D ViewportOffset(static_cast<float>(Viewport->GetStartX()),
-                             static_cast<float>(Viewport->GetStartY()));
+    FVector2D ViewportSize(static_cast<float>(Viewport->GetSizeX()), static_cast<float>(Viewport->GetSizeY()));
+    FVector2D ViewportOffset(static_cast<float>(Viewport->GetStartX()), static_cast<float>(Viewport->GetStartY()));
 
     // X, Y are already local coordinates within the viewport, convert to global coordinates for picking
-    FVector2D ViewportMousePos(static_cast<float>(X) + ViewportOffset.X,
-                               static_cast<float>(Y) + ViewportOffset.Y);
+    FVector2D ViewportMousePos(static_cast<float>(X) + ViewportOffset.X, static_cast<float>(Y) + ViewportOffset.Y);
+
     AActor* PickedActor = nullptr;
+    USceneComponent* PickedComponent = nullptr;
     TArray<AActor*> AllActors = World->GetActors();
     AGizmoActor* GizmoActor = World->GetGizmoActor();
-    if (Button == 0)
-    {
+
+    if (Button == 0) {
         bIsMouseButtonDown = true;
         // 뷰포트의 실제 aspect ratio 계산
         float PickingAspectRatio = ViewportSize.X / ViewportSize.Y;
         if (ViewportSize.Y == 0) PickingAspectRatio = 1.0f; // 0으로 나누기 방지
-        if (GizmoActor&&GizmoActor->GetbIsHovering())
+        if (GizmoActor && GizmoActor->GetbIsHovering())
         {
             return;
         }
-        PickedActor = CPickingSystem::PerformGlobalBVHPicking(
-            AllActors, Camera, ViewportMousePos, ViewportSize, ViewportOffset, PickingAspectRatio,
-            Viewport);
-
-
         if (PickedActor)
         {
+            PickedActor->SetIsPicked(false);
+        }
+        PickedComponent = CPickingSystem::PerformGlobalBVHPicking(AllActors, Camera, ViewportMousePos, ViewportSize, ViewportOffset, PickingAspectRatio, Viewport);
+
+        if (PickedComponent)
+        {
+            PickedActor = PickedComponent->GetOwner();
+            PickedActor->SetIsPicked(true);
+
             USelectionManager::GetInstance().SelectActor(PickedActor);
             UUIManager::GetInstance().SetPickedActor(PickedActor);
-            AGizmoActor* GizmoActor = World->GetGizmoActor();
-            if (GizmoActor)
+            if (World->GetGizmoActor())
             {
-                GizmoActor->SetTargetActor(PickedActor);
-                GizmoActor->SetActorLocation(PickedActor->GetActorLocation());
+                World->GetGizmoActor()->SetTargetActor(PickedActor);
+                World->GetGizmoActor()->SetActorLocation(PickedActor->GetActorLocation());
             }
         }
         else
         {
-            UUIManager::GetInstance().ResetPickedActor();
             // Clear selection if nothing was picked
             USelectionManager::GetInstance().ClearSelection();
+            UUIManager::GetInstance().ResetPickedActor();
         }
     }
-    else if (Button == 1)
-    {
-        //우클릭시 
+    else if (Button == 1) {//우클릭시
         bIsMouseRightButtonDown = true;
         MouseLastX = X;
         MouseLastY = Y;
+
     }
+
 }
 
 void FViewportClient::MouseButtonUp(FViewport* Viewport, int32 X, int32 Y, int32 Button)

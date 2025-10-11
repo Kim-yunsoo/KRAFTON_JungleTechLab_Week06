@@ -77,6 +77,21 @@ public:
         return Comp;
     }
 
+    template<typename T>
+    TSet<T*> GetComponents()
+    {
+        TSet<T*> Set;
+        T* Component = nullptr;
+        for (UActorComponent* Child : OwnedComponents)
+        {
+            if (Component = Cast<T>(Child))
+            {
+                Set.Add(Component);
+            }
+        }
+        return Set;
+    }
+
     // 지정된 부모 하위에 새로운 컴포넌트를 생성하고 붙입니다.
     USceneComponent* CreateAndAttachComponent(USceneComponent* ParentComponent, UClass* ComponentClass);
     // 이 액터가 소유한 씬 컴포넌트를 안전하게 제거하고 삭제합니다.

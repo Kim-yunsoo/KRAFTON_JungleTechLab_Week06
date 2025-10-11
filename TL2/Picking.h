@@ -108,15 +108,15 @@ public:
                                             float ViewportAspectRatio, FViewport* Viewport);
 
     // Global BVH만 사용하는 피킹
-    static AActor* PerformGlobalBVHPicking(const TArray<AActor*>& Actors,
-                                          ACameraActor* Camera,
-                                          const FVector2D& ViewportMousePos,
-                                          const FVector2D& ViewportSize,
-                                          const FVector2D& ViewportOffset,
-                                          float ViewportAspectRatio, FViewport* Viewport);
+    static USceneComponent* PerformGlobalBVHPicking(const TArray<AActor*>& Actors,
+                                                    ACameraActor* Camera,
+                                                    const FVector2D& ViewportMousePos,
+                                                    const FVector2D& ViewportSize,
+                                                    const FVector2D& ViewportOffset,
+                                                    float ViewportAspectRatio, FViewport* Viewport);
 
     /** === 헬퍼 함수들 === */
-    static bool CheckActorPicking(const AActor* Actor, const FRay& Ray, float& OutDistance);
+    static bool CheckActorPicking(AActor* Actor, USceneComponent*& OutComponent, const FRay& Ray, float& OutDistance);
 
     // 거리 기반 적응형 조기 종료 임계값
     static float GetAdaptiveThreshold(float cameraDistance);
@@ -124,4 +124,5 @@ public:
 private:
     /** === 내부 헬퍼 함수들 === */
     static bool CheckGizmoComponentPicking(const UStaticMeshComponent* Component, const FRay& Ray, float& OutDistance);
+    static bool CheckBillboardComponentPicking(const class UBillboardComponent* Component, const FRay& Ray, float& OutDistance);
 };

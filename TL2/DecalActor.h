@@ -4,6 +4,7 @@
 #include "DecalComponent.h"
 
 class UOBoundingBoxComponent;
+class UBillboardComponent;
 
 class ADecalActor : public AActor
 {
@@ -30,6 +31,7 @@ public:
 protected:
     UDecalComponent* DecalComponent;
     UOBoundingBoxComponent* DecalVolumeComponent;
+    UBillboardComponent* BillboardComponent;
 
     TArray<AActor*> OverlappingActors;
 };
