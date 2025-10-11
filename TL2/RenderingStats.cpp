@@ -103,7 +103,7 @@ void URenderingStatsCollector::UpdateDecalStats(const FDecalRenderingStats& InSt
     {
         SumStats.TotalDecalCount += DecalStatsHistory[i].TotalDecalCount;
         SumStats.ActiveDecalCount += DecalStatsHistory[i].ActiveDecalCount;
-        SumStats.AffectedActorsCount += DecalStatsHistory[i].AffectedActorsCount;
+        SumStats.AffectedMeshesCount += DecalStatsHistory[i].AffectedMeshesCount;
         SumStats.DecalDrawCalls += DecalStatsHistory[i].DecalDrawCalls;
         SumStats.DecalPassTimeMs += DecalStatsHistory[i].DecalPassTimeMs;
         SumStats.CollisionCheckTimeMs += DecalStatsHistory[i].CollisionCheckTimeMs;
@@ -115,7 +115,7 @@ void URenderingStatsCollector::UpdateDecalStats(const FDecalRenderingStats& InSt
     // 평균값 계산
     AverageDecalStats.TotalDecalCount = SumStats.TotalDecalCount / AVERAGE_FRAME_COUNT;
     AverageDecalStats.ActiveDecalCount = SumStats.ActiveDecalCount / AVERAGE_FRAME_COUNT;
-    AverageDecalStats.AffectedActorsCount = SumStats.AffectedActorsCount / AVERAGE_FRAME_COUNT;
+    AverageDecalStats.AffectedMeshesCount = SumStats.AffectedMeshesCount / AVERAGE_FRAME_COUNT;
     AverageDecalStats.DecalDrawCalls = SumStats.DecalDrawCalls / AVERAGE_FRAME_COUNT;
     AverageDecalStats.DecalPassTimeMs = SumStats.DecalPassTimeMs / static_cast<float>(AVERAGE_FRAME_COUNT);
     AverageDecalStats.CollisionCheckTimeMs = SumStats.CollisionCheckTimeMs / static_cast<float>(AVERAGE_FRAME_COUNT);

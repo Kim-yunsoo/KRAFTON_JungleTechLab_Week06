@@ -305,18 +305,18 @@ void UStatsOverlayD2D::Draw()
         swprintf_s(Buffer,
             L"=== Decal Rendering ===\n"
             L"Active: %u / %u\n"
-            L"Affected Actors: %u\n"
+            L"Affected Meshes: %u\n"
             L"DrawCalls: %u\n"
             L"Pass Time: %.2f ms\n"
             L"Avg Time/Decal: %.3f ms\n"
-            L"Avg Actors/Decal: %.1f",
+            L"Avg Meshes/Decal: %.1f",
             DecalStats.ActiveDecalCount,
             DecalStats.TotalDecalCount,
-            DecalStats.AffectedActorsCount,
+            DecalStats.AffectedMeshesCount,
             DecalStats.DecalDrawCalls,
             DecalStats.DecalPassTimeMs,
             DecalStats.AvgTimePerDecalMs,
-            DecalStats.AvgActorsPerDecal
+            DecalStats.AvgMeshesPerDecal
         );
 
         D2D1_RECT_F rc = D2D1::RectF(margin, nextY, margin + panelWidth, nextY + panelHeight * 2.5f + 10.0f);

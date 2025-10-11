@@ -273,6 +273,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 
 	int AllActorCount = 0;
 	int FrustumCullCount = 0;
+	int32 TotalDecalCount = 0;
 
 	const TArray<AActor*>& LevelActors = Level ? Level->GetActors() : TArray<AActor*>();
 
@@ -339,6 +340,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 			// 데칼 컴포넌트는 Pass 2에서 렌더링
 			if (Cast<UDecalComponent>(Component))
 			{
+				++TotalDecalCount;
 				continue;
 			}
 
@@ -391,48 +393,43 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 		Renderer->OMSetBlendState(false);
 	}
 
-	// ============================================
-	// Pass 2: 데칼 렌더링
-	// ============================================
-	if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals) &&
-		Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives))
-	{
-		// ✅ 데칼 패스 시작 (타이머 시작 + 통계 초기화)
-		URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
-		StatsCollector.BeginDecalPass();
+    // 엔진 액터들 (그리드 등) 렌더링
+    RenderEngineActors(ViewMatrix, ProjectionMatrix, Viewport);
+    // Pass 2: 데칼 렌더링 (Depth 버퍼를 읽어서 다른 오브젝트 위에 투영)
+    if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals) &&
+        Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives))
+    {
+        URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
+        StatsCollector.BeginDecalPass();
 
-		const TArray<ADecalActor*>& LevelDecalActors = Level ? Level->GetDecalActors() : TArray<ADecalActor*>();
-        
-		FDecalRenderingStats& CurrentDecalStats = StatsCollector.GetDecalStats();
+		FDecalRenderingStats& DecalStats = StatsCollector.GetDecalStats();
 
-		// 기본 카운트 설정
-		CurrentDecalStats.TotalDecalCount = static_cast<uint32>(LevelDecalActors.Num());
+        // 기본 카운트 설정
+        DecalStats.TotalDecalCount = TotalDecalCount;
 
-		for (ADecalActor* DecalActor : LevelDecalActors)
-		{
-			if (UDecalComponent* DecalComp = DecalActor->GetDecalComponent())
-			{
-				const TArray<AActor*>& OverlappingActors = DecalActor->GetOverlappingActors();
+        for (AActor* Actor : LevelActors)
+        {
+            if (!Actor || Actor->GetActorHiddenInGame())
+            {
+                continue;
+            }
 
-				if (OverlappingActors.Num() > 0)
-				{
-					CurrentDecalStats.ActiveDecalCount++;
-					CurrentDecalStats.AffectedActorsCount += static_cast<uint32>(OverlappingActors.Num());
+            for (UActorComponent* Component : Actor->GetComponents())
+            {
+                if (Component)
+                {
+                    // 데칼 컴포넌트만 렌더링
+                    if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
+                    {
+                        DecalComp->Render(Renderer, ViewMatrix, ProjectionMatrix);
+                    }
+                }
+            }
+        }
 
-					for (AActor* Actor : OverlappingActors)
-					{
-						DecalComp->RenderOnActor(Renderer, Viewport, Actor, ViewMatrix, ProjectionMatrix);
-					}
-				}
-			}
-		}
-
-		// ✅ 데칼 패스 종료 (타이머 종료 + 평균 계산 + 히스토리 업데이트)
-		StatsCollector.EndDecalPass();
-	}
-
-	// 엔진 액터들 (그리드 등) 렌더링
-	RenderEngineActors(ViewMatrix, ProjectionMatrix, Viewport);
+        // 데칼 패스 종료 (타이머 종료 + 평균 계산 + 히스토리 업데이트)
+        StatsCollector.EndDecalPass();
+    }
 
 	Renderer->EndLineBatch(FMatrix::Identity(), ViewMatrix, ProjectionMatrix);
 }
@@ -496,11 +493,11 @@ void UWorld::Tick(float DeltaSeconds)
 
             // Actor의 Tick이 끝난 후에 
             // Decal과 충돌한 Actor를 수집한다. 
-            for (ADecalActor* DecalActor: Level->GetDecalActors())
-            {
-                 
-                DecalActor->CheckAndAddOverlappingActors(Actor);
-            }
+            //for (ADecalActor* DecalActor: Level->GetDecalActors())
+            //{
+            //     
+            //    DecalActor->CheckAndAddOverlappingActors(Actor);
+            //}
              
         }
     }
@@ -512,13 +509,6 @@ void UWorld::Tick(float DeltaSeconds)
         {
             EngineActor->Tick(DeltaSeconds);
         }
-         
-        // Actor의 Tick이 끝난 후에 
-        // Decal과 충돌한 Actor를 수집한다. 
-        for (ADecalActor* DecalActor : Level->GetDecalActors())
-        {
-            DecalActor->CheckAndAddOverlappingActors(EngineActor);
-        } 
     }
 
     if (GizmoActor)

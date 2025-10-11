@@ -48,7 +48,7 @@ struct FDecalRenderingStats
     // 기본 카운트
     uint32 TotalDecalCount = 0;
     uint32 ActiveDecalCount = 0;
-    uint32 AffectedActorsCount = 0;
+    uint32 AffectedMeshesCount = 0;
     uint32 DecalDrawCalls = 0;
 
     // 성능 측정
@@ -57,7 +57,7 @@ struct FDecalRenderingStats
 
     // 평균값
     float AvgTimePerDecalMs = 0.0;
-    float AvgActorsPerDecal = 0.0f;
+    float AvgMeshesPerDecal = 0.0f;
 
     // 렌더 상태
     uint32 DecalShaderChanges = 0;
@@ -74,7 +74,7 @@ struct FDecalRenderingStats
         if (ActiveDecalCount > 0)
         {
             AvgTimePerDecalMs = DecalPassTimeMs / ActiveDecalCount;
-            AvgActorsPerDecal = static_cast<float>(AffectedActorsCount) / static_cast<float>(ActiveDecalCount);
+            AvgMeshesPerDecal = static_cast<float>(AffectedMeshesCount) / static_cast<float>(ActiveDecalCount);
         }
     }
 };

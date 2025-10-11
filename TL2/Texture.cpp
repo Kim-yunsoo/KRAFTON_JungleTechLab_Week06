@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "Texture.h"
 #include <DDSTextureLoader.h>
+#include <WICTextureLoader.h> 
 
 UTexture::UTexture()
 {
@@ -21,12 +22,32 @@ void UTexture::Load(const FString& InFilePath, ID3D11Device* InDevice)
 	std::wstring WFilePath;
 	WFilePath = std::wstring(InFilePath.begin(), InFilePath.end());
 
-	HRESULT hr = DirectX::CreateDDSTextureFromFile(
+	 
+	size_t DotPos = WFilePath.find_last_of(L'.');
+	std::wstring extension = WFilePath.substr(DotPos + 1);
+	
+	HRESULT hr = E_FAIL;
+
+	if (extension == L"dds")
+	{
+		hr = DirectX::CreateDDSTextureFromFile(
+			InDevice,
+			WFilePath.c_str(),
+			reinterpret_cast<ID3D11Resource**>(&Texture2D),
+			&ShaderResourceView
+		);
+	}
+	
+	else if (extension == L"png" || extension == L"jpg")
+	{
+	hr = DirectX::CreateWICTextureFromFile(
 		InDevice,
 		WFilePath.c_str(),
 		reinterpret_cast<ID3D11Resource**>(&Texture2D),
 		&ShaderResourceView
-	);
+	); 
+
+	}
 	if (FAILED(hr))
 	{
 		UE_LOG("!!!LOAD TEXTURE FAILED!!!");

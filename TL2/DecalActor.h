@@ -19,19 +19,12 @@ public:
     UDecalComponent* GetDecalComponent() const { return DecalComponent; }
     void SetDecalComponent(UDecalComponent* InDecalComponent);
 
-    void CheckAndAddOverlappingActors(AActor* OverlappingActor); 
-
     virtual bool DeleteComponent(USceneComponent* ComponentToDelete) override;
 
     UObject* Duplicate() override;
     void DuplicateSubObjects() override;
-    
-    TArray<AActor*> GetOverlappingActors() const { return OverlappingActors; }
 
 protected:
     UDecalComponent* DecalComponent;
-    UOBoundingBoxComponent* DecalVolumeComponent;
     UBillboardComponent* BillboardComponent;
-
-    TArray<AActor*> OverlappingActors;
 };
