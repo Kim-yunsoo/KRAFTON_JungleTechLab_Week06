@@ -137,30 +137,33 @@ TArray<UStaticMeshComponent*> UDecalComponent::FindAffectedMeshes(UWorld* World)
         if (!Actor || Actor->GetActorHiddenInGame())
             continue;
 
-        // StaticMeshActor만 검사
-        AStaticMeshActor* StaticMeshActor = Cast<AStaticMeshActor>(Actor);
-        if (!StaticMeshActor)
-            continue;
+        // Actor의 모든 컴포넌트 검사
+        const TSet<UActorComponent*>& Components = Actor->GetComponents();
 
-        // Collision Component로 충돌 검사
-        UAABoundingBoxComponent* CollisionComp = StaticMeshActor->CollisionComponent;
-        if (!CollisionComp)
-            continue;
-
-        FBound ActorAABB = CollisionComp->GetWorldBoundFromCube();
-
-        // 1단계: AABB vs AABB (빠른 필터링)
-        if (!DecalAABB.IsIntersect(ActorAABB))
-            continue;
-
-        // 2단계: OBB vs OBB (정밀 검사 - SAT)
-        FOrientedBox ActorOBB = GetActorOrientedBox(StaticMeshActor);
-        if (DecalOBB.Intersects(ActorOBB))
+        for (UActorComponent* Component : Components)
         {
-            UStaticMeshComponent* MeshComp = StaticMeshActor->GetStaticMeshComponent();
-            if (MeshComp)
+            if (!Component)
+                continue;
+
+            // StaticMeshComponent인지 확인
+            UStaticMeshComponent* StaticMeshComp = Cast<UStaticMeshComponent>(Component);
+            if (!StaticMeshComp)
+                continue;
+
+            // StaticMesh가 없으면 스킵
+            if (!StaticMeshComp->GetStaticMesh())
+                continue;
+
+            // 1단계: AABB vs AABB (빠른 필터링)
+            FBound ComponentAABB = StaticMeshComp->GetWorldBoundingBox();
+            if (!DecalAABB.IsIntersect(ComponentAABB))
+                continue;
+
+            // 2단계: OBB vs OBB (정밀 검사 - SAT)
+            FOrientedBox ComponentOBB = StaticMeshComp->GetWorldOrientedBox();
+            if (DecalOBB.Intersects(ComponentOBB))
             {
-                AffectedMeshes.push_back(MeshComp);
+                AffectedMeshes.push_back(StaticMeshComp);
             }
         }
     }

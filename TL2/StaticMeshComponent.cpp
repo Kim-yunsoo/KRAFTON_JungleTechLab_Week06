@@ -47,6 +47,86 @@ void UStaticMeshComponent::SetStaticMesh(const FString& PathFileName)
     }
 }
 
+FBound UStaticMeshComponent::GetWorldBoundingBox() const
+{
+    if (!StaticMesh)
+    {
+        // StaticMesh가 없으면 기본 작은 박스 반환
+        FVector WorldPos = GetWorldLocation();
+        return FBound(WorldPos - FVector(0.1f, 0.1f, 0.1f),
+            WorldPos + FVector(0.1f, 0.1f, 0.1f));
+    }
+
+    // StaticMesh가 제공하는 로컬 바운드 사용
+    FBound LocalBound = StaticMesh->GetLocalBound();
+
+    // 로컬 AABB의 8개 꼭짓점을 월드로 변환
+    FVector LocalMin = LocalBound.Min;
+    FVector LocalMax = LocalBound.Max;
+
+    FMatrix WorldMatrix = GetWorldMatrix();
+    FVector Corners[8] = {
+        FVector(LocalMin.X, LocalMin.Y, LocalMin.Z),
+        FVector(LocalMax.X, LocalMin.Y, LocalMin.Z),
+        FVector(LocalMin.X, LocalMax.Y, LocalMin.Z),
+        FVector(LocalMax.X, LocalMax.Y, LocalMin.Z),
+        FVector(LocalMin.X, LocalMin.Y, LocalMax.Z),
+        FVector(LocalMax.X, LocalMin.Y, LocalMax.Z),
+        FVector(LocalMin.X, LocalMax.Y, LocalMax.Z),
+        FVector(LocalMax.X, LocalMax.Y, LocalMax.Z),
+    };
+
+    // 월드 공간 AABB 계산
+    FVector WorldMin(FLT_MAX, FLT_MAX, FLT_MAX);
+    FVector WorldMax(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+    for (int i = 0; i < 8; ++i)
+    {
+        // 로컬 → 월드 변환
+        FVector4 LocalPos4(Corners[i].X, Corners[i].Y, Corners[i].Z, 1.0f);
+        FVector4 WorldPos4 = WorldMatrix.TransformPosition(LocalPos4);
+        FVector WorldCorner(WorldPos4.X, WorldPos4.Y, WorldPos4.Z);
+
+        WorldMin.X = FMath::Min(WorldMin.X, WorldCorner.X);
+        WorldMin.Y = FMath::Min(WorldMin.Y, WorldCorner.Y);
+        WorldMin.Z = FMath::Min(WorldMin.Z, WorldCorner.Z);
+
+        WorldMax.X = FMath::Max(WorldMax.X, WorldCorner.X);
+        WorldMax.Y = FMath::Max(WorldMax.Y, WorldCorner.Y);
+        WorldMax.Z = FMath::Max(WorldMax.Z, WorldCorner.Z);
+    }
+
+    return FBound(WorldMin, WorldMax);
+}
+
+FOrientedBox UStaticMeshComponent::GetWorldOrientedBox() const
+{
+    if (!StaticMesh)
+    {
+        return FOrientedBox(GetWorldLocation(), FVector(0.1f, 0.1f, 0.1f), FQuat::Identity());
+    }
+
+    // StaticMesh가 제공하는 로컬 바운드 사용
+    FBound LocalBound = StaticMesh->GetLocalBound();
+
+    // OBB 구성
+    FVector LocalMin = LocalBound.Min;
+    FVector LocalMax = LocalBound.Max;
+    FVector LocalCenter = (LocalMin + LocalMax) * 0.5f;
+    FVector LocalHalfExtents = (LocalMax - LocalMin) * 0.5f;
+
+    // 월드 변환 적용
+    FMatrix WorldMatrix = GetWorldMatrix();
+    FVector4 LocalCenter4(LocalCenter.X, LocalCenter.Y, LocalCenter.Z, 1.0f);
+    FVector4 WorldCenter4 = WorldMatrix.TransformPosition(LocalCenter4);
+    FVector WorldCenter(WorldCenter4.X, WorldCenter4.Y, WorldCenter4.Z);
+
+    FVector WorldHalfExtents = LocalHalfExtents * GetWorldScale(); // 스케일 적용
+    FQuat WorldRotation = GetWorldRotation();
+
+    return FOrientedBox(WorldCenter, WorldHalfExtents, WorldRotation);
+}
+
 void UStaticMeshComponent::Serialize(bool bIsLoading, FPrimitiveData& InOut)
 {
     // 0) 트랜스폼 직렬화/역직렬화는 상위(UPrimitiveComponent)에서 처리

@@ -28,6 +28,7 @@ void UStaticMesh::Load(const FString& InFilePath, ID3D11Device* InDevice, EVerte
     IndexCount = static_cast<uint32>(StaticMeshAsset->Indices.size());
 
     BuildMeshBVH();
+	CalculateLocalBound();
 }
 
 void UStaticMesh::Load(FMeshData* InData, ID3D11Device* InDevice, EVertexLayoutType InVertexType)
@@ -143,5 +144,29 @@ void UStaticMesh::ReleaseResources()
         IndexBuffer->Release();
         IndexBuffer = nullptr;
     }
+}
+
+void UStaticMesh::CalculateLocalBound()
+{
+    if (!StaticMeshAsset || StaticMeshAsset->Vertices.empty())
+    {
+        LocalBound = FBound();
+        return;
+    }
+
+    FVector Min = StaticMeshAsset->Vertices[0].pos;
+    FVector Max = StaticMeshAsset->Vertices[0].pos;
+    for (const auto& Vertex : StaticMeshAsset->Vertices)
+    {
+        Min.X = FMath::Min(Min.X, Vertex.pos.X);
+        Min.Y = FMath::Min(Min.Y, Vertex.pos.Y);
+        Min.Z = FMath::Min(Min.Z, Vertex.pos.Z);
+        Max.X = FMath::Max(Max.X, Vertex.pos.X);
+        Max.Y = FMath::Max(Max.Y, Vertex.pos.Y);
+        Max.Z = FMath::Max(Max.Z, Vertex.pos.Z);
+    }
+
+    LocalBound.Min = Min;
+	LocalBound.Max = Max;
 }
 
