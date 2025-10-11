@@ -10,6 +10,7 @@
 #include "StaticMeshComponent.h"
 #include "AABoundingBoxComponent.h"
 #include "RenderingStats.h"
+#include "SelectionManager.h"
 
 UDecalComponent::UDecalComponent()
 {
@@ -166,30 +167,33 @@ void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMa
         return;
     }
 
-    // 1. --- OBB Drawing ---
-    FOrientedBox OBB = GetDecalOrientedBox();
-    TArray<FVector> Corners = OBB.GetCorners();
-    const FVector4 Yellow(1.0f, 1.0f, 0.0f, 1.0f);
-
-    if (Corners.size() == 8)
+    // 1. Owner가 선택된 경우에만 OBB Drawing
+    if (Owner && USelectionManager::GetInstance().IsActorSelected(Owner))
     {
-        // Draw bottom face
-        Renderer->AddLine(Corners[0], Corners[1], Yellow);
-        Renderer->AddLine(Corners[1], Corners[3], Yellow);
-        Renderer->AddLine(Corners[3], Corners[2], Yellow);
-        Renderer->AddLine(Corners[2], Corners[0], Yellow);
+        FOrientedBox OBB = GetDecalOrientedBox();
+        TArray<FVector> Corners = OBB.GetCorners();
+        const FVector4 Yellow(1.0f, 1.0f, 0.0f, 1.0f);
 
-        // Draw top face
-        Renderer->AddLine(Corners[4], Corners[5], Yellow);
-        Renderer->AddLine(Corners[5], Corners[7], Yellow);
-        Renderer->AddLine(Corners[7], Corners[6], Yellow);
-        Renderer->AddLine(Corners[6], Corners[4], Yellow);
+        if (Corners.size() == 8)
+        {
+            // Bottom face
+            Renderer->AddLine(Corners[0], Corners[1], Yellow);
+            Renderer->AddLine(Corners[1], Corners[3], Yellow);
+            Renderer->AddLine(Corners[3], Corners[2], Yellow);
+            Renderer->AddLine(Corners[2], Corners[0], Yellow);
 
-        // Draw vertical edges
-        Renderer->AddLine(Corners[0], Corners[4], Yellow);
-        Renderer->AddLine(Corners[1], Corners[5], Yellow);
-        Renderer->AddLine(Corners[2], Corners[6], Yellow);
-        Renderer->AddLine(Corners[3], Corners[7], Yellow);
+            // Top face
+            Renderer->AddLine(Corners[4], Corners[5], Yellow);
+            Renderer->AddLine(Corners[5], Corners[7], Yellow);
+            Renderer->AddLine(Corners[7], Corners[6], Yellow);
+            Renderer->AddLine(Corners[6], Corners[4], Yellow);
+
+            // Vertical edges
+            Renderer->AddLine(Corners[0], Corners[4], Yellow);
+            Renderer->AddLine(Corners[1], Corners[5], Yellow);
+            Renderer->AddLine(Corners[2], Corners[6], Yellow);
+            Renderer->AddLine(Corners[3], Corners[7], Yellow);
+        }
     }
 
     if (!DecalTexture)
