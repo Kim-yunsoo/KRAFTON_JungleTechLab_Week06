@@ -400,15 +400,17 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
     // 엔진 액터들 (그리드 등) 렌더링
     RenderEngineActors(ViewMatrix, ProjectionMatrix, Viewport);
 
-    // Pass 2: 데칼 렌더링 (SF_Decals 플래그 확인)
-    if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals))
+    URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
+    
+    // Pass 2: 데칼 렌더링
+    StatsCollector.BeginDecalPass();
+
+    FDecalRenderingStats& DecalStats = StatsCollector.GetDecalStats();
+    DecalStats.TotalDecalCount = TotalDecalCount;
+
+    if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals) &&
+        Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
     {
-        URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
-        StatsCollector.BeginDecalPass();
-
-        FDecalRenderingStats& DecalStats = StatsCollector.GetDecalStats();
-        DecalStats.TotalDecalCount = TotalDecalCount;
-
         for (AActor* Actor : LevelActors)
         {
             if (!Actor || Actor->GetActorHiddenInGame())
@@ -424,9 +426,8 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
                 }
             }
         }
-
-        StatsCollector.EndDecalPass();
     }
+    StatsCollector.EndDecalPass();
 
 	Renderer->EndLineBatch(FMatrix::Identity(), ViewMatrix, ProjectionMatrix);
 }
