@@ -5,6 +5,7 @@
 #include "AABoundingBoxComponent.h"
 #include "DecalComponent.h"
 #include "ObjectFactory.h"
+#include "BillboardComponent.h"
 
 
 ADecalActor::ADecalActor()
@@ -18,6 +19,11 @@ ADecalActor::ADecalActor()
 
 ADecalActor::~ADecalActor()
 {
+    if (DecalComponent)
+    {
+        ObjectFactory::DeleteObject(DecalComponent);
+    }
+    DecalComponent = nullptr;
 }
 
 void ADecalActor::Tick(float DeltaTime)
@@ -86,6 +92,37 @@ UObject* ADecalActor::Duplicate()
     DuplicatedActor->DuplicateSubObjects();
 
     return DuplicatedActor;
+}
+
+UObject* ADecalActor::Duplicate(FObjectDuplicationParameters Parameters)
+{
+    auto DupObject = static_cast<ADecalActor*>(Super_t::Duplicate(Parameters));
+
+    // Locate duplicated components and wire pointers
+    //DupActor->DecalComponent = nullptr;
+    //DupActor->BillboardComponent = nullptr;
+
+    for (UActorComponent* Component : OwnedComponents)
+    {
+        if (RootComponent == Component)
+        {
+            continue;
+        }
+
+        if (auto It = Parameters.DuplicationSeed.find(Component); It != Parameters.DuplicationSeed.end())
+        {
+            DupObject->OwnedComponents.emplace(static_cast<UActorComponent*>(It->second));
+        }
+        else
+        {
+            auto Params = InitStaticDuplicateObjectParams(Component, DupObject, FName::GetNone(), Parameters.DuplicationSeed, Parameters.CreatedObjects);
+            auto DupComponent = static_cast<UActorComponent*>(Component->Duplicate(Params));
+
+            DupObject->OwnedComponents.emplace(DupComponent);
+        } 
+    }
+
+    return DupObject;
 }
 
 void ADecalActor::DuplicateSubObjects()

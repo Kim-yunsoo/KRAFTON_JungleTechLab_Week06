@@ -38,6 +38,7 @@ public:
     UTextQuad* GetStaticMesh() const { return BillboardQuad; }
 
     UObject* Duplicate() override;
+    UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
     void DuplicateSubObjects() override;
 
 private:

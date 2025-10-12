@@ -21,6 +21,7 @@ public:
 	UTextQuad* GetStaticMesh() const { return TextQuad; }
 
 	UObject* Duplicate() override;
+	//UObject* Duplicate(FObjectDuplicationParameters Parameter) override;
 	void DuplicateSubObjects() override;
 
 private:

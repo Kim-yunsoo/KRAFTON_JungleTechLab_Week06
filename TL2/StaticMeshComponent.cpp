@@ -209,6 +209,16 @@ UObject* UStaticMeshComponent::Duplicate()
     return DuplicatedComponent;
 }
 
+UObject* UStaticMeshComponent::Duplicate(FObjectDuplicationParameters Parameter)
+{
+    auto DupObject = static_cast<UStaticMeshComponent*>(Super_t::Duplicate(Parameter));
+    
+    DupObject->StaticMesh = StaticMesh;
+    DupObject->MaterailSlots = MaterailSlots;
+     
+    return DupObject;
+}
+
 void UStaticMeshComponent::DuplicateSubObjects()
 {
     // 부모의 깊은 복사 수행 (AttachChildren 재귀 복제)

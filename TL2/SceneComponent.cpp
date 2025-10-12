@@ -193,6 +193,7 @@ void USceneComponent::SetLocalLocationAndRotation(const FVector& L, const FQuat&
 
 FMatrix USceneComponent::GetWorldMatrix() const
 {
+    //TODO Cache 해놓으면 좋을 것 같다.
     return GetWorldTransform().ToMatrixWithScaleLocalXYZ();
 }
 
@@ -295,7 +296,7 @@ UObject* USceneComponent::Duplicate()
 
     return DuplicatedComponent;
 }
-
+ 
 /**
  * @brief USceneComponent의 Internal 복사 함수
  * 원본이 들고 있던 Component를 각 Component의 복사함수를 호출하여 받아온 후 새로 담아서 처리함
@@ -316,4 +317,42 @@ void USceneComponent::DuplicateSubObjects()
         DuplicatedChildren.push_back(Child);
     }
     AttachChildren = DuplicatedChildren;
+}
+
+
+UObject* USceneComponent::Duplicate(FObjectDuplicationParameters Parameters)
+{
+    auto DupObject = static_cast<USceneComponent*>(Super_t::Duplicate(Parameters));
+
+    // 기본 인자 세팅  
+    DupObject->RelativeLocation = RelativeLocation;
+    DupObject->RelativeRotation = RelativeRotation;
+    DupObject->RelativeScale = RelativeScale;
+    DupObject->UpdateRelativeTransform();
+
+    //계층 구조 
+    if (AttachParent != nullptr)
+    {
+        if (auto It = Parameters.DuplicationSeed.find(AttachParent); It != Parameters.DuplicationSeed.end())
+        { 
+            DupObject->AttachParent = static_cast<USceneComponent*>(It->second); 
+            DupObject->UpdateRelativeTransform();
+        }
+    } 
+
+    for (auto& Child : AttachChildren)
+    {
+        if (auto It = Parameters.DuplicationSeed.find(Child); It != Parameters.DuplicationSeed.end())
+        {
+            DupObject->AttachChildren.Add(static_cast<USceneComponent*>(It->second));
+        }
+        else
+        {
+            auto Params = InitStaticDuplicateObjectParams(Child, DupObject->GetOuter(), FName::GetNone(), Parameters.DuplicationSeed, Parameters.CreatedObjects);
+            auto DupComponent= static_cast<USceneComponent*>(Child->Duplicate(Params));
+            DupObject->AttachChildren.Add(DupComponent);
+        }
+    }
+
+    return DupObject;
 }

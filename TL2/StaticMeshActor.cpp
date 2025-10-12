@@ -35,7 +35,7 @@ void AStaticMeshActor::Tick(float DeltaTime)
 
     //TODO: bTickEditor를 추가해서 Tick안에서 분기문을 없애야됨
     if (World->WorldType == EWorldType::PIE) {
-        //RootComponent->AddLocalRotation({ 0.01f, 0.0f,0.0f });
+        ///RootComponent->AddLocalRotation({ 0.01f, 0.0f,0.0f });
         //RootComponent->AddLocalOffset({ sin(times)/100, sin(times)/100,sin(times)/100 });
     }
 
@@ -122,6 +122,64 @@ UObject* AStaticMeshActor::Duplicate()
     DuplicatedActor->DuplicateSubObjects();
 
     return DuplicatedActor;
+}
+
+UObject* AStaticMeshActor::Duplicate(FObjectDuplicationParameters Parameters)
+{
+    // First, perform base actor duplication using parameterized path
+    auto DupActor = static_cast<AStaticMeshActor*>(Super_t::Duplicate(Parameters));
+
+    // Ensure actor-specific pointers are wired
+    DupActor->StaticMeshComponent = Cast<UStaticMeshComponent>(DupActor->RootComponent);
+
+    // Prefer the duplicated collision component over the default one created in the constructor
+    UAABoundingBoxComponent* DuplicatedCollision = nullptr;
+    if (CollisionComponent)
+    {
+        if (auto It = Parameters.CreatedObjects.find(CollisionComponent); It != Parameters.CreatedObjects.end())
+        {
+            DuplicatedCollision = Cast<UAABoundingBoxComponent>(It->second);
+        }
+    }
+
+    if (DuplicatedCollision)
+    {
+        // Remove any default collision components that are not the duplicated one
+        TArray<UActorComponent*> ToRemove;
+        for (UActorComponent* Comp : DupActor->OwnedComponents)
+        {
+            if (auto* Box = Cast<UAABoundingBoxComponent>(Comp))
+            {
+                if (Box != DuplicatedCollision)
+                {
+                    ToRemove.Add(Box);
+                }
+            }
+        }
+
+        for (UActorComponent* Comp : ToRemove)
+        {
+            DupActor->OwnedComponents.Remove(Comp);
+            ObjectFactory::DeleteObject(Comp);
+        }
+
+        DupActor->CollisionComponent = DuplicatedCollision;
+    }
+    else
+    {
+        // Fallback: match any existing bounding box component
+        DupActor->CollisionComponent = nullptr;
+        for (UActorComponent* Comp : DupActor->OwnedComponents)
+        {
+            if (auto* Box = Cast<UAABoundingBoxComponent>(Comp))
+            {
+                DupActor->CollisionComponent = Box;
+                break;
+            }
+        }
+    }
+
+    return DupActor;
 }
 
 void AStaticMeshActor::DuplicateSubObjects()

@@ -13,7 +13,7 @@ public:
 
     ADecalActor();
     virtual ~ADecalActor() override;
-
+    
     virtual void Tick(float DeltaTime) override;
 
     UDecalComponent* GetDecalComponent() const { return DecalComponent; }
@@ -25,6 +25,7 @@ public:
     virtual bool DeleteComponent(USceneComponent* ComponentToDelete) override;
 
     UObject* Duplicate() override;
+    UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
     void DuplicateSubObjects() override;
 
 protected:

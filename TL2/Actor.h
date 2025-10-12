@@ -99,6 +99,7 @@ public:
     void AddComponent(USceneComponent* InComponent);
     // Duplicate function
     UObject* Duplicate() override;
+    UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
     void DuplicateSubObjects() override;
 
 public:

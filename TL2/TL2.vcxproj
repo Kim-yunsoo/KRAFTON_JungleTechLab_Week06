@@ -177,6 +177,7 @@
     <ClCompile Include="FViewportClient.cpp" />
     <ClCompile Include="Level.cpp" />
     <ClCompile Include="MenuBarWidget.cpp" />
+    <ClCompile Include="Name.cpp" />
     <ClCompile Include="ObjManager.cpp" />
     <ClCompile Include="OBoundingBoxComponent.cpp" />
     <ClCompile Include="CameraActor.cpp" />

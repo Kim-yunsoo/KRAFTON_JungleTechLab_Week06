@@ -47,6 +47,33 @@ UObject* UActorComponent::Duplicate()
     return DuplicatedComponent;
 }
 
+UObject* UActorComponent::Duplicate(FObjectDuplicationParameters Parameters)
+{
+    auto DupObject = static_cast<UActorComponent*>(Super_t::Duplicate(Parameters));
+     
+    //Owner 처리
+    if (Owner)
+    {
+        // Deuplicat할 Component 체크      
+        if (auto It = Parameters.DuplicationSeed.find(Owner); It != Parameters.DuplicationSeed.end() )
+        {
+            DupObject->Owner = static_cast<AActor*>(It->second);
+        }
+        else
+        { 
+            /** @todo 플래그를 도입해서 위쪽 계층이 반영될 수 있도록 변경한다. */
+            UE_LOG("Owner는 UActorComponent보다 먼저 생성되어야 합니다.");
+            DupObject->Owner = nullptr;
+        }
+    }
+    else
+    {
+        DupObject->Owner = nullptr;
+    }
+
+    return DupObject;
+}
+
 void UActorComponent::DuplicateSubObjects()
 {
     Super_t::DuplicateSubObjects();

@@ -70,6 +70,7 @@ public:
 
     // Duplicate
     UObject* Duplicate() override;
+    UObject* Duplicate(FObjectDuplicationParameters Parameters ) override;
     void DuplicateSubObjects() override;
 
     float GetFadeInDuration() { return FadeInDuration; }

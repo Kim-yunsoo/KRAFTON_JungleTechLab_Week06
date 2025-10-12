@@ -121,6 +121,7 @@ UObject* UTextRenderComponent::Duplicate()
 
 	return DuplicatedComponent;
 }
+ 
 
 void UTextRenderComponent::DuplicateSubObjects()
 {

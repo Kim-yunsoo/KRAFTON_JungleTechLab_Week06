@@ -23,6 +23,7 @@ public:
     void ClearDefaultComponents();
 
     UObject* Duplicate() override;
+    UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
     void DuplicateSubObjects() override;
 
 protected:
