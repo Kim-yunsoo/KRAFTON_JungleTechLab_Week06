@@ -9,8 +9,8 @@ class FWindowsBinReader : public FArchive
 public:
     FWindowsBinReader(const FString& Filename)
         : FArchive(true, false) // Loading 모드
-    {
-        File.open(std::filesystem::u8path(Filename), std::ios::binary | std::ios::in);
+    { 
+        File.open(Filename, std::ios::binary | std::ios::in);
     }
     ~FWindowsBinReader() { Close(); }
 

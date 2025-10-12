@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "ObjManager.h"
 
 #include "ObjectIterator.h"
@@ -38,7 +38,7 @@ void FObjManager::Preload()
         {
             // 경로 정규화 - 절대경로로 변환하고 슬래시로 통일
             std::filesystem::path NormalizedPath = std::filesystem::absolute(Path);
-            FString PathStr = NormalizedPath.u8string();
+             FString PathStr = NormalizedPath.string();
             std::replace(PathStr.begin(), PathStr.end(), '\\', '/');
 
             // 이미 처리된 파일인지 확인
@@ -66,9 +66,9 @@ void FObjManager::Clear()
 
 FStaticMesh* FObjManager::LoadObjStaticMeshAsset(const FString& PathFileName)
 {
-    // 1) 경로 정규화 - 절대경로로 변환하고 백슬래시를 슬래시로 통일
-    std::filesystem::path NormalizedPath = std::filesystem::absolute(std::filesystem::u8path(PathFileName));
-    FString NormalizedPathStr = NormalizedPath.u8string();
+    // 1) 경로 정규화 - 절대경로로 변환하고 백슬래시를 슬래시로 통일 
+    std::filesystem::path NormalizedPath = std::filesystem::absolute(PathFileName);
+    FString NormalizedPathStr = NormalizedPath.string();
     std::replace(NormalizedPathStr.begin(), NormalizedPathStr.end(), '\\', '/');
 
     // 2) 캐시 히트 시 즉시 반환 (정규화된 경로로 검색)
@@ -84,8 +84,8 @@ FStaticMesh* FObjManager::LoadObjStaticMeshAsset(const FString& PathFileName)
 
     // 4) 해당 파일명 bin이 존재하는 지 확인
     // 존재하면 bin을 가져와서 FStaticMesh에 할당
-    // 존재하지 않으면, 아래 과정 진행 후, bin으로 저장
-    std::filesystem::path Path = std::filesystem::u8path(NormalizedPathStr);
+    // 존재하지 않으면, 아래 과정 진행 후, bin으로 저장 
+    std::filesystem::path Path(NormalizedPathStr);
     if ((Path.extension() != ".obj") && (Path.extension() != ".OBJ"))
     {
         UE_LOG("this file is not obj!: %s", NormalizedPathStr.c_str());
@@ -96,7 +96,7 @@ FStaticMesh* FObjManager::LoadObjStaticMeshAsset(const FString& PathFileName)
 
     std::filesystem::path WithoutExtensionPath = Path;
     WithoutExtensionPath.replace_extension("");
-    const FString StemPath = WithoutExtensionPath.u8string(); // 확장자를 제외한 경로
+    const FString StemPath = WithoutExtensionPath.string(); // 확장자를 제외한 경로
     const FString BinPathFileName = StemPath + ".bin";
     if (std::filesystem::exists(BinPathFileName))
     {
@@ -170,17 +170,19 @@ FStaticMesh* FObjManager::LoadObjStaticMeshAsset(const FString& PathFileName)
 
 UStaticMesh* FObjManager::LoadObjStaticMesh(const FString& PathFileName)
 {
-    // 0) 경로 정규화
-    std::filesystem::path NormalizedPath = std::filesystem::absolute(std::filesystem::u8path(PathFileName));
-    FString NormalizedPathStr = NormalizedPath.u8string();
+    // 0) 경로 정규화 
+    std::filesystem::path NormalizedPath = std::filesystem::absolute(PathFileName);
+    FString NormalizedPathStr = NormalizedPath.string();
+
     std::replace(NormalizedPathStr.begin(), NormalizedPathStr.end(), '\\', '/');
 
 	// 1) 이미 로드된 UStaticMesh가 있는지 전체 검색 (정규화된 경로로 비교)
     for (TObjectIterator<UStaticMesh> It; It; ++It)
     {
         UStaticMesh* StaticMesh = *It;
-        std::filesystem::path ExistingPath = std::filesystem::absolute(std::filesystem::u8path(StaticMesh->GetFilePath()));
-        FString ExistingNormalizedStr = ExistingPath.u8string();
+        std::filesystem::path ExistingPath = std::filesystem::absolute(StaticMesh->GetFilePath());
+        FString ExistingNormalizedStr = ExistingPath.string();
+        
         std::replace(ExistingNormalizedStr.begin(), ExistingNormalizedStr.end(), '\\', '/');
 
         if (ExistingNormalizedStr == NormalizedPathStr)
