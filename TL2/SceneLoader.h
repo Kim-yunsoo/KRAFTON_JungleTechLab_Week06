@@ -39,6 +39,14 @@ struct FComponentData
     // Type별 속성 (StaticMeshComponent 전용)
     FString StaticMesh;  // Asset path
     TArray<FString> Materials;
+
+    // DecalComponent 전용 속성
+    FString DecalTexture;  // Decal texture path
+    FVector DecalSize;  // Decal box size
+    int32 SortOrder = 0;
+    float FadeInDuration = 1.0f;
+    float FadeStartDelay = 1.0f;
+    float FadeDuration = 1.0f;
 };
 
 struct FActorData

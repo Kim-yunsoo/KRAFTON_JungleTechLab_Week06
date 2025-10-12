@@ -65,6 +65,26 @@ void AStaticMeshActor::SetCollisionComponent(EPrimitiveType InType)
     CollisionComponent->SetPrimitiveType(InType);
 }
 
+void AStaticMeshActor::ClearDefaultComponents()
+{
+    // 생성자가 만든 StaticMeshComponent 삭제
+    if (StaticMeshComponent)
+    {
+        OwnedComponents.Remove(StaticMeshComponent);
+        ObjectFactory::DeleteObject(StaticMeshComponent);
+        StaticMeshComponent = nullptr;
+        RootComponent = nullptr;
+    }
+
+    // 생성자가 만든 CollisionComponent 삭제
+    if (CollisionComponent)
+    {
+        OwnedComponents.Remove(CollisionComponent);
+        ObjectFactory::DeleteObject(CollisionComponent);
+        CollisionComponent = nullptr;
+    }
+}
+
 UObject* AStaticMeshActor::Duplicate()
 {
     // 원본(this)의 컴포넌트들 저장

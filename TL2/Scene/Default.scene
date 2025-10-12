@@ -1,67 +1,126 @@
 {
   "Version" : 2,
-  "NextUUID" : 714,
+  "NextUUID" : 931,
   "PerspectiveCamera" : {
     "FOV" : [60.000000],
     "FarClip" : [4000.000000],
-    "Location" : [-5.777772, -3.261525, 3.857491],
+    "Location" : [-6.893888, -0.392758, 2.938904],
     "NearClip" : [0.100000],
-    "Rotation" : [0.000000, 25.100010, 21.600000]
+    "Rotation" : [0.000000, 16.599997, 3.700002]
   },
   "Actors" : [
     {
-      "UUID" : 530,
-      "Type" : "ADecalActor",
-      "Name" : "Decal_0",
-      "RootComponentUUID" : 531
-    },
-    {
-      "UUID" : 539,
+      "UUID" : 881,
       "Type" : "AStaticMeshActor",
       "Name" : "Cube_0",
-      "RootComponentUUID" : 541
+      "RootComponentUUID" : 883
+    },
+    {
+      "UUID" : 885,
+      "Type" : "ADecalActor",
+      "Name" : "DecalActor_0",
+      "RootComponentUUID" : 887
+    },
+    {
+      "UUID" : 888,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Cube_1",
+      "RootComponentUUID" : 890
+    },
+    {
+      "UUID" : 893,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Cube_2",
+      "RootComponentUUID" : 895
+    },
+    {
+      "UUID" : 897,
+      "Type" : "ADecalActor",
+      "Name" : "DecalActor_1",
+      "RootComponentUUID" : 899
     }
   ],
   "Components" : [
     {
-      "UUID" : 531,
-      "OwnerActorUUID" : 530,
+      "UUID" : 883,
+      "OwnerActorUUID" : 881,
       "ParentComponentUUID" : 0,
-      "Type" : "USceneComponent",
-      "RelativeLocation" : [-0.750271, 0.000000, 0.000000],
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [0.000000, -2.175713, 0.000000],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.050000, 1.050000, 1.050000]
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/Cube.obj"
     },
     {
-      "UUID" : 537,
-      "OwnerActorUUID" : 530,
-      "ParentComponentUUID" : 531,
+      "UUID" : 884,
+      "OwnerActorUUID" : 881,
+      "ParentComponentUUID" : 883,
       "Type" : "UAABoundingBoxComponent",
       "RelativeLocation" : [0.000000, 0.000000, 0.000000],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000]
     },
     {
-      "UUID" : 532,
-      "OwnerActorUUID" : 530,
-      "ParentComponentUUID" : 531,
+      "UUID" : 887,
+      "OwnerActorUUID" : 885,
+      "ParentComponentUUID" : 0,
+      "Type" : "UDecalComponent",
+      "RelativeLocation" : [0.000000, -2.165182, 0.000000],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "DecalTexture" : "Editor/Decal/DefaultDecalTexture.jpg",
+      "DecalSize" : [1.000000, 1.000000, 1.000000],
+      "SortOrder" : 0,
+      "FadeInDuration" : 1.000000,
+      "FadeStartDelay" : 1.000000,
+      "FadeDuration" : 1.000000
+    },
+    {
+      "UUID" : 886,
+      "OwnerActorUUID" : 885,
+      "ParentComponentUUID" : 0,
+      "Type" : "USceneComponent",
+      "RelativeLocation" : [0.000000, 0.000000, 0.000000],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000]
+    },
+    {
+      "UUID" : 890,
+      "OwnerActorUUID" : 888,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [0.000000, 2.248012, 0.000000],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/Cube.obj"
+    },
+    {
+      "UUID" : 891,
+      "OwnerActorUUID" : 888,
+      "ParentComponentUUID" : 890,
+      "Type" : "UAABoundingBoxComponent",
+      "RelativeLocation" : [0.000000, 0.000000, 0.000000],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000]
+    },
+    {
+      "UUID" : 892,
+      "OwnerActorUUID" : 888,
+      "ParentComponentUUID" : 890,
       "Type" : "UDecalComponent",
       "RelativeLocation" : [0.000000, 0.000000, 0.000000],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000]
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "DecalTexture" : "Editor/Decal/DefaultDecalTexture.jpg",
+      "DecalSize" : [1.000000, 1.000000, 1.000000],
+      "SortOrder" : 0,
+      "FadeInDuration" : 3.000000,
+      "FadeStartDelay" : 3.000000,
+      "FadeDuration" : 3.000000
     },
     {
-      "UUID" : 538,
-      "OwnerActorUUID" : 530,
-      "ParentComponentUUID" : 531,
-      "Type" : "UOBoundingBoxComponent",
-      "RelativeLocation" : [0.000000, 0.000000, 0.000000],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000]
-    },
-    {
-      "UUID" : 541,
-      "OwnerActorUUID" : 539,
+      "UUID" : 895,
+      "OwnerActorUUID" : 893,
       "ParentComponentUUID" : 0,
       "Type" : "UStaticMeshComponent",
       "RelativeLocation" : [0.000000, 0.000000, 0.000000],
@@ -70,13 +129,37 @@
       "StaticMesh" : "Data/Cube.obj"
     },
     {
-      "UUID" : 542,
-      "OwnerActorUUID" : 539,
-      "ParentComponentUUID" : 541,
+      "UUID" : 896,
+      "OwnerActorUUID" : 893,
+      "ParentComponentUUID" : 895,
       "Type" : "UAABoundingBoxComponent",
       "RelativeLocation" : [0.000000, 0.000000, 0.000000],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000]
+    },
+    {
+      "UUID" : 898,
+      "OwnerActorUUID" : 897,
+      "ParentComponentUUID" : 0,
+      "Type" : "USceneComponent",
+      "RelativeLocation" : [0.000000, 0.000000, 0.000000],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000]
+    },
+    {
+      "UUID" : 899,
+      "OwnerActorUUID" : 897,
+      "ParentComponentUUID" : 0,
+      "Type" : "UDecalComponent",
+      "RelativeLocation" : [0.000000, 0.000000, 0.000000],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "DecalTexture" : "Editor/Decal/Before.png",
+      "DecalSize" : [1.000000, 1.000000, 1.000000],
+      "SortOrder" : 0,
+      "FadeInDuration" : 1.000000,
+      "FadeStartDelay" : 3.000000,
+      "FadeDuration" : 1.000000
     }
   ]
 }
