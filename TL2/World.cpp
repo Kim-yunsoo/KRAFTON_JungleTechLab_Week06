@@ -304,11 +304,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 		{
 			continue;
 		}
-		if (Cast<AStaticMeshActor>(Actor) &&
-			!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
-		{
-			continue;
-		}
+		
 		AllActorCount++;
 		for (UActorComponent* Component : Actor->GetComponents())
 		{
@@ -323,6 +319,15 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 				{
 					continue;
 				}
+			}
+
+			// Static Mesh Component의 경우 SF_StaticMeshes 확인
+            if (UStaticMeshComponent* StaticMeshComp = Cast<UStaticMeshComponent>(Component))
+            {
+                if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
+                {
+                    continue;
+                }
 			}
 
 			if (Cast<UTextRenderComponent>(Component) &&
