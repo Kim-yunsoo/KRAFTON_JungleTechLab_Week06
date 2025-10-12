@@ -143,11 +143,13 @@ void AGizmoActor::Tick(float DeltaSeconds)
 	}
 	UpdateComponentVisibility();
 }
-void AGizmoActor::Render(ACameraActor* Camera, FViewport* Viewport) {
 
-UpdateConstantScreenScale(Camera, Viewport);
+void AGizmoActor::Render(ACameraActor* Camera, FViewport* Viewport) 
+{
 
-TArray<USceneComponent*>* Components = GetGizmoComponents();
+	UpdateConstantScreenScale(Camera, Viewport);
+
+	TArray<USceneComponent*>* Components = GetGizmoComponents();
 	if (!Components) return;
 
 
@@ -166,8 +168,6 @@ TArray<USceneComponent*>* Components = GetGizmoComponents();
 	FVector2D ViewportMousePos(static_cast<float>(UInputManager::GetInstance().GetMousePosition().X) + ViewportOffset.X,
 		static_cast<float>(UInputManager::GetInstance().GetMousePosition().Y) + ViewportOffset.Y);
 
-
-
 	for (int32 i = 0; i < Components->Num(); ++i)
 	{
 		USceneComponent* Component = (*Components)[i];
@@ -181,16 +181,16 @@ TArray<USceneComponent*>* Components = GetGizmoComponents();
 		ModelMatrix = Component->GetWorldMatrix();
 		Renderer->UpdateConstantBuffer(ModelMatrix, ViewMatrix, ProjectionMatrix);
 
-		
-			if (GizmoAxis== i + 1)
-			{
-				Renderer->UpdateHighLightConstantBuffer(true, rgb, i + 1, 1, 0, 1);
-			}
-			else
-			{
-				Renderer->UpdateHighLightConstantBuffer(true, rgb, i + 1, 0, 0, 1);
-			}
-		
+
+		if (GizmoAxis == i + 1)
+		{
+			Renderer->UpdateHighLightConstantBuffer(true, rgb, i + 1, 1, 0, 1);
+		}
+		else
+		{
+			Renderer->UpdateHighLightConstantBuffer(true, rgb, i + 1, 0, 0, 1);
+		}
+
 
 		if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
 		{
@@ -198,7 +198,7 @@ TArray<USceneComponent*>* Components = GetGizmoComponents();
 			Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
 			Renderer->OMSetBlendState(true); // 필요 시
 
-			Primitive->Render(Renderer, ViewMatrix, ProjectionMatrix);
+			Primitive->Render(Renderer, ViewMatrix, ProjectionMatrix, Viewport);
 			// 상태 복구
 			Renderer->OMSetBlendState(false);
 			Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);

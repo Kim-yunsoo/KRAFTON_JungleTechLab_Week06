@@ -26,7 +26,7 @@ protected:
     ~UStaticMeshComponent() override;
 
 public:
-    void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj) override;
+    void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj, FViewport* Viewport) override;
 
     void SetStaticMesh(const FString& PathFileName);
     UStaticMesh* GetStaticMesh() const { return StaticMesh; }
@@ -56,5 +56,16 @@ protected:
     UStaticMesh* StaticMesh = nullptr;
     // [PIE] 값 복사 (배열 전체 값 복사)
     TArray<FMaterialSlot> MaterailSlots;
+
+private:
+    // Bounding Box 렌더링 메서드
+    void RenderBoundingBox(URenderer* Renderer);
+
+    // Line 데이터 생성 헬퍼
+    void CreateLineData(
+        const FVector& Min, const FVector& Max,
+        TArray<FVector>& OutStart,
+        TArray<FVector>& OutEnd,
+        TArray<FVector4>& OutColor);
 };
 

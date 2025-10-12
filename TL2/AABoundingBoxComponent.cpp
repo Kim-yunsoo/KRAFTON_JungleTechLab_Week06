@@ -45,7 +45,7 @@ void UAABoundingBoxComponent::SetMinMax(const FBound& Bound)
     LocalMax = Bound.Max;
 }
 
-void UAABoundingBoxComponent::Render(URenderer* Renderer, const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix)
+void UAABoundingBoxComponent::Render(URenderer* Renderer, const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport)
 {
   //  if (USelectionManager::GetInstance().GetSelectedActor() == GetOwner())
     //{

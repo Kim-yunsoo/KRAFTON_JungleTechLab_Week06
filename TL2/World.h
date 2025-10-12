@@ -26,7 +26,7 @@ class UOctree;
 class FBVH;
 class ULevel;
 
-struct FFrustum;
+class FFrustum;
 /**
  * UWorld
  * - 월드 단위의 액터/타임/매니저 관리 클래스

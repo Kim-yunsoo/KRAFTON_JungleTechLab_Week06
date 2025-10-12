@@ -134,7 +134,7 @@ public:
     // [PIE] RootComponent 복사가 끝나면 자식 컴포넌트를 순회하면서 OwnedComponents에 루트와 하위 컴포넌트 모두 추가
     TSet<UActorComponent*> OwnedComponents;
     
-    // [PIE] ???
+	// Deprecated: Actor가 직접 CollisionComponent를 가지지 않음
     UAABoundingBoxComponent* CollisionComponent = nullptr;
 
     // [PIE] 외부에서 초기화, Level로 변경 필요?
