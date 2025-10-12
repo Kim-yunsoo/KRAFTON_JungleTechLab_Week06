@@ -764,6 +764,39 @@ struct alignas(16) FMatrix
     static FMatrix LookAtLH(const FVector& Eye, const FVector& At, const FVector& Up);
     static FMatrix PerspectiveFovLH(float FovY, float Aspect, float Zn, float Zf);
     static FMatrix OrthoLH(float Width, float Height, float Zn, float Zf);
+
+    // Position 변환 (w=1.0 가정)
+    FVector TransformPosition(const FVector& V) const
+    {
+        // Row-major 행렬이므로: Result = V * M (벡터를 행으로 취급)
+        // Translation은 M[3][0-2]에 위치
+        return FVector(
+            V.X * M[0][0] + V.Y * M[1][0] + V.Z * M[2][0] + M[3][0],
+            V.X * M[0][1] + V.Y * M[1][1] + V.Z * M[2][1] + M[3][1],
+            V.X * M[0][2] + V.Y * M[1][2] + V.Z * M[2][2] + M[3][2]
+        );
+    }
+
+    // Direction 변환 (w=0.0 가정, Translation 무시)
+    FVector TransformVector(const FVector& V) const
+    {
+        return FVector(
+            V.X * M[0][0] + V.Y * M[1][0] + V.Z * M[2][0],
+            V.X * M[0][1] + V.Y * M[1][1] + V.Z * M[2][1],
+            V.X * M[0][2] + V.Y * M[1][2] + V.Z * M[2][2]
+        );
+    }
+
+    // FVector4 변환 (w 포함 완전 변환)
+    FVector4 TransformPosition(const FVector4& V) const
+    {
+        return FVector4(
+            V.X * M[0][0] + V.Y * M[1][0] + V.Z * M[2][0] + V.W * M[3][0],
+            V.X * M[0][1] + V.Y * M[1][1] + V.Z * M[2][1] + V.W * M[3][1],
+            V.X * M[0][2] + V.Y * M[1][2] + V.Z * M[2][2] + V.W * M[3][2],
+            V.X * M[0][3] + V.Y * M[1][3] + V.Z * M[2][3] + V.W * M[3][3]
+        );
+    }
 };
 
 //Without Last RC

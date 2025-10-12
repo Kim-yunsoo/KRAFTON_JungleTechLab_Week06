@@ -20,6 +20,7 @@
 #include "UEContainer.h"
 #include "DecalComponent.h"
 #include "DecalActor.h"
+#include "BillboardComponent.h"
 #include "RenderingStats.h"
 
 extern float CLIENTWIDTH;
@@ -92,11 +93,17 @@ UWorld::~UWorld()
     }
     else if (WorldType == EWorldType::PIE)
     {
+        // PIE 월드의 BVH 정리 (PIE 전용으로 새로 생성했으므로 삭제 필요)
+        if (BVH)
+        {
+            delete BVH;
+            BVH = nullptr;
+        }
+
         // PIE 월드는 공유 포인터만 nullptr로 설정 (삭제하지 않음)
         MainCameraActor = nullptr;
         GridActor = nullptr;
         GizmoActor = nullptr;
-        BVH = nullptr;
         Renderer = nullptr;
         MainViewport = nullptr;
         MultiViewport = nullptr;
@@ -159,9 +166,14 @@ void UWorld::Initialize()
     InitializeGrid();
     InitializeGizmo();
 
+    // BVH 초기화 (빈 상태로 시작)
+    if (!BVH)
+    {
+        BVH = new FBVH();
+    }
 
     // 액터 간 참조 설정
-    //SetupActorReferences(); 
+    //SetupActorReferences();
 }
 
 void UWorld::InitializeMainCamera() 
@@ -293,11 +305,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 		{
 			continue;
 		}
-		if (Cast<AStaticMeshActor>(Actor) &&
-			!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
-		{
-			continue;
-		}
+		
 		AllActorCount++;
 		for (UActorComponent* Component : Actor->GetComponents())
 		{
@@ -312,6 +320,15 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 				{
 					continue;
 				}
+			}
+
+			// Static Mesh Component의 경우 SF_StaticMeshes 확인
+            if (UStaticMeshComponent* StaticMeshComp = Cast<UStaticMeshComponent>(Component))
+            {
+                if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
+                {
+                    continue;
+                }
 			}
 
 			if (Cast<UTextRenderComponent>(Component) &&
@@ -337,12 +354,13 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 				}
 			}
 
-			// 데칼 컴포넌트는 Pass 2에서 렌더링
-			if (Cast<UDecalComponent>(Component))
-			{
-				++TotalDecalCount;
-				continue;
-			}
+			// Decal Component인 경우 Editor Visuals만 렌더링 (실제 데칼 투영은 패스 2에서)
+            if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
+            {
+                DecalComp->RenderEditorVisuals(Renderer, ViewMatrix, ProjectionMatrix);
+				TotalDecalCount++;
+                continue;
+            }
 
 			// Decal Actor의 Billboard Component인 경우 SF_Decals 확인
 			if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Component))
@@ -382,17 +400,19 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 
     // 엔진 액터들 (그리드 등) 렌더링
     RenderEngineActors(ViewMatrix, ProjectionMatrix, Viewport);
-    // Pass 2: 데칼 렌더링 (Depth 버퍼를 읽어서 다른 오브젝트 위에 투영)
-    if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals))
+
+    URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
+    
+    // Pass 2: 데칼 렌더링
+    StatsCollector.BeginDecalPass();
+
+    FDecalRenderingStats& DecalStats = StatsCollector.GetDecalStats();
+    DecalStats.TotalDecalCount = TotalDecalCount;
+
+    if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives) &&
+        Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals) &&
+        Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
     {
-        URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
-        StatsCollector.BeginDecalPass();
-
-		FDecalRenderingStats& DecalStats = StatsCollector.GetDecalStats();
-
-        // 기본 카운트 설정
-        DecalStats.TotalDecalCount = TotalDecalCount;
-
         for (AActor* Actor : LevelActors)
         {
             if (!Actor || Actor->GetActorHiddenInGame())
@@ -402,20 +422,14 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 
             for (UActorComponent* Component : Actor->GetComponents())
             {
-                if (Component)
+                if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
                 {
-                    // 데칼 컴포넌트만 렌더링
-                    if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
-                    {
-                        DecalComp->Render(Renderer, ViewMatrix, ProjectionMatrix);
-                    }
+                    DecalComp->RenderDecalProjection(Renderer, ViewMatrix, ProjectionMatrix);
                 }
             }
         }
-
-        // 데칼 패스 종료 (타이머 종료 + 평균 계산 + 히스토리 업데이트)
-        StatsCollector.EndDecalPass();
     }
+    StatsCollector.EndDecalPass();
 
 	Renderer->EndLineBatch(FMatrix::Identity(), ViewMatrix, ProjectionMatrix);
 }
@@ -514,6 +528,9 @@ void UWorld::Tick(float DeltaSeconds)
 
     //InputManager.Update();
     UIManager.Update(DeltaSeconds);
+
+    // BVH 업데이트 (Transform 변경이 있을 경우)
+    UpdateBVHIfNeeded();
 }
 
 float UWorld::GetTimeSeconds() const
@@ -576,6 +593,9 @@ bool UWorld::DestroyActor(AActor* Actor)
         ObjectFactory::DeleteObject(Actor);
         // 삭제된 액터 정리
         USelectionManager::GetInstance().CleanupInvalidActors();
+
+        // BVH 더티 플래그 설정
+        MarkBVHDirty();
 
         return true; // 성공적으로 삭제
     }
@@ -883,8 +903,6 @@ void UWorld::LoadScene(const FString& SceneName)
     const uint32 SafeNext = std::max({DuringLoadNext, MaxAssignedUUID + 1, PreLoadNext});
     UObject::SetNextUUID(SafeNext);
 
-
-
     if (Level)
     {
         InitializeSceneGraph(Level->GetActors());
@@ -1031,6 +1049,32 @@ void UWorld::SaveSceneV2(const FString& SceneName)
                 }
                 // TODO: Materials 수집
             }
+            else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Comp))
+            {
+                // DecalComponent 속성 저장
+                if (DecalComp->GetDecalTexture())
+                {
+                    CompData.DecalTexture = DecalComp->GetDecalTexture()->GetFilePath();
+                }
+                CompData.DecalSize = DecalComp->GetDecalSize();
+                CompData.FadeInDuration = DecalComp->GetFadeInDuration();
+                CompData.FadeStartDelay = DecalComp->GetFadeStartDelay();
+                CompData.FadeDuration = DecalComp->GetFadeDuration();
+                // SortOrder는 기본값 0 사용
+            }
+            else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Comp))
+            {
+                // BillboardComponent 속성 저장
+                CompData.BillboardTexturePath = BillboardComp->GetTexturePath();
+                CompData.BillboardWidth = BillboardComp->GetBillboardWidth();
+                CompData.BillboardHeight = BillboardComp->GetBillboardHeight();
+                CompData.UCoord = BillboardComp->GetU();
+                CompData.VCoord = BillboardComp->GetV();
+                CompData.ULength = BillboardComp->GetUL();
+                CompData.VLength = BillboardComp->GetVL();
+                CompData.bIsScreenSizeScaled = BillboardComp->IsScreenSizeScaled();
+                CompData.ScreenSize = BillboardComp->GetScreenSize();
+            }
 
             SceneData.Components.push_back(CompData);
         }
@@ -1116,6 +1160,17 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         NewActor->SetName(ActorData.Name);
         NewActor->SetWorld(this);
 
+        // DecalActor의 경우 생성자가 만든 DecalComponent를 삭제
+        if (ADecalActor* DecalActor = Cast<ADecalActor>(NewActor))
+        {
+            DecalActor->ClearDefaultComponents();
+        }
+        // StaticMeshActor의 경우 생성자가 만든 컴포넌트들을 삭제
+        else if (AStaticMeshActor* StaticMeshActor = Cast<AStaticMeshActor>(NewActor))
+        {
+            StaticMeshActor->ClearDefaultComponents();
+        }
+
         ActorMap.Add(ActorData.UUID, NewActor);
     }
 
@@ -1143,6 +1198,30 @@ void UWorld::LoadSceneV2(const FString& SceneName)
                 SMC->SetStaticMesh(CompData.StaticMesh);
             }
             // TODO: Materials 복원
+        }
+        else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(NewComp))
+        {
+            // DecalComponent 속성 복원
+            if (!CompData.DecalTexture.empty())
+            {
+                DecalComp->SetDecalTexture(CompData.DecalTexture);
+            }
+            DecalComp->SetDecalSize(CompData.DecalSize);
+            DecalComp->SetFadeInDuration(CompData.FadeInDuration);
+            DecalComp->SetFadeStartDelay(CompData.FadeStartDelay);
+            DecalComp->SetFadeDuration(CompData.FadeDuration);
+        }
+        else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(NewComp))
+        {
+            // BillboardComponent 속성 복원
+            if (!CompData.BillboardTexturePath.empty())
+            {
+                BillboardComp->SetTexture(CompData.BillboardTexturePath);
+            }
+            BillboardComp->SetBillboardSize(CompData.BillboardWidth, CompData.BillboardHeight);
+            BillboardComp->SetUVCoords(CompData.UCoord, CompData.VCoord, CompData.ULength, CompData.VLength);
+            BillboardComp->SetScreenSizeScaled(CompData.bIsScreenSizeScaled);
+            BillboardComp->SetScreenSize(CompData.ScreenSize);
         }
 
         // Owner Actor 설정
@@ -1217,6 +1296,12 @@ void UWorld::LoadSceneV2(const FString& SceneName)
                 }
             }
         }
+        // DecalActor 전용 포인터 재설정
+        else if (ADecalActor* DecalActor = Cast<ADecalActor>(Actor))
+        {
+            // RootComponent를 DecalComponent로 재설정
+            DecalActor->SetDecalComponent(Cast<UDecalComponent>(DecalActor->RootComponent));
+        }
     }
 
     // NextUUID 업데이트 (로드된 모든 UUID + 1)
@@ -1226,6 +1311,7 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         UObject::SetNextUUID(MaxUUID);
     }
 
+    BVH->Build(Level->GetActors());
     UE_LOG("Scene V2 loaded successfully: %s", SceneName.c_str());
 }
 
@@ -1264,6 +1350,9 @@ UWorld* UWorld::DuplicateWorldForPIE(UWorld* EditorWorld)
 
     // GridActor 공유 (선택적)
     PIEWorld->GridActor = nullptr;
+
+    // BVH 초기화 (PIE 월드용으로 새로 생성)
+    PIEWorld->BVH = new FBVH();
 
     // Level 복제
     if (EditorWorld->GetLevel())
@@ -1309,6 +1398,12 @@ UWorld* UWorld::DuplicateWorldForPIE(UWorld* EditorWorld)
 
 void UWorld::InitializeActorsForPlay()
 {
+    // PIE 월드의 BVH 빌드
+    if (BVH && Level)
+    {
+        BVH->Build(Level->GetActors());
+    }
+
     // 모든 액터의 BeginPlay 호출
     if (Level)
     {
@@ -1343,8 +1438,8 @@ void UWorld::CleanupWorld()
 void UWorld::SpawnActor(AActor* InActor)
 {
     InActor->SetWorld(this);
-  
- 
+
+
         if (UStaticMeshComponent* ActorComp = Cast<UStaticMeshComponent>(InActor->RootComponent))
         {
             FString ActorName = GenerateUniqueActorName(
@@ -1352,6 +1447,56 @@ void UWorld::SpawnActor(AActor* InActor)
             );
             InActor->SetName(ActorName);
         }
-   
+
     Level->GetActors().Add(InActor);
+
+    // BVH 더티 플래그 설정
+    MarkBVHDirty();
+}
+
+void UWorld::MarkBVHDirty()
+{
+    if (BVH)
+    {
+        BVH->MarkDirty();
+    }
+}
+
+void UWorld::UpdateBVHIfNeeded()
+{
+    // BVH가 없으면 생성
+    if (!BVH)
+    {
+        BVH = new FBVH();
+    }
+
+    if (!Level)
+    {
+        return;
+    }
+
+    bool bShouldRebuild = false;
+
+    // 1. 더티 플래그 체크
+    if (BVH->IsDirty())
+    {
+        bShouldRebuild = true;
+    }
+
+    // 2. 주기적 재빌드 체크 (BVHRebuildInterval > 0일 때만)
+    if (BVHRebuildInterval > 0)
+    {
+        BVHFrameCounter++;
+        if (BVHFrameCounter >= BVHRebuildInterval)
+        {
+            BVHFrameCounter = 0;
+            bShouldRebuild = true;
+        }
+    }
+
+    // 재빌드 수행
+    if (bShouldRebuild)
+    {
+        BVH->Build(Level->GetActors()); // Rebuild 대신 Build 사용 (더티 플래그 체크 없이 무조건 빌드)
+    }
 }

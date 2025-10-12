@@ -12,32 +12,45 @@ ADecalActor::ADecalActor()
 {
     // DecalComponent 생성 및 컴포넌트 생성
     DecalComponent = CreateDefaultSubobject<UDecalComponent>(FName("DecalComponent")); 
-    DecalComponent->SetupAttachment(RootComponent);
+    //DecalComponent->SetupAttachment(RootComponent);
 
-    BillboardComponent = CreateDefaultSubobject<UBillboardComponent>(FName("BillboardComponent"));
-    BillboardComponent->SetWorldLocation(FVector(0.f, 0.f, 0.f));
-    BillboardComponent->SetupAttachment(RootComponent);
+    RootComponent = DecalComponent;
 }
 
 ADecalActor::~ADecalActor()
 {
+    if (DecalComponent)
+    {
+        ObjectFactory::DeleteObject(DecalComponent);
+    }
+    DecalComponent = nullptr;
 }
 
 void ADecalActor::Tick(float DeltaTime)
 {
     Super_t::Tick(DeltaTime);
-
-    // Fade 업데이트
-    if (DecalComponent)
-    {
-        DecalComponent->DecalAnimTick(DeltaTime);
-    }
 }
 
 void ADecalActor::SetDecalComponent(UDecalComponent* InDecalComponent)
 {
     DecalComponent = InDecalComponent;
-    DecalComponent->SetupAttachment(RootComponent);
+    // RootComponent가 DecalComponent와 다를 때만 Attach
+    if (DecalComponent && RootComponent && DecalComponent != RootComponent)
+    {
+        DecalComponent->SetupAttachment(RootComponent);
+    }
+}
+
+void ADecalActor::ClearDefaultComponents()
+{
+    // 생성자가 만든 DecalComponent를 삭제
+    if (DecalComponent)
+    {
+        OwnedComponents.Remove(DecalComponent);
+        ObjectFactory::DeleteObject(DecalComponent);
+        DecalComponent = nullptr;
+        RootComponent = nullptr;
+    }
 }
 
 bool ADecalActor::DeleteComponent(USceneComponent* ComponentToDelete)
@@ -64,13 +77,6 @@ UObject* ADecalActor::Duplicate()
         DuplicatedActor->OwnedComponents.Remove(DuplicatedActor->DecalComponent);
         ObjectFactory::DeleteObject(DuplicatedActor->DecalComponent);
         DuplicatedActor->DecalComponent = nullptr; 
-    }
-
-    if (DuplicatedActor->BillboardComponent)
-    {
-        DuplicatedActor->OwnedComponents.Remove(DuplicatedActor->BillboardComponent);
-        ObjectFactory::DeleteObject(DuplicatedActor->BillboardComponent);
-        DuplicatedActor->BillboardComponent = nullptr;
     }
 
     DuplicatedActor->RootComponent = nullptr;

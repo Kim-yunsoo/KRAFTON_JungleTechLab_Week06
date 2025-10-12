@@ -8,7 +8,7 @@
 #include <cfloat>
 
 
-FBVH::FBVH() : MaxDepth(0)
+FBVH::FBVH() : MaxDepth(0), bIsDirty(false)
 {
 }
 
@@ -38,25 +38,42 @@ void FBVH::Build(const TArray<AActor*>& Actors)
         if (!Actor || Actor->GetActorHiddenInGame())
             continue;
 
-        const FBound* ActorBounds_Local = nullptr;
-        bool bHasBounds = false;
+        // Actor의 모든 UStaticMeshComponent를 포함하는 FBound 계산
+        FBound CombinedBounds;
+        bool bHasValidBounds = false;
 
-        if (const AStaticMeshActor* StaticMeshActor = Cast<const AStaticMeshActor>(Actor))
+        // Actor의 모든 컴포넌트 순회
+        const TSet<UActorComponent*>& Components = Actor->GetComponents();
+        for (UActorComponent* Component : Components)
         {
-            for (auto Component : StaticMeshActor->GetComponents()) // 최적화: AABB 컴포넌트만 검색
+            // UStaticMeshComponent만 처리
+            if (UStaticMeshComponent* StaticMeshComp = Cast<UStaticMeshComponent>(Component))
             {
-                if (UAABoundingBoxComponent* AABBComponent = Cast<UAABoundingBoxComponent>(Component))
+                // StaticMesh가 없으면 스킵
+                if (!StaticMeshComp->GetStaticMesh())
+                    continue;
+
+                // 해당 컴포넌트의 World AABB 가져오기
+                FBound ComponentBounds = StaticMeshComp->GetWorldBoundingBox();
+
+                if (!bHasValidBounds)
                 {
-                    ActorBounds_Local = AABBComponent->GetFBound();
-                    bHasBounds = true;
-                    break;
+                    // 첫 번째 유효한 바운드
+                    CombinedBounds = ComponentBounds;
+                    bHasValidBounds = true;
+                }
+                else
+                {
+                    // 기존 바운드와 합치기 (+= 연산자 사용)
+                    CombinedBounds += ComponentBounds;
                 }
             }
         }
 
-        if (bHasBounds)
+        // 유효한 바운드가 있을 때만 추가
+        if (bHasValidBounds)
         {
-            FActorBounds AB(Actor, *ActorBounds_Local);
+            FActorBounds AB(Actor, CombinedBounds);
             ActorBounds.Add(AB);
             ActorIndices.Add(ActorBounds.Num() - 1);
         }
@@ -75,10 +92,22 @@ void FBVH::Build(const TArray<AActor*>& Actors)
     uint64_t BuildCycles = BVHBuildTimer.Finish();
     double BuildTimeMs = FPlatformTime::ToMilliseconds(BuildCycles);
 
-    char buf[256];
-    sprintf_s(buf, "[BVH] Built for %d actors, %d nodes, depth %d (Time: %.3fms)\n",
-        ActorBounds.Num(), Nodes.Num(), MaxDepth, BuildTimeMs);
+    // 빌드 완료 후 더티 플래그 해제
+    bIsDirty = false;
+}
+
+void FBVH::Rebuild(const TArray<AActor*>& Actors)
+{
+    if (!bIsDirty)
+    {
+        return; // 더티 플래그가 없으면 재빌드 불필요
+    }
+
+    char buf[128];
+    sprintf_s(buf, "[BVH] Rebuilding BVH...\n");
     UE_LOG(buf);
+
+    Build(Actors);
 }
 
 void FBVH::Clear()
@@ -87,6 +116,7 @@ void FBVH::Clear()
     ActorBounds.Empty();
     ActorIndices.Empty();
     MaxDepth = 0;
+    bIsDirty = false;
 }
 
 AActor* FBVH::Intersect(const FVector& RayOrigin, const FVector& RayDirection, float& OutDistance) const
@@ -489,4 +519,59 @@ bool FBVH::IntersectActor(const AActor* Actor, const FVector& RayOrigin, const F
 
     //return CPickingSystem::CheckActorPicking(Actor, Ray, OutDistance);
     return false;
+}
+
+// AABB와 교차하는 모든 액터 찾기
+void FBVH::IntersectAABB(const FBound& QueryAABB, TArray<AActor*>& OutActors) const
+{
+    if (Nodes.Num() == 0)
+        return;
+
+    // 루트 노드부터 재귀 탐색
+    IntersectAABBNode(0, QueryAABB, OutActors);
+}
+
+// AABB 교차 검사용 재귀 함수
+void FBVH::IntersectAABBNode(int NodeIndex, const FBound& QueryAABB, TArray<AActor*>& OutActors) const
+{
+    if (NodeIndex < 0 || NodeIndex >= Nodes.Num())
+        return;
+
+    const FBVHNode& Node = Nodes[NodeIndex];
+
+    // 노드의 AABB와 Query AABB가 교차하는지 확인
+    if (!Node.BoundingBox.IsIntersect(QueryAABB))
+        return;
+
+    // 리프 노드인 경우 액터들 추가
+    if (Node.IsLeaf())
+    {
+        for (int i = 0; i < Node.ActorCount; ++i)
+        {
+            int ActorIndex = ActorIndices[Node.FirstActor + i];
+            AActor* Actor = ActorBounds[ActorIndex].Actor;
+
+            if (Actor && !Actor->GetActorHiddenInGame())
+            {
+                // 액터의 실제 AABB와 Query AABB가 교차하는지 확인
+                const FBound& ActorAABB = ActorBounds[ActorIndex].Bounds;
+                if (ActorAABB.IsIntersect(QueryAABB))
+                {
+                    OutActors.Add(Actor);
+                }
+            }
+        }
+        return;
+    }
+
+    // 내부 노드인 경우 자식 노드들 재귀 탐색
+    if (Node.LeftChild >= 0)
+    {
+        IntersectAABBNode(Node.LeftChild, QueryAABB, OutActors);
+    }
+
+    if (Node.RightChild >= 0)
+    {
+        IntersectAABBNode(Node.RightChild, QueryAABB, OutActors);
+    }
 }

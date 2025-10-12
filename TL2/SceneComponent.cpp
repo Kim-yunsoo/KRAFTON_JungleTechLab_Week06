@@ -35,6 +35,10 @@ USceneComponent::~USceneComponent()
     }
 }
 
+void USceneComponent::TickComponent(float DeltaSeconds)
+{
+}
+
 // ──────────────────────────────
 // Relative API
 // ──────────────────────────────

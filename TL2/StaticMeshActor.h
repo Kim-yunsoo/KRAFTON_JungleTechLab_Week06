@@ -19,6 +19,9 @@ public:
     void SetStaticMeshComponent(UStaticMeshComponent* InStaticMeshComponent);
 	void SetCollisionComponent(EPrimitiveType InType = EPrimitiveType::Default);
 
+    // Scene 로드 시 생성자가 만든 기본 컴포넌트를 삭제하기 위한 메서드
+    void ClearDefaultComponents();
+
     UObject* Duplicate() override;
     UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
     void DuplicateSubObjects() override;

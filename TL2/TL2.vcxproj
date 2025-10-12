@@ -285,6 +285,7 @@
     <ClCompile Include="UI\GlobalConsole.cpp" />
     <ClCompile Include="UI\ImGui\ImGuiHelper.cpp" />
     <ClCompile Include="UI\UIManager.cpp" />
+    <ClCompile Include="UI\Widget\ActorSpawnWidget.cpp" />
     <ClCompile Include="UI\Widget\ActorTerminationWidget.cpp" />
     <ClCompile Include="UI\Widget\CameraControlWIdget.cpp" />
     <ClCompile Include="UI\Widget\ConsoleWidget.cpp" />
@@ -449,6 +450,7 @@
     <ClInclude Include="UI\GlobalConsole.h" />
     <ClInclude Include="UI\ImGui\ImGuiHelper.h" />
     <ClInclude Include="UI\UIManager.h" />
+    <ClInclude Include="UI\Widget\ActorSpawnWidget.h" />
     <ClInclude Include="UI\Widget\ActorTerminationWidget.h" />
     <ClInclude Include="UI\Widget\CameraControlWidget.h" />
     <ClInclude Include="UI\Widget\ConsoleWidget.h" />

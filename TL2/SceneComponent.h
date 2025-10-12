@@ -23,6 +23,9 @@ protected:
 
 
 public:
+    // Tick
+    virtual void TickComponent(float DeltaSeconds) override;
+
     // ──────────────────────────────
     // Relative Transform API
     // ──────────────────────────────

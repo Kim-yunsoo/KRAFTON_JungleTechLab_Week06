@@ -28,8 +28,17 @@ public:
 
     UDecalComponent();
     virtual ~UDecalComponent() override;
+
+    virtual void TickComponent(float DeltaSeconds) override;
     
+	// 전체 렌더링 (Editor + 실제 데칼 투영)
     void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
+
+    // Editor 비주얼만 렌더링
+    void RenderEditorVisuals(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
+
+    // 실제 Decal 투영만 렌더링
+    void RenderDecalProjection(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
 
     // Decal Box와 충돌하는 Static Mesh 컴포넌트 찾기
     TArray<UStaticMeshComponent*> FindAffectedMeshes(UWorld* World);
@@ -73,9 +82,10 @@ public:
     void SetFadeDuration(float Value) { FadeDuration = Value; }
 
 private:
-    // Actor에서 OBB 생성
-    FOrientedBox GetActorOrientedBox(AStaticMeshActor* Actor) const;
-     
+    void RenderBillboard(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
+    void RenderOBB(URenderer* Renderer);
+    void CreateBillboardVertices();
+
 protected:
     // Texture
     // [PIE] 주소 복사
@@ -101,4 +111,11 @@ protected:
      
     float CurrentAlpha;
     float CurrentStateElapsedTime[4];
+
+    // Billboard properties
+    UTextQuad* BillboardQuad = nullptr;
+    UTexture* BillboardTexture = nullptr;
+    UMaterial* BillboardMaterial = nullptr;
+    float BillboardWidth = 1.0f;
+    float BillboardHeight = 1.0f;
 };

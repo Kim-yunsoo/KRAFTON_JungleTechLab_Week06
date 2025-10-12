@@ -39,6 +39,25 @@ struct FComponentData
     // Type별 속성 (StaticMeshComponent 전용)
     FString StaticMesh;  // Asset path
     TArray<FString> Materials;
+
+    // DecalComponent 전용 속성
+    FString DecalTexture;  // Decal texture path
+    FVector DecalSize;  // Decal box size
+    int32 SortOrder = 0;
+    float FadeInDuration = 1.0f;
+    float FadeStartDelay = 1.0f;
+    float FadeDuration = 1.0f;
+
+    // BillboardComponent 전용 속성
+    FString BillboardTexturePath;  // Billboard texture path
+    float BillboardWidth = 1.0f;
+    float BillboardHeight = 1.0f;
+    float UCoord = 0.0f;
+    float VCoord = 0.0f;
+    float ULength = 1.0f;
+    float VLength = 1.0f;
+    bool bIsScreenSizeScaled = false;
+    float ScreenSize = 0.0025f;
 };
 
 struct FActorData

@@ -11,6 +11,10 @@
 #include "AABoundingBoxComponent.h"
 #include "RenderingStats.h"
 #include "SelectionManager.h"
+#include "CameraActor.h"
+#include "World.h"
+#include "VertexData.h"
+#include "BVH.h"
 
 UDecalComponent::UDecalComponent()
 {
@@ -29,12 +33,25 @@ UDecalComponent::UDecalComponent()
         CurrentStateElapsedTime[i] = 0.0f;
     }
     DecalCurrentState = EDecalState::FadeIn;
+
+    // Billboard setup (Editor only)
+    auto& ResourceManager = UResourceManager::GetInstance();
+    BillboardQuad = ResourceManager.Get<UTextQuad>("Billboard");
+    BillboardTexture = ResourceManager.Load<UTexture>("Editor/Decal/DecalActor_64x.dds");
+    BillboardMaterial = ResourceManager.Load<UMaterial>("Billboard.hlsl");
+
+    SetTickEnabled(true);
 }
 
 UDecalComponent::~UDecalComponent()
 {
 
-}  
+}
+
+void UDecalComponent::TickComponent(float DeltaSeconds)
+{
+    DecalAnimTick(DeltaSeconds);
+}
 
 FBound UDecalComponent::GetDecalBoundingBox() const
 {
@@ -86,22 +103,6 @@ FOrientedBox UDecalComponent::GetDecalOrientedBox() const
     );
 }
 
-FOrientedBox UDecalComponent::GetActorOrientedBox(AStaticMeshActor* Actor) const
-{
-    if (!Actor)
-        return FOrientedBox();
-
-    UAABoundingBoxComponent* CollisionComp = Actor->CollisionComponent;
-    if (!CollisionComp)
-        return FOrientedBox();
-
-    FBound AABB = CollisionComp->GetWorldBoundFromCube();
-    FVector Center = (AABB.Max + AABB.Min) * 0.5f;
-    FVector HalfExtents = (AABB.Max - AABB.Min) * 0.5f;
-
-    return FOrientedBox(Center, HalfExtents, Actor->GetActorRotation());
-}
-
 // Find Affected Meshes
 TArray<UStaticMeshComponent*> UDecalComponent::FindAffectedMeshes(UWorld* World)
 {
@@ -110,48 +111,62 @@ TArray<UStaticMeshComponent*> UDecalComponent::FindAffectedMeshes(UWorld* World)
     if (!World)
         return AffectedMeshes;
 
-    // 1단계: Decal AABB 계산 (빠른 필터링용)
     FBound DecalAABB = GetDecalBoundingBox();
 
-    // 2단계: Decal OBB 계산 (정밀 검사용)
     FOrientedBox DecalOBB = GetDecalOrientedBox();
 
-    // World의 모든 Actor 순회
-    ULevel* Level = World->GetLevel();
-    if (!Level)
-        return AffectedMeshes;
+    // 1단계: BVH를 사용한 Broad Phase 후보군 필터링
+    TArray<AActor*> BroadPhaseCandidates;
+    FBVH* BVH = World->GetBVH();
 
-    const TArray<AActor*>& Actors = Level->GetActors();
+    if (BVH)
+    {
+        // BVH를 통해 Decal AABB와 교차하는 Actor들만 빠르게 찾기
+        BVH->IntersectAABB(DecalAABB, BroadPhaseCandidates);
+    }
+    else
+    {
+        // BVH가 없는 경우 모든 Actor를 후보군으로 (Fallback)
+        ULevel* Level = World->GetLevel();
+        if (Level)
+        {
+            BroadPhaseCandidates = Level->GetActors();
+        }
+    }
 
-    for (AActor* Actor : Actors)
+    // Broad Phase 후보군에서 실제 영향받는 메시 찾기
+    for (AActor* Actor : BroadPhaseCandidates)
     {
         if (!Actor || Actor->GetActorHiddenInGame())
             continue;
 
-        // StaticMeshActor만 검사
-        AStaticMeshActor* StaticMeshActor = Cast<AStaticMeshActor>(Actor);
-        if (!StaticMeshActor)
-            continue;
+        // Actor의 모든 컴포넌트 검사
+        const TSet<UActorComponent*>& Components = Actor->GetComponents();
 
-        // Collision Component로 충돌 검사
-        UAABoundingBoxComponent* CollisionComp = StaticMeshActor->CollisionComponent;
-        if (!CollisionComp)
-            continue;
-
-        FBound ActorAABB = CollisionComp->GetWorldBoundFromCube();
-
-        // 1단계: AABB vs AABB (빠른 필터링)
-        if (!DecalAABB.IsIntersect(ActorAABB))
-            continue;
-
-        // 2단계: OBB vs OBB (정밀 검사 - SAT)
-        FOrientedBox ActorOBB = GetActorOrientedBox(StaticMeshActor);
-        if (DecalOBB.Intersects(ActorOBB))
+        for (UActorComponent* Component : Components)
         {
-            UStaticMeshComponent* MeshComp = StaticMeshActor->GetStaticMeshComponent();
-            if (MeshComp)
+            if (!Component)
+                continue;
+
+            // StaticMeshComponent인지 확인
+            UStaticMeshComponent* StaticMeshComp = Cast<UStaticMeshComponent>(Component);
+            if (!StaticMeshComp)
+                continue;
+
+            // StaticMesh가 없으면 스킵
+            if (!StaticMeshComp->GetStaticMesh())
+                continue;
+
+            // 2단계: AABB vs AABB (컴포넌트 레벨 필터링)
+            FBound ComponentAABB = StaticMeshComp->GetWorldBoundingBox();
+            if (!DecalAABB.IsIntersect(ComponentAABB))
+                continue;
+
+            // 3단계: OBB vs OBB (정밀 검사 - SAT)
+            FOrientedBox ComponentOBB = StaticMeshComp->GetWorldOrientedBox();
+            if (DecalOBB.Intersects(ComponentOBB))
             {
-                AffectedMeshes.push_back(MeshComp);
+                AffectedMeshes.push_back(StaticMeshComp);
             }
         }
     }
@@ -167,41 +182,39 @@ void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMa
         return;
     }
 
-    // 1. Owner가 선택된 경우에만 OBB Drawing
-    if (Owner && USelectionManager::GetInstance().IsActorSelected(Owner))
-    {
-        FOrientedBox OBB = GetDecalOrientedBox();
-        TArray<FVector> Corners = OBB.GetCorners();
-        const FVector4 Yellow(1.0f, 1.0f, 0.0f, 1.0f);
+    // Editor 비주얼 (항상 렌더링)
+    RenderEditorVisuals(Renderer, View, Proj);
 
-        if (Corners.size() == 8)
-        {
-            // Bottom face
-            Renderer->AddLine(Corners[0], Corners[1], Yellow);
-            Renderer->AddLine(Corners[1], Corners[3], Yellow);
-            Renderer->AddLine(Corners[3], Corners[2], Yellow);
-            Renderer->AddLine(Corners[2], Corners[0], Yellow);
+    // 실제 Decal 투영 (SF_Decals 플래그에 따라 World.cpp에서 제어)
+    RenderDecalProjection(Renderer, View, Proj);
+}
 
-            // Top face
-            Renderer->AddLine(Corners[4], Corners[5], Yellow);
-            Renderer->AddLine(Corners[5], Corners[7], Yellow);
-            Renderer->AddLine(Corners[7], Corners[6], Yellow);
-            Renderer->AddLine(Corners[6], Corners[4], Yellow);
-
-            // Vertical edges
-            Renderer->AddLine(Corners[0], Corners[4], Yellow);
-            Renderer->AddLine(Corners[1], Corners[5], Yellow);
-            Renderer->AddLine(Corners[2], Corners[6], Yellow);
-            Renderer->AddLine(Corners[3], Corners[7], Yellow);
-        }
-    }
-
-    if (!DecalTexture)
+void UDecalComponent::RenderEditorVisuals(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj)
+{
+    if (!Renderer)
     {
         return;
     }
 
-    // 2. Affected Meshes 찾기
+    // Editor 모드에서만 실행
+    if (GWorld && GWorld->WorldType == EWorldType::Editor)
+    {
+        // 1. Owner가 선택된 경우에만 OBB Drawing
+        RenderOBB(Renderer);
+
+        // 2. Billboard rendering
+        RenderBillboard(Renderer, View, Proj);
+    }
+}
+
+void UDecalComponent::RenderDecalProjection(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj)
+{
+    if (!Renderer || !DecalTexture)
+    {
+        return;
+    }
+
+    // Affected Meshes 찾기
     TArray<UStaticMeshComponent*> AffectedMeshes = FindAffectedMeshes(GWorld);
     if (AffectedMeshes.empty())
         return;
@@ -209,10 +222,10 @@ void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMa
     URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
     FDecalRenderingStats& DecalStats = StatsCollector.GetDecalStats();
 
-	DecalStats.ActiveDecalCount++;
+    DecalStats.ActiveDecalCount++;
     DecalStats.AffectedMeshesCount += static_cast<uint32>(AffectedMeshes.size());
 
-    // 3. Decal Shader 및 파이프라인 준비
+    // Decal Shader 및 파이프라인 준비
     UShader* DecalProjShader = UResourceManager::GetInstance().Load<UShader>("ProjectionDecal.hlsl");
 
     Renderer->PrepareShader(DecalProjShader);
@@ -247,8 +260,6 @@ void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMa
         if (!StaticMeshComponent || !Mesh)
             continue;
 
-        // Per-mesh constant buffers
-        // Reuse b4 to carry decal view/proj
         Renderer->UpdateConstantBuffer(StaticMeshComponent->GetWorldMatrix(), View, Proj);
         Renderer->UpdateInvWorldBuffer(DecalView, DecalProj);
         Renderer->UpdateColorBuffer(FVector4{ 1.0f, 1.0f, 1.0f, CurrentAlpha });
@@ -279,7 +290,6 @@ void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMa
 
         DevieContext->DrawIndexed(Mesh->GetIndexCount(), 0, 0);
 
-		// Decal 드로우콜 통계 증가
         StatsCollector.IncrementDecalDrawCalls();
     }
 
@@ -385,6 +395,161 @@ void UDecalComponent::StartFade()
     }
     CurrentAlpha = 0.0f;
     DecalCurrentState = EDecalState::FadeIn;
+}
+
+void UDecalComponent::CreateBillboardVertices()
+{
+    TArray<FBillboardVertexInfo_GPU> vertices;
+
+    // 단일 쿼드의 4개 정점 생성 (카메라를 향하는 평면)
+    float halfW = BillboardWidth * 0.5f;
+    float halfH = BillboardHeight * 0.5f;
+
+    FBillboardVertexInfo_GPU Info;
+
+    // UV 좌표 (전체 텍스처 사용)
+    float UCoord = 0.0f;
+    float VCoord = 0.0f;
+    float ULength = 1.0f;
+    float VLength = 1.0f;
+
+    // 정점 0: 좌상단
+    Info.Position[0] = -halfW;
+    Info.Position[1] = halfH;
+    Info.Position[2] = 0.0f;
+    Info.CharSize[0] = BillboardWidth;
+    Info.CharSize[1] = BillboardHeight;
+    Info.UVRect[0] = UCoord;
+    Info.UVRect[1] = VCoord;
+    Info.UVRect[2] = ULength;
+    Info.UVRect[3] = VLength;
+    vertices.push_back(Info);
+
+    // 정점 1: 우상단
+    Info.Position[0] = halfW;
+    Info.Position[1] = halfH;
+    Info.Position[2] = 0.0f;
+    vertices.push_back(Info);
+
+    // 정점 2: 좌하단
+    Info.Position[0] = -halfW;
+    Info.Position[1] = -halfH;
+    Info.Position[2] = 0.0f;
+    vertices.push_back(Info);
+
+    // 정점 3: 우하단
+    Info.Position[0] = halfW;
+    Info.Position[1] = -halfH;
+    Info.Position[2] = 0.0f;
+    vertices.push_back(Info);
+
+    // 동적 버텍스 버퍼 업데이트
+    UResourceManager::GetInstance().UpdateDynamicVertexBuffer("Billboard", vertices);
+}
+
+void UDecalComponent::RenderBillboard(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj)
+{
+    if (!BillboardMaterial || !BillboardTexture || !BillboardQuad)
+        return;
+
+    // 카메라 정보 가져오기
+    UWorld* World = GetOwner() ? GetOwner()->GetWorld() : nullptr;
+    if (!World)
+        return;
+
+    ACameraActor* CameraActor = World->GetCameraActor();
+    if (!CameraActor)
+        return;
+
+    FVector CamRight = CameraActor->GetActorRight();
+    FVector CamUp = CameraActor->GetActorUp();
+
+    // 빌보드 위치 설정 (데칼 액터의 위치)
+    FVector BillboardPos = GetWorldLocation();
+
+    // 텍스처 로드 
+    BillboardMaterial->Load("Editor/Decal/DecalActor_64x.dds", Renderer->GetRHIDevice()->GetDevice());
+
+    // 상수 버퍼 업데이트
+    Renderer->UpdateBillboardConstantBuffers(BillboardPos, View, Proj, CamRight, CamUp);
+
+    // 셰이더 준비
+    UShader* CompShader = BillboardMaterial->GetShader();
+    Renderer->PrepareShader(CompShader);
+
+    ID3D11DeviceContext* DeviceContext = Renderer->GetRHIDevice()->GetDeviceContext();
+
+    // InputLayout 설정 (중요!)
+    DeviceContext->IASetInputLayout(CompShader->GetInputLayout());
+
+    // 빌보드 정점 생성 및 버퍼 업데이트
+    CreateBillboardVertices();
+
+    // 렌더링
+    Renderer->OMSetBlendState(true);
+    Renderer->RSSetState(EViewModeIndex::VMI_Unlit);
+
+    // 버퍼 및 텍스처 바인딩
+    UINT Stride = sizeof(FBillboardVertexInfo_GPU);
+    UINT Offset = 0;
+    ID3D11Buffer* VertexBuffer = BillboardQuad->GetVertexBuffer();
+    ID3D11Buffer* IndexBuffer = BillboardQuad->GetIndexBuffer();
+
+    DeviceContext->IASetVertexBuffers(0, 1, &VertexBuffer, &Stride, &Offset);
+    DeviceContext->IASetIndexBuffer(IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+    // 텍스처 바인딩 (중요!)
+    UTexture* CompTexture = BillboardMaterial->GetTexture();
+    if (CompTexture && CompTexture->GetShaderResourceView())
+    {
+        ID3D11ShaderResourceView* TextureSRV = CompTexture->GetShaderResourceView();
+        Renderer->GetRHIDevice()->PSSetDefaultSampler(0);
+        DeviceContext->PSSetShaderResources(0, 1, &TextureSRV);
+    }
+
+    DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    DeviceContext->DrawIndexed(BillboardQuad->GetIndexCount(), 0, 0);
+
+    Renderer->OMSetBlendState(false);
+}
+
+void UDecalComponent::RenderOBB(URenderer* Renderer)
+{
+    if (!Renderer || !Owner)
+    {
+        return;
+    }
+
+    // Owner가 선택된 경우에만 OBB Drawing
+    if (!USelectionManager::GetInstance().IsActorSelected(Owner))
+    {
+        return;
+    }
+
+    FOrientedBox OBB = GetDecalOrientedBox();
+    TArray<FVector> Corners = OBB.GetCorners();
+    const FVector4 Yellow(1.0f, 1.0f, 0.0f, 1.0f);
+
+    if (Corners.size() == 8)
+    {
+        // Bottom face
+        Renderer->AddLine(Corners[0], Corners[1], Yellow);
+        Renderer->AddLine(Corners[1], Corners[3], Yellow);
+        Renderer->AddLine(Corners[3], Corners[2], Yellow);
+        Renderer->AddLine(Corners[2], Corners[0], Yellow);
+
+        // Top face
+        Renderer->AddLine(Corners[4], Corners[5], Yellow);
+        Renderer->AddLine(Corners[5], Corners[7], Yellow);
+        Renderer->AddLine(Corners[7], Corners[6], Yellow);
+        Renderer->AddLine(Corners[6], Corners[4], Yellow);
+
+        // Vertical edges
+        Renderer->AddLine(Corners[0], Corners[4], Yellow);
+        Renderer->AddLine(Corners[1], Corners[5], Yellow);
+        Renderer->AddLine(Corners[2], Corners[6], Yellow);
+        Renderer->AddLine(Corners[3], Corners[7], Yellow);
+    }
 }
 
 UObject* UDecalComponent::Duplicate()
