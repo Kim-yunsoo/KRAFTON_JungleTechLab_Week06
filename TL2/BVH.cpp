@@ -38,25 +38,42 @@ void FBVH::Build(const TArray<AActor*>& Actors)
         if (!Actor || Actor->GetActorHiddenInGame())
             continue;
 
-        const FBound* ActorBounds_Local = nullptr;
-        bool bHasBounds = false;
+        // Actor의 모든 UStaticMeshComponent를 포함하는 FBound 계산
+        FBound CombinedBounds;
+        bool bHasValidBounds = false;
 
-        if (const AStaticMeshActor* StaticMeshActor = Cast<const AStaticMeshActor>(Actor))
+        // Actor의 모든 컴포넌트 순회
+        const TSet<UActorComponent*>& Components = Actor->GetComponents();
+        for (UActorComponent* Component : Components)
         {
-            for (auto Component : StaticMeshActor->GetComponents()) // 최적화: AABB 컴포넌트만 검색
+            // UStaticMeshComponent만 처리
+            if (UStaticMeshComponent* StaticMeshComp = Cast<UStaticMeshComponent>(Component))
             {
-                if (UAABoundingBoxComponent* AABBComponent = Cast<UAABoundingBoxComponent>(Component))
+                // StaticMesh가 없으면 스킵
+                if (!StaticMeshComp->GetStaticMesh())
+                    continue;
+
+                // 해당 컴포넌트의 World AABB 가져오기
+                FBound ComponentBounds = StaticMeshComp->GetWorldBoundingBox();
+
+                if (!bHasValidBounds)
                 {
-                    ActorBounds_Local = AABBComponent->GetFBound();
-                    bHasBounds = true;
-                    break;
+                    // 첫 번째 유효한 바운드
+                    CombinedBounds = ComponentBounds;
+                    bHasValidBounds = true;
+                }
+                else
+                {
+                    // 기존 바운드와 합치기 (+= 연산자 사용)
+                    CombinedBounds += ComponentBounds;
                 }
             }
         }
 
-        if (bHasBounds)
+        // 유효한 바운드가 있을 때만 추가
+        if (bHasValidBounds)
         {
-            FActorBounds AB(Actor, *ActorBounds_Local);
+            FActorBounds AB(Actor, CombinedBounds);
             ActorBounds.Add(AB);
             ActorIndices.Add(ActorBounds.Num() - 1);
         }
@@ -74,11 +91,6 @@ void FBVH::Build(const TArray<AActor*>& Actors)
 
     uint64_t BuildCycles = BVHBuildTimer.Finish();
     double BuildTimeMs = FPlatformTime::ToMilliseconds(BuildCycles);
-
-    /*char buf[256];
-    sprintf_s(buf, "[BVH] Built for %d actors, %d nodes, depth %d (Time: %.3fms)\n",
-        ActorBounds.Num(), Nodes.Num(), MaxDepth, BuildTimeMs);
-    UE_LOG(buf);*/
 
     // 빌드 완료 후 더티 플래그 해제
     bIsDirty = false;
