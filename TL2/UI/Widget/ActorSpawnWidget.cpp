@@ -465,7 +465,7 @@ void UActorSpawnWidget::SpawnDecalActor(UWorld* World, bool bIsOrtho) const
 			DecalComp->SetFadeStartDelay(FadeStartDelay);
 			DecalComp->SetFadeDuration(FadeOutDuration);
 			DecalComp->SetMaxAlpha(MaxAlpha); 
-			DecalComp->SetProjectionMatrixFlag(bIsOrtho); 
+			DecalComp->SetOrthoMatrixFlag(bIsOrtho); 
 		}
 
 		FString ActorName = World->GenerateUniqueActorName("DecalActor");

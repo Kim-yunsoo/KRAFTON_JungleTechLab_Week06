@@ -47,6 +47,7 @@ struct FComponentData
     float FadeInDuration = 1.0f;
     float FadeStartDelay = 1.0f;
     float FadeDuration = 1.0f;
+    bool bIsOrthoMatrix;
 
     // BillboardComponent 전용 속성
     FString BillboardTexturePath;  // Billboard texture path

@@ -308,7 +308,8 @@ void FSceneLoader::SaveV2(const FSceneData& SceneData, const FString& SceneName)
             oss << "      \"SortOrder\" : " << Comp.SortOrder << ",\n";
             oss << "      \"FadeInDuration\" : " << Comp.FadeInDuration << ",\n";
             oss << "      \"FadeStartDelay\" : " << Comp.FadeStartDelay << ",\n";
-            oss << "      \"FadeDuration\" : " << Comp.FadeDuration;
+            oss << "      \"FadeDuration\" : " << Comp.FadeDuration << ",\n";
+            oss << "      \"bIsOrthoMatrix\" : " << Comp.bIsOrthoMatrix;
         }
         else if (Comp.Type.find("BillboardComponent") != std::string::npos)
         {
@@ -502,6 +503,9 @@ FSceneData FSceneLoader::ParseV2(const JSON& Json)
 
             if (CompJson.hasKey("FadeDuration"))
                 Comp.FadeDuration = (float)CompJson.at("FadeDuration").ToFloat();
+
+            if (CompJson.hasKey("bIsOrthoMatrix"))
+                Comp.bIsOrthoMatrix = (bool)CompJson.at("bIsOrthoMatrix").ToBool();
 
             // BillboardComponent 전용 속성
             if (CompJson.hasKey("BillboardTexturePath"))

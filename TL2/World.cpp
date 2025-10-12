@@ -1021,7 +1021,7 @@ void UWorld::SaveSceneV2(const FString& SceneName)
                 CompData.FadeInDuration = DecalComp->GetFadeInDuration();
                 CompData.FadeStartDelay = DecalComp->GetFadeStartDelay();
                 CompData.FadeDuration = DecalComp->GetFadeDuration();
-                // SortOrder는 기본값 0 사용
+                CompData.bIsOrthoMatrix = DecalComp->GetOrthoMatrixFlag();
             }
             else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Comp))
             {
@@ -1171,6 +1171,7 @@ void UWorld::LoadSceneV2(const FString& SceneName)
             DecalComp->SetFadeInDuration(CompData.FadeInDuration);
             DecalComp->SetFadeStartDelay(CompData.FadeStartDelay);
             DecalComp->SetFadeDuration(CompData.FadeDuration);
+            DecalComp->SetOrthoMatrixFlag(CompData.bIsOrthoMatrix);
         }
         else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(NewComp))
         {

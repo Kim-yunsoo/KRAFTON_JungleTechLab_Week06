@@ -76,13 +76,13 @@ public:
     float GetFadeInDuration() { return FadeInDuration; }
     float GetFadeStartDelay() { return FadeStartDelay; }
     float GetFadeDuration() { return FadeDuration; }
-    bool GetProjectionMatrixFlag() { return bIsOrthoMatrix; }
+    bool GetOrthoMatrixFlag(){ return bIsOrthoMatrix; }
     float GetMaxAlpha() { return MaxAlpha;}
 
     void SetFadeInDuration(float Value) { FadeInDuration = Value; }
     void SetFadeStartDelay(float Value) { FadeStartDelay = Value; }
     void SetFadeDuration(float Value) { FadeDuration = Value; }
-    void SetProjectionMatrixFlag(bool IsOrtho) { bIsOrthoMatrix = IsOrtho; }
+    void SetOrthoMatrixFlag(bool IsOrtho) { bIsOrthoMatrix = IsOrtho; }
     void SetMaxAlpha(float MaxValue) { MaxAlpha = MaxValue; }
 
 private:
