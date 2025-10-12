@@ -180,7 +180,7 @@ private:
 	FBVH* BVH;
 
 	// BVH 주기적 재빌드 관련
-	int32 BVHRebuildInterval = 120; // 0 = 더티 플래그만 사용, N = N프레임마다 재빌드
+	int32 BVHRebuildInterval = 30; // 0 = 더티 플래그만 사용, N = N프레임마다 재빌드
 	int32 BVHFrameCounter = 0;
 };
 template<class T>
