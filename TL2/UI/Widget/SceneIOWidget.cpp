@@ -16,7 +16,7 @@ USceneIOWidget::USceneIOWidget()
 	, StatusMessageTimer(0.0f)
 	, bIsStatusError(false)
 {
-	strcpy_s(NewLevelNameBuffer, "Default");
+	strcpy_s(NewLevelNameBuffer, "DecalDemo");
 }
 
 USceneIOWidget::~USceneIOWidget() = default;

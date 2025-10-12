@@ -19,8 +19,17 @@ void UTexture::Load(const FString& InFilePath, ID3D11Device* InDevice)
 {
 	assert(InDevice);
 
-	std::wstring WFilePath;
-	WFilePath = std::wstring(InFilePath.begin(), InFilePath.end());
+    // Convert UTF-8 (std::string) to UTF-16 (std::wstring) for WinAPI
+    std::wstring WFilePath;
+    if (!InFilePath.empty())
+    {
+        int len = MultiByteToWideChar(CP_UTF8, 0, InFilePath.c_str(), -1, nullptr, 0);
+        if (len > 0)
+        {
+            WFilePath.resize(static_cast<size_t>(len - 1));
+            MultiByteToWideChar(CP_UTF8, 0, InFilePath.c_str(), -1, WFilePath.data(), len);
+        }
+    }
 
 	 
 	size_t DotPos = WFilePath.find_last_of(L'.');

@@ -27,8 +27,10 @@ void UStaticMesh::Load(const FString& InFilePath, ID3D11Device* InDevice, EVerte
     VertexCount = static_cast<uint32>(StaticMeshAsset->Vertices.size());
     IndexCount = static_cast<uint32>(StaticMeshAsset->Indices.size());
  
+ 	CalculateLocalBound();
+
+    //return;
     BuildMeshBVH();
- 	CalculateLocalBound(); 
 }
 
 void UStaticMesh::Load(FMeshData* InData, ID3D11Device* InDevice, EVertexLayoutType InVertexType)

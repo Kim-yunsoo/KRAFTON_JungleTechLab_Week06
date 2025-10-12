@@ -11,8 +11,17 @@ void UShader::Load(const FString& InShaderPath, ID3D11Device* InDevice)
 {
     assert(InDevice);
 
+    // Convert UTF-8 path to UTF-16 for D3DCompileFromFile
     std::wstring WFilePath;
-    WFilePath = std::wstring(InShaderPath.begin(), InShaderPath.end());
+    if (!InShaderPath.empty())
+    {
+        int len = MultiByteToWideChar(CP_UTF8, 0, InShaderPath.c_str(), -1, nullptr, 0);
+        if (len > 0)
+        {
+            WFilePath.resize(static_cast<size_t>(len - 1));
+            MultiByteToWideChar(CP_UTF8, 0, InShaderPath.c_str(), -1, WFilePath.data(), len);
+        }
+    }
 
     HRESULT hr;
     ID3DBlob* errorBlob = nullptr;

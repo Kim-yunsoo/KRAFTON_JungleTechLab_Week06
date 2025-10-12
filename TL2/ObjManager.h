@@ -53,7 +53,7 @@ public:
         size_t pos = InFileName.find_last_of("/\\");
         std::string objDir = (pos == std::string::npos) ? "" : InFileName.substr(0, pos + 1);
 
-        std::ifstream FileIn(InFileName.c_str());
+        std::ifstream FileIn(std::filesystem::u8path(InFileName));
 
         if (!FileIn)
         {

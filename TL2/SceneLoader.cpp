@@ -55,7 +55,7 @@ static bool ParsePerspectiveCamera(const JSON& Root, FPerspectiveCameraData& Out
 
 TArray<FPrimitiveData> FSceneLoader::Load(const FString& FileName, FPerspectiveCameraData* OutCameraData)
 {
-    std::ifstream file(FileName);
+    std::ifstream file(std::filesystem::u8path(FileName));
     if (!file.is_open())
     {
 		UE_LOG("Scene load failed. Cannot open file: %s", FileName.c_str());
@@ -353,7 +353,7 @@ FSceneData FSceneLoader::LoadV2(const FString& FileName)
 {
     FSceneData Result;
 
-    std::ifstream file(FileName);
+    std::ifstream file(std::filesystem::u8path(FileName));
     if (!file.is_open())
     {
         UE_LOG("Scene load failed. Cannot open file: %s", FileName.c_str());

@@ -2,7 +2,8 @@
 #include "AABoundingBoxComponent.h"
 #include "StaticMeshActor.h"
 #include "ObjectFactory.h"
-
+#include "DecalActor.h"
+#include "DecalComponent.h"
 AStaticMeshActor::AStaticMeshActor()
 {
     // TODO(KJC): AActor의 생성자에서 USceneComponent를 Root로 넣어주고 있지만
@@ -35,8 +36,32 @@ void AStaticMeshActor::Tick(float DeltaTime)
 
     //TODO: bTickEditor를 추가해서 Tick안에서 분기문을 없애야됨
     if (World->WorldType == EWorldType::PIE) {
-        ///RootComponent->AddLocalRotation({ 0.01f, 0.0f,0.0f });
+        //RootComponent->AddLocalRotation({ 0.01f, 0.0f,0.0f });
         //RootComponent->AddLocalOffset({ sin(times)/100, sin(times)/100,sin(times)/100 });
+        // Apply movement only for mcube mesh
+        if (StaticMeshComponent && StaticMeshComponent->GetStaticMesh())
+        {
+            const FString& AssetPath = StaticMeshComponent->GetStaticMesh()->GetAssetPathFileName();
+            if (AssetPath.find("mcube") != std::string::npos)
+            {
+                if (RootComponent->GetRelativeLocation().Y < -10.f)
+                { 
+                    const TArray<AActor*>& Actors = World->GetLevel()->GetActors();
+                    for (AActor* Act : Actors)
+                    {
+                        if (Act && Act->IsA<ADecalActor>())
+                        {
+                            ADecalActor* DecalActor = static_cast<ADecalActor*>(Act);
+                            if (UDecalComponent* DC = DecalActor->GetDecalComponent())
+                            {
+                                DC->StartFade();
+                            }
+                        }
+
+                    }  
+                } 
+            }
+        }
     }
 
     if(bIsPicked&& CollisionComponent)

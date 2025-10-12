@@ -27,7 +27,8 @@ UDecalComponent::UDecalComponent()
     FadeStartDelay = 3;
     FadeDuration = 3; 
 
-    CurrentAlpha = 1.0f;
+    // Start invisible until StartFade() sets bIsAnim and animates alpha
+    CurrentAlpha = 0.0f;
     MaxAlpha = 1.0f;
     bIsOrthoMatrix = true;
 
@@ -343,6 +344,8 @@ void UDecalComponent::SetDecalTexture(const FString& TexturePath)
 
 void UDecalComponent::DecalAnimTick(float DeltaTime)
 { 
+     
+
     const uint8 stateIndex = static_cast<uint8>(DecalCurrentState);
 
     if (DecalCurrentState != EDecalState::Finished)
@@ -419,7 +422,7 @@ void UDecalComponent::ActivateFadeEffect()
     }
     case EDecalState::Finished:
     {
-        CurrentAlpha = 0.0f; 
+        CurrentAlpha = 0.0f; //bIsAnim = false;
         break;
     }
     }
@@ -434,6 +437,7 @@ void UDecalComponent::StartFade()
     }
     CurrentAlpha = 0.0f;
     DecalCurrentState = EDecalState::FadeIn;
+    bIsAnim = true;
 }
 
 void UDecalComponent::CreateBillboardVertices()

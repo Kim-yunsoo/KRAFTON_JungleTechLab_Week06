@@ -78,12 +78,15 @@ public:
     float GetFadeDuration() { return FadeDuration; }
     bool GetProjectionMatrixFlag() { return bIsOrthoMatrix; }
     float GetMaxAlpha() { return MaxAlpha;}
+    bool GetIsAnim() { return bIsAnim; }
+
 
     void SetFadeInDuration(float Value) { FadeInDuration = Value; }
     void SetFadeStartDelay(float Value) { FadeStartDelay = Value; }
     void SetFadeDuration(float Value) { FadeDuration = Value; }
     void SetProjectionMatrixFlag(bool IsOrtho) { bIsOrthoMatrix = IsOrtho; }
     void SetMaxAlpha(float MaxValue) { MaxAlpha = MaxValue; }
+    void SetIsAnim(bool bIsAnim) { this->bIsAnim = bIsAnim; }
 
 private:
      void RenderBillboard(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
@@ -126,4 +129,6 @@ protected:
     UMaterial* BillboardMaterial = nullptr;
     float BillboardWidth = 1.0f;
     float BillboardHeight = 1.0f; 
+
+    bool bIsAnim = false;
 };
