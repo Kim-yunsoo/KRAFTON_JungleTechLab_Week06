@@ -53,7 +53,26 @@ UObject* UBillboardComponent::Duplicate()
     DuplicatedComponent->ScreenSize = this->ScreenSize;
 
     DuplicatedComponent->DuplicateSubObjects();
+
     return DuplicatedComponent;
+}
+
+UObject* UBillboardComponent::Duplicate(FObjectDuplicationParameters Parameters)
+{
+    auto DubObject = static_cast<UBillboardComponent*>(Super_t::Duplicate(Parameters));
+   
+    DubObject->BillboardQuad = this->BillboardQuad;
+    DubObject->BillboardWidth = this->BillboardWidth;
+    DubObject->BillboardHeight = this->BillboardHeight;
+    DubObject->TexturePath = this->TexturePath;
+    DubObject->UCoord = this->UCoord;
+    DubObject->VCoord = this->VCoord;
+    DubObject->ULength = this->ULength;
+    DubObject->VLength = this->VLength;
+    DubObject->bIsScreenSizeScaled = this->bIsScreenSizeScaled;
+    DubObject->ScreenSize = this->ScreenSize;
+
+    return DubObject;
 }
 
 void UBillboardComponent::DuplicateSubObjects()
