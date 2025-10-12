@@ -322,36 +322,10 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 				}
 			}
 
-			// Static Mesh Component의 경우 SF_StaticMeshes 확인
-            if (UStaticMeshComponent* StaticMeshComp = Cast<UStaticMeshComponent>(Component))
-            {
-                if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
-                {
-                    continue;
-                }
-			}
-
 			if (Cast<UTextRenderComponent>(Component) &&
 				!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_BillboardText))
 			{
 				continue;
-			}
-
-			if (UAABoundingBoxComponent* AABBComp = Cast<UAABoundingBoxComponent>(Component))
-			{
-				if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_BoundingBoxes))
-				{
-					continue; // BoundingBox ShowFlag가 꺼져있으면 AABB 스킵
-				}
-
-				// Decal Actor가 소유한 AABB인 경우에만 Decal ShowFlag 확인
-				if (Cast<ADecalActor>(Actor))
-				{
-					if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals))
-					{
-						continue; // Decal ShowFlag가 꺼져있으면 Decal의 AABB 스킵
-					}
-				}
 			}
 
 			// Decal Component인 경우 Editor Visuals만 렌더링 (실제 데칼 투영은 패스 2에서)
@@ -361,19 +335,6 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 				TotalDecalCount++;
                 continue;
             }
-
-			// Decal Actor의 Billboard Component인 경우 SF_Decals 확인
-			if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Component))
-			{
-				// Decal Actor가 소유한 Billboard인 경우
-				if (Cast<ADecalActor>(Actor))
-				{
-					if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals)) // Decal ShowFlag 꺼져 있는 경우
-					{
-						continue;
-					}
-				}
-			}
 
 			if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
 			{
@@ -386,7 +347,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 				//}
 
 				Renderer->UpdateHighLightConstantBuffer(bIsSelected, rgb, 0, 0, 0, 0);
-				Primitive->Render(Renderer, ViewMatrix, ProjectionMatrix);
+				Primitive->Render(Renderer, ViewMatrix, ProjectionMatrix, Viewport);
 
 				//// depth test 원래대로 복원
 				//if (bIsSelected)
@@ -471,7 +432,7 @@ void UWorld::RenderEngineActors(const FMatrix& ViewMatrix, const FMatrix& Projec
             if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
             {
                 Renderer->SetViewModeType(ViewModeIndex);
-                Primitive->Render(Renderer, ViewMatrix, ProjectionMatrix);
+                Primitive->Render(Renderer, ViewMatrix, ProjectionMatrix, Viewport);
                 Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
             }
         }

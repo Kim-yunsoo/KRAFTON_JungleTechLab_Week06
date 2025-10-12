@@ -10,6 +10,8 @@ protected:
     ~UGizmoArrowComponent() override;
 
 public:
+    void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj, FViewport* Viewport = nullptr) override;
+
     const FVector& GetDirection() const { return Direction; }
     const FVector& GetColor() const { return Color; }
 

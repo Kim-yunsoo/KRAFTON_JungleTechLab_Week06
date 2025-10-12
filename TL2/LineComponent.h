@@ -19,7 +19,7 @@ public:
     void RemoveLine(ULine* Line);
     void ClearLines();
 
-    virtual void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj) override;
+    virtual void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj, FViewport* Viewport) override;
 
     // Properties
     void SetLineVisible(bool bVisible) { bLinesVisible = bVisible; }

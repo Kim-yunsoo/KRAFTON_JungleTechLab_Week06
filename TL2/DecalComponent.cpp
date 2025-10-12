@@ -528,27 +528,27 @@ void UDecalComponent::RenderOBB(URenderer* Renderer)
 
     FOrientedBox OBB = GetDecalOrientedBox();
     TArray<FVector> Corners = OBB.GetCorners();
-    const FVector4 Yellow(1.0f, 1.0f, 0.0f, 1.0f);
+	const FVector4 LineColor(0.0f, 1.0f, 0.0f, 1.0f); // 녹색
 
     if (Corners.size() == 8)
     {
         // Bottom face
-        Renderer->AddLine(Corners[0], Corners[1], Yellow);
-        Renderer->AddLine(Corners[1], Corners[3], Yellow);
-        Renderer->AddLine(Corners[3], Corners[2], Yellow);
-        Renderer->AddLine(Corners[2], Corners[0], Yellow);
+        Renderer->AddLine(Corners[0], Corners[1], LineColor);
+        Renderer->AddLine(Corners[1], Corners[3], LineColor);
+        Renderer->AddLine(Corners[3], Corners[2], LineColor);
+        Renderer->AddLine(Corners[2], Corners[0], LineColor);
 
         // Top face
-        Renderer->AddLine(Corners[4], Corners[5], Yellow);
-        Renderer->AddLine(Corners[5], Corners[7], Yellow);
-        Renderer->AddLine(Corners[7], Corners[6], Yellow);
-        Renderer->AddLine(Corners[6], Corners[4], Yellow);
+        Renderer->AddLine(Corners[4], Corners[5], LineColor);
+        Renderer->AddLine(Corners[5], Corners[7], LineColor);
+        Renderer->AddLine(Corners[7], Corners[6], LineColor);
+        Renderer->AddLine(Corners[6], Corners[4], LineColor);
 
         // Vertical edges
-        Renderer->AddLine(Corners[0], Corners[4], Yellow);
-        Renderer->AddLine(Corners[1], Corners[5], Yellow);
-        Renderer->AddLine(Corners[2], Corners[6], Yellow);
-        Renderer->AddLine(Corners[3], Corners[7], Yellow);
+        Renderer->AddLine(Corners[0], Corners[4], LineColor);
+        Renderer->AddLine(Corners[1], Corners[5], LineColor);
+        Renderer->AddLine(Corners[2], Corners[6], LineColor);
+        Renderer->AddLine(Corners[3], Corners[7], LineColor);
     }
 }
 
