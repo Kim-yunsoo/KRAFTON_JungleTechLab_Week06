@@ -436,8 +436,7 @@ UObject* UDecalComponent::Duplicate(FObjectDuplicationParameters Parameters)
     {
         DupObject->CurrentStateElapsedTime[i] = 0.0f;
     }
-
-
+     
     return DupObject;
 }
 

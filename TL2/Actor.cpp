@@ -303,7 +303,7 @@ UObject* AActor::Duplicate(FObjectDuplicationParameters Parameters)
         
         if (auto It = Parameters.DuplicationSeed.find(Component); It != Parameters.DuplicationSeed.end()) 
         {
-            DupObject->OwnedComponents.Add(static_cast<UActorComponent*>(It->second));
+            DupObject->OwnedComponents.emplace(static_cast<UActorComponent*>(It->second));
         }
         else
         {

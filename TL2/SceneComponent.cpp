@@ -324,13 +324,14 @@ UObject* USceneComponent::Duplicate(FObjectDuplicationParameters Parameters)
     DupObject->RelativeLocation = RelativeLocation;
     DupObject->RelativeRotation = RelativeRotation;
     DupObject->RelativeScale = RelativeScale;
+    DupObject->UpdateRelativeTransform();
 
     //계층 구조 
     if (AttachParent != nullptr)
     {
         if (auto It = Parameters.DuplicationSeed.find(AttachParent); It != Parameters.DuplicationSeed.end())
         { 
-            DupObject->AttachParent = AttachParent; 
+            DupObject->AttachParent = static_cast<USceneComponent*>(It->second); 
             DupObject->UpdateRelativeTransform();
         }
     } 
@@ -345,7 +346,6 @@ UObject* USceneComponent::Duplicate(FObjectDuplicationParameters Parameters)
         {
             auto Params = InitStaticDuplicateObjectParams(Child, DupObject->GetOuter(), FName::GetNone(), Parameters.DuplicationSeed, Parameters.CreatedObjects);
             auto DupComponent= static_cast<USceneComponent*>(Child->Duplicate(Params));
-
             DupObject->AttachChildren.Add(DupComponent);
         }
     }

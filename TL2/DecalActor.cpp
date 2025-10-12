@@ -98,6 +98,10 @@ UObject* ADecalActor::Duplicate(FObjectDuplicationParameters Parameters)
 
     for (UActorComponent* Component : OwnedComponents)
     {
+        if (RootComponent == Component)
+        {
+            continue;
+        }
 
         if (auto It = Parameters.DuplicationSeed.find(Component); It != Parameters.DuplicationSeed.end())
         {
