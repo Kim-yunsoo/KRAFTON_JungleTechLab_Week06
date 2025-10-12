@@ -21,9 +21,13 @@ void UStaticMeshComponent::Render(URenderer* Renderer, const FMatrix& ViewMatrix
 {
     if (StaticMesh)
     {
+        // 1. 메쉬 렌더링
         Renderer->UpdateConstantBuffer(GetWorldMatrix(), ViewMatrix, ProjectionMatrix);
         Renderer->PrepareShader(GetMaterial()->GetShader());
         Renderer->DrawIndexedPrimitiveComponent(GetStaticMesh(), D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST, MaterailSlots);
+
+        // 2. AABB Bounding Box
+        RenderBoundingBox(Renderer);
     }
 }
 
@@ -200,4 +204,63 @@ void UStaticMeshComponent::DuplicateSubObjects()
 {
     // 부모의 깊은 복사 수행 (AttachChildren 재귀 복제)
     Super_t::DuplicateSubObjects();
+}
+
+void UStaticMeshComponent::RenderBoundingBox(URenderer* Renderer)
+{
+    if (!Renderer || !StaticMesh)
+    {
+        return;
+    }
+
+    // World AABB 가져오기
+    FBound WorldBound = GetWorldBoundingBox();
+
+    // Line 데이터 생성
+    TArray<FVector> Start;
+    TArray<FVector> End;
+    TArray<FVector4> Color;
+
+    CreateLineData(WorldBound.Min, WorldBound.Max, Start, End, Color);
+
+    // Line 렌더링
+    Renderer->AddLines(Start, End, Color);
+}
+
+void UStaticMeshComponent::CreateLineData(
+    const FVector& Min, const FVector& Max,
+    TArray<FVector>& OutStart,
+    TArray<FVector>& OutEnd,
+    TArray<FVector4>& OutColor)
+{
+    // 8개 꼭짓점 정의
+    const FVector v0(Min.X, Min.Y, Min.Z);
+    const FVector v1(Max.X, Min.Y, Min.Z);
+    const FVector v2(Max.X, Max.Y, Min.Z);
+    const FVector v3(Min.X, Max.Y, Min.Z);
+    const FVector v4(Min.X, Min.Y, Max.Z);
+    const FVector v5(Max.X, Min.Y, Max.Z);
+    const FVector v6(Max.X, Max.Y, Max.Z);
+    const FVector v7(Min.X, Max.Y, Max.Z);
+
+    // 선 색상 정의
+    const FVector4 LineColor(1.0f, 1.0f, 0.0f, 1.0f); // Yellow
+
+    // --- 아래쪽 면 ---
+    OutStart.Add(v0); OutEnd.Add(v1); OutColor.Add(LineColor);
+    OutStart.Add(v1); OutEnd.Add(v2); OutColor.Add(LineColor);
+    OutStart.Add(v2); OutEnd.Add(v3); OutColor.Add(LineColor);
+    OutStart.Add(v3); OutEnd.Add(v0); OutColor.Add(LineColor);
+
+    // --- 위쪽 면 ---
+    OutStart.Add(v4); OutEnd.Add(v5); OutColor.Add(LineColor);
+    OutStart.Add(v5); OutEnd.Add(v6); OutColor.Add(LineColor);
+    OutStart.Add(v6); OutEnd.Add(v7); OutColor.Add(LineColor);
+    OutStart.Add(v7); OutEnd.Add(v4); OutColor.Add(LineColor);
+
+    // --- 옆면 기둥 ---
+    OutStart.Add(v0); OutEnd.Add(v4); OutColor.Add(LineColor);
+    OutStart.Add(v1); OutEnd.Add(v5); OutColor.Add(LineColor);
+    OutStart.Add(v2); OutEnd.Add(v6); OutColor.Add(LineColor);
+    OutStart.Add(v3); OutEnd.Add(v7); OutColor.Add(LineColor);
 }

@@ -21,8 +21,9 @@ AStaticMeshActor::AStaticMeshActor()
     RootComponent = StaticMeshComponent;
     AddComponent(StaticMeshComponent);
 
-    CollisionComponent = CreateDefaultSubobject<UAABoundingBoxComponent>(FName("CollisionBox"));
-	CollisionComponent->SetupAttachment(RootComponent);
+	// CollisionComponent Deprecated
+    /*CollisionComponent = CreateDefaultSubobject<UAABoundingBoxComponent>(FName("CollisionBox"));
+	CollisionComponent->SetupAttachment(RootComponent);*/
 }
 
 void AStaticMeshActor::Tick(float DeltaTime)

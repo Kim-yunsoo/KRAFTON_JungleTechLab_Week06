@@ -54,5 +54,16 @@ protected:
     UStaticMesh* StaticMesh = nullptr;
     // [PIE] 값 복사 (배열 전체 값 복사)
     TArray<FMaterialSlot> MaterailSlots;
+
+private:
+    // Bounding Box 렌더링 메서드
+    void RenderBoundingBox(URenderer* Renderer);
+
+    // Line 데이터 생성 헬퍼
+    void CreateLineData(
+        const FVector& Min, const FVector& Max,
+        TArray<FVector>& OutStart,
+        TArray<FVector>& OutEnd,
+        TArray<FVector4>& OutColor);
 };
 
