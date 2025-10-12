@@ -31,7 +31,14 @@ public:
 
     virtual void TickComponent(float DeltaSeconds) override;
     
+	// 전체 렌더링 (Editor + 실제 데칼 투영)
     void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
+
+    // Editor 비주얼만 렌더링
+    void RenderEditorVisuals(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
+
+    // 실제 Decal 투영만 렌더링
+    void RenderDecalProjection(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
 
     // Decal Box와 충돌하는 Static Mesh 컴포넌트 찾기
     TArray<UStaticMeshComponent*> FindAffectedMeshes(UWorld* World);
@@ -74,8 +81,8 @@ public:
     void SetFadeDuration(float Value) { FadeDuration = Value; }
 
 private:
-    // Billboard rendering (Editor only)
     void RenderBillboard(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
+    void RenderOBB(URenderer* Renderer);
     void CreateBillboardVertices();
 
 protected:

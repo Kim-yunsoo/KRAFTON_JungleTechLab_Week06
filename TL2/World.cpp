@@ -353,12 +353,13 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 				}
 			}
 
-			// 데칼 컴포넌트는 Pass 2에서 렌더링
-			if (Cast<UDecalComponent>(Component))
-			{
-				++TotalDecalCount;
-				continue;
-			}
+			// Decal Component인 경우 Editor Visuals만 렌더링 (실제 데칼 투영은 패스 2에서)
+            if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
+            {
+                DecalComp->RenderEditorVisuals(Renderer, ViewMatrix, ProjectionMatrix);
+				TotalDecalCount++;
+                continue;
+            }
 
 			// Decal Actor의 Billboard Component인 경우 SF_Decals 확인
 			if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Component))
@@ -398,15 +399,14 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 
     // 엔진 액터들 (그리드 등) 렌더링
     RenderEngineActors(ViewMatrix, ProjectionMatrix, Viewport);
-    // Pass 2: 데칼 렌더링 (Depth 버퍼를 읽어서 다른 오브젝트 위에 투영)
+
+    // Pass 2: 데칼 렌더링 (SF_Decals 플래그 확인)
     if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals))
     {
         URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
         StatsCollector.BeginDecalPass();
 
-		FDecalRenderingStats& DecalStats = StatsCollector.GetDecalStats();
-
-        // 기본 카운트 설정
+        FDecalRenderingStats& DecalStats = StatsCollector.GetDecalStats();
         DecalStats.TotalDecalCount = TotalDecalCount;
 
         for (AActor* Actor : LevelActors)
@@ -418,18 +418,13 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 
             for (UActorComponent* Component : Actor->GetComponents())
             {
-                if (Component)
+                if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
                 {
-                    // 데칼 컴포넌트만 렌더링
-                    if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
-                    {
-                        DecalComp->Render(Renderer, ViewMatrix, ProjectionMatrix);
-                    }
+                    DecalComp->RenderDecalProjection(Renderer, ViewMatrix, ProjectionMatrix);
                 }
             }
         }
 
-        // 데칼 패스 종료 (타이머 종료 + 평균 계산 + 히스토리 업데이트)
         StatsCollector.EndDecalPass();
     }
 

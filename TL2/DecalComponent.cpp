@@ -182,47 +182,39 @@ void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMa
         return;
     }
 
-    if (GWorld && GWorld->WorldType == EWorldType::Editor)
-    {
-        // 1. Owner가 선택된 경우에만 OBB Drawing
-        if (Owner && USelectionManager::GetInstance().IsActorSelected(Owner))
-        {
-            FOrientedBox OBB = GetDecalOrientedBox();
-            TArray<FVector> Corners = OBB.GetCorners();
-            const FVector4 Yellow(1.0f, 1.0f, 0.0f, 1.0f);
+    // Editor 비주얼 (항상 렌더링)
+    RenderEditorVisuals(Renderer, View, Proj);
 
-            if (Corners.size() == 8)
-            {
-                // Bottom face
-                Renderer->AddLine(Corners[0], Corners[1], Yellow);
-                Renderer->AddLine(Corners[1], Corners[3], Yellow);
-                Renderer->AddLine(Corners[3], Corners[2], Yellow);
-                Renderer->AddLine(Corners[2], Corners[0], Yellow);
+    // 실제 Decal 투영 (SF_Decals 플래그에 따라 World.cpp에서 제어)
+    RenderDecalProjection(Renderer, View, Proj);
+}
 
-                // Top face
-                Renderer->AddLine(Corners[4], Corners[5], Yellow);
-                Renderer->AddLine(Corners[5], Corners[7], Yellow);
-                Renderer->AddLine(Corners[7], Corners[6], Yellow);
-                Renderer->AddLine(Corners[6], Corners[4], Yellow);
-
-                // Vertical edges
-                Renderer->AddLine(Corners[0], Corners[4], Yellow);
-                Renderer->AddLine(Corners[1], Corners[5], Yellow);
-                Renderer->AddLine(Corners[2], Corners[6], Yellow);
-                Renderer->AddLine(Corners[3], Corners[7], Yellow);
-            }
-        }
-
-        // Billboard rendering
-        RenderBillboard(Renderer, View, Proj);
-    }
-
-    if (!DecalTexture)
+void UDecalComponent::RenderEditorVisuals(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj)
+{
+    if (!Renderer)
     {
         return;
     }
 
-    // 2. Affected Meshes 찾기
+    // Editor 모드에서만 실행
+    if (GWorld && GWorld->WorldType == EWorldType::Editor)
+    {
+        // 1. Owner가 선택된 경우에만 OBB Drawing
+        RenderOBB(Renderer);
+
+        // 2. Billboard rendering
+        RenderBillboard(Renderer, View, Proj);
+    }
+}
+
+void UDecalComponent::RenderDecalProjection(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj)
+{
+    if (!Renderer || !DecalTexture)
+    {
+        return;
+    }
+
+    // Affected Meshes 찾기
     TArray<UStaticMeshComponent*> AffectedMeshes = FindAffectedMeshes(GWorld);
     if (AffectedMeshes.empty())
         return;
@@ -230,10 +222,10 @@ void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMa
     URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
     FDecalRenderingStats& DecalStats = StatsCollector.GetDecalStats();
 
-	DecalStats.ActiveDecalCount++;
+    DecalStats.ActiveDecalCount++;
     DecalStats.AffectedMeshesCount += static_cast<uint32>(AffectedMeshes.size());
 
-    // 3. Decal Shader 및 파이프라인 준비
+    // Decal Shader 및 파이프라인 준비
     UShader* DecalProjShader = UResourceManager::GetInstance().Load<UShader>("ProjectionDecal.hlsl");
 
     Renderer->PrepareShader(DecalProjShader);
@@ -268,8 +260,6 @@ void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMa
         if (!StaticMeshComponent || !Mesh)
             continue;
 
-        // Per-mesh constant buffers
-        // Reuse b4 to carry decal view/proj
         Renderer->UpdateConstantBuffer(StaticMeshComponent->GetWorldMatrix(), View, Proj);
         Renderer->UpdateInvWorldBuffer(DecalView, DecalProj);
         Renderer->UpdateColorBuffer(FVector4{ 1.0f, 1.0f, 1.0f, CurrentAlpha });
@@ -300,7 +290,6 @@ void UDecalComponent::Render(URenderer* Renderer, const FMatrix& View, const FMa
 
         DevieContext->DrawIndexed(Mesh->GetIndexCount(), 0, 0);
 
-		// Decal 드로우콜 통계 증가
         StatsCollector.IncrementDecalDrawCalls();
     }
 
@@ -522,6 +511,45 @@ void UDecalComponent::RenderBillboard(URenderer* Renderer, const FMatrix& View, 
     DeviceContext->DrawIndexed(BillboardQuad->GetIndexCount(), 0, 0);
 
     Renderer->OMSetBlendState(false);
+}
+
+void UDecalComponent::RenderOBB(URenderer* Renderer)
+{
+    if (!Renderer || !Owner)
+    {
+        return;
+    }
+
+    // Owner가 선택된 경우에만 OBB Drawing
+    if (!USelectionManager::GetInstance().IsActorSelected(Owner))
+    {
+        return;
+    }
+
+    FOrientedBox OBB = GetDecalOrientedBox();
+    TArray<FVector> Corners = OBB.GetCorners();
+    const FVector4 Yellow(1.0f, 1.0f, 0.0f, 1.0f);
+
+    if (Corners.size() == 8)
+    {
+        // Bottom face
+        Renderer->AddLine(Corners[0], Corners[1], Yellow);
+        Renderer->AddLine(Corners[1], Corners[3], Yellow);
+        Renderer->AddLine(Corners[3], Corners[2], Yellow);
+        Renderer->AddLine(Corners[2], Corners[0], Yellow);
+
+        // Top face
+        Renderer->AddLine(Corners[4], Corners[5], Yellow);
+        Renderer->AddLine(Corners[5], Corners[7], Yellow);
+        Renderer->AddLine(Corners[7], Corners[6], Yellow);
+        Renderer->AddLine(Corners[6], Corners[4], Yellow);
+
+        // Vertical edges
+        Renderer->AddLine(Corners[0], Corners[4], Yellow);
+        Renderer->AddLine(Corners[1], Corners[5], Yellow);
+        Renderer->AddLine(Corners[2], Corners[6], Yellow);
+        Renderer->AddLine(Corners[3], Corners[7], Yellow);
+    }
 }
 
 UObject* UDecalComponent::Duplicate()
