@@ -147,7 +147,7 @@ void UActorSpawnWidget::RenderWidget()
 	ImGui::Text("Actor Type:");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(220);
-	const char* ActorTypeItems[] = { "Actor (Empty)", "StaticMeshActor", "DecalActor" };
+	const char* ActorTypeItems[] = { "Actor (Empty)", "StaticMeshActor", "DecalActor", "PerspectiveDecalActor"};
 	ImGui::Combo("##ActorType", &SelectedActorType, ActorTypeItems, IM_ARRAYSIZE(ActorTypeItems));
 
 	ImGui::Spacing();
@@ -199,7 +199,7 @@ void UActorSpawnWidget::RenderWidget()
 	}
 
 	// DecalActor 전용 설정
-	if (SelectedActorType == static_cast<int32>(EActorType::Decal))
+	if (SelectedActorType == static_cast<int32>(EActorType::Decal) || SelectedActorType == static_cast<int32>(EActorType::PerspectiveDecal))
 	{
 		// GetDecalFiles()를 사용하여 Decal 텍스처 경로를 가져옵니다
 		CachedDecalTexturePaths = GetDecalFiles();
@@ -249,6 +249,12 @@ void UActorSpawnWidget::RenderWidget()
 		// Fade 설정 (UTargetActorTransformWidget의 Decal Component Settings와 동일)
 		ImGui::Separator();
 		ImGui::Text("Fade Settings");
+
+		ImGui::DragFloat("Max Alpha", &MaxAlpha, 0.05f, 0.0f, 1.0f, "%.2f");
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::SetTooltip("Decal의 Max Alpha 값을 조절합니다");
+		}
 
 		ImGui::DragFloat("Fade In Duration", &FadeInDuration, 0.05f, 0.0f, 100.0f, "%.2f");
 		if (ImGui::IsItemHovered())
@@ -361,7 +367,10 @@ void UActorSpawnWidget::SpawnActors() const
 			SpawnStaticMeshActor(World);
 			break;
 		case EActorType::Decal:
-			SpawnDecalActor(World);
+			SpawnDecalActor(World, true);
+			break;
+		case EActorType::PerspectiveDecal:
+			SpawnDecalActor(World, false);
 			break;
 		}
 	}
@@ -428,7 +437,7 @@ void UActorSpawnWidget::SpawnStaticMeshActor(UWorld* World) const
 	}
 }
 
-void UActorSpawnWidget::SpawnDecalActor(UWorld* World) const
+void UActorSpawnWidget::SpawnDecalActor(UWorld* World, bool bIsOrtho) const
 {
 	// DecalActor는 스케일을 DecalSize로 직접 제어
 	FVector SpawnLocation = GenerateRandomLocation();
@@ -455,6 +464,8 @@ void UActorSpawnWidget::SpawnDecalActor(UWorld* World) const
 			DecalComp->SetFadeInDuration(FadeInDuration);
 			DecalComp->SetFadeStartDelay(FadeStartDelay);
 			DecalComp->SetFadeDuration(FadeOutDuration);
+			DecalComp->SetMaxAlpha(MaxAlpha); 
+			DecalComp->SetProjectionMatrixFlag(bIsOrtho); 
 		}
 
 		FString ActorName = World->GenerateUniqueActorName("DecalActor");

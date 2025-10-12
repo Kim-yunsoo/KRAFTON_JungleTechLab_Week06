@@ -520,7 +520,18 @@ void UTargetActorTransformWidget::RenderWidget()
 				float FadeIn = DecalComp->GetFadeInDuration();
 				float StartDelay = DecalComp->GetFadeStartDelay();
 				float FadeOut = DecalComp->GetFadeDuration();
+				float MaxAlpha = DecalComp->GetMaxAlpha();
+
 				bool bChanged = false; 
+
+				if (ImGui::DragFloat("Max Alpha", &MaxAlpha, 0.05f, 0.0f, 1.0f, "%.2f"))
+				{
+					bChanged = true;
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("이 값은 Decal Matrial의 Alpha값을 설정합니다.");
+				}
 
 				if (ImGui::DragFloat("Fade In Duration", &FadeIn, 0.05f, 0.0f, 100.0f, "%.2f"))
 				{
@@ -553,7 +564,7 @@ void UTargetActorTransformWidget::RenderWidget()
 					DecalComp->SetFadeInDuration(FadeIn);
 					DecalComp->SetFadeStartDelay(StartDelay);
 					DecalComp->SetFadeDuration(FadeOut);
-
+					DecalComp->SetMaxAlpha(MaxAlpha);
 				}
 				ImGui::Text("Current Alpha: %.2f", DecalComp->GetCurrentAlpha());
 				if (ImGui::Button("Start Fade"))

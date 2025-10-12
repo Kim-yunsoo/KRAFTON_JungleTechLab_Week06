@@ -76,13 +76,17 @@ public:
     float GetFadeInDuration() { return FadeInDuration; }
     float GetFadeStartDelay() { return FadeStartDelay; }
     float GetFadeDuration() { return FadeDuration; }
+    bool GetProjectionMatrixFlag() { return bIsOrthoMatrix; }
+    float GetMaxAlpha() { return MaxAlpha;}
 
     void SetFadeInDuration(float Value) { FadeInDuration = Value; }
     void SetFadeStartDelay(float Value) { FadeStartDelay = Value; }
     void SetFadeDuration(float Value) { FadeDuration = Value; }
+    void SetProjectionMatrixFlag(bool IsOrtho) { bIsOrthoMatrix = IsOrtho; }
+    void SetMaxAlpha(float MaxValue) { MaxAlpha = MaxValue; }
 
 private:
-    void RenderBillboard(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
+     void RenderBillboard(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
     void RenderOBB(URenderer* Renderer);
     void CreateBillboardVertices();
 
@@ -109,13 +113,17 @@ protected:
     /** Decal이 Fadeout으로 사라지는데 걸리는 시간 */
     float FadeDuration;
      
+    /** Decal Projection 방법 flag */
+    bool bIsOrthoMatrix;
+
     float CurrentAlpha;
     float CurrentStateElapsedTime[4];
+    float MaxAlpha;
 
     // Billboard properties
     UTextQuad* BillboardQuad = nullptr;
     UTexture* BillboardTexture = nullptr;
     UMaterial* BillboardMaterial = nullptr;
     float BillboardWidth = 1.0f;
-    float BillboardHeight = 1.0f;
+    float BillboardHeight = 1.0f; 
 };

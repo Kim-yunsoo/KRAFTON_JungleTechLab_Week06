@@ -31,7 +31,8 @@ private:
 	{
 		Empty = 0,
 		StaticMesh = 1,
-		Decal = 2
+		Decal = 2,
+		PerspectiveDecal = 3,
 	};
 
 	int32 SelectedActorType = static_cast<int32>(EActorType::Empty);
@@ -55,8 +56,9 @@ private:
 
 	// Fade 설정
 	float FadeInDuration = 1.0f;
-	float FadeStartDelay = 1.0f;
+	float FadeStartDelay = 3.0f;
 	float FadeOutDuration = 1.0f;
+	float MaxAlpha = 1.0f;
 
 	// 헬퍼 메서드
 	UWorld* GetCurrentWorld() const;
@@ -68,5 +70,5 @@ private:
 
 	void SpawnEmptyActor(UWorld* World) const;
 	void SpawnStaticMeshActor(UWorld* World) const;
-	void SpawnDecalActor(UWorld* World) const;
+	void SpawnDecalActor(UWorld* World, bool bIsOrtho) const;
 };

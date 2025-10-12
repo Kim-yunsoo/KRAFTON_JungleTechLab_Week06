@@ -28,6 +28,9 @@ UDecalComponent::UDecalComponent()
     FadeDuration = 3; 
 
     CurrentAlpha = 1.0f;
+    MaxAlpha = 1.0f;
+    bIsOrthoMatrix = true;
+
     for (int i = 0; i < 4; ++i)
     {
         CurrentStateElapsedTime[i] = 0.0f;
@@ -243,30 +246,29 @@ void UDecalComponent::RenderDecalProjection(URenderer* Renderer, const FMatrix& 
     FMatrix DecalView = DecalXform.ToMatrixWithScaleLocalXYZ().InverseAffine();
 
     FMatrix DecalProj;
-    {//Ortho
+
+    //Orthographic Matrix
+    if(bIsOrthoMatrix)
+    {
         const float OrthoWidth = Scale.Y;
         const float OrthoHeight = Scale.Z;
         const float NearZ = -0.5f * Scale.X;
         const float FarZ = 0.5f * Scale.X;
         DecalProj = FMatrix::OrthoLH(OrthoWidth, OrthoHeight, NearZ, FarZ);
     }
-    //Perspective (set far-plane size to match OBB scale Y/Z)
-    {
-        // Depth along local +X
-        const float FarZ = FMath::Max(Scale.X, 1e-3f);
-        const float NearZ = 0.01f;
 
-        // Aspect based on OBB width/height (Y/Z)
-        const float SafeZ = FMath::Max(Scale.Z, 1e-6f);
-        const float Aspect = Scale.Y / SafeZ;
+    //Perspective Matrix
+    else
+    { 
+        const float FarX = FMath::Max(Scale.X, 1e-3f);
+        const float NearX = 0.01f;
 
-        // Choose vertical FOV so that far-plane height equals OBB Z scale
-        // farHeight = 2 * FarZ * tan(Fov/2) = Scale.Z
-        float tanHalfFov = SafeZ / (2.0f * FarZ);
-        tanHalfFov = FMath::Clamp(tanHalfFov, 1e-4f, 10.0f);
+        const float Aspect = Scale.Y / Scale.Z;
+         
+        float tanHalfFov = Scale.Z / (2.0f * FarX);
         const float FovRad = 2.0f * atanf(tanHalfFov);
 
-        DecalProj = FMatrix::PerspectiveFovLH(FovRad, Aspect, NearZ, FarZ);
+        DecalProj = FMatrix::PerspectiveFovLH(FovRad, Aspect, NearX, FarX);
     }
 
     ID3D11DeviceContext* DevieContext = Renderer->GetRHIDevice()->GetDeviceContext();
@@ -354,17 +356,18 @@ void UDecalComponent::ActivateFadeEffect()
     {
     case EDecalState::FadeIn:
     {
-        const float Duration = FMath::Max(0.0f, GetFadeInDuration());
+        const float Duration = GetFadeInDuration();
+         
         if (Duration == 0.0f)
         {
-            CurrentAlpha = 1.0f;
+            CurrentAlpha = MaxAlpha;
             DecalCurrentState = EDecalState::Delay;
             CurrentStateElapsedTime[static_cast<uint8>(EDecalState::Delay)] = 0.0f;
         }
         else
         {
-            CurrentAlpha = FMath::Clamp(CurrentStateElapsedTime[static_cast<uint8>(EDecalState::FadeIn)] / Duration, 0.0f, 1.0f);
-            if (CurrentAlpha == 1.0f)
+            CurrentAlpha = FMath::Clamp(CurrentStateElapsedTime[static_cast<uint8>(EDecalState::FadeIn)] / Duration, 0.0f, MaxAlpha);
+            if (CurrentAlpha == MaxAlpha)
             {
                 DecalCurrentState = EDecalState::Delay;
                 CurrentStateElapsedTime[static_cast<uint8>(EDecalState::Delay)] = 0.0f; 
@@ -376,8 +379,12 @@ void UDecalComponent::ActivateFadeEffect()
     }
     case EDecalState::Delay:
     {
-        CurrentAlpha = 1.0f;
-        if (CurrentStateElapsedTime[static_cast<uint8>(EDecalState::Delay)] > GetFadeStartDelay())
+        CurrentAlpha = MaxAlpha;
+        if (FadeStartDelay == 0.0f)
+        {
+
+        }
+        else if (CurrentStateElapsedTime[static_cast<uint8>(EDecalState::Delay)] > GetFadeStartDelay())
         {
             DecalCurrentState = EDecalState::FadingOut;
             CurrentStateElapsedTime[static_cast<uint8>(EDecalState::FadingOut)] = 0.0f;
@@ -595,7 +602,8 @@ UObject* UDecalComponent::Duplicate()
     DuplicatedComponent->FadeDuration = FadeDuration;
     DuplicatedComponent->CurrentAlpha = 0.0f;
     DuplicatedComponent->DecalCurrentState = EDecalState::FadeIn;
-
+    DuplicatedComponent->bIsOrthoMatrix = bIsOrthoMatrix;
+    
     for (int i = 0; i < 4; ++i)
     {
         DuplicatedComponent->CurrentStateElapsedTime[i] = 0.0f;
@@ -620,6 +628,8 @@ UObject* UDecalComponent::Duplicate(FObjectDuplicationParameters Parameters)
     DupObject->FadeDuration = FadeDuration;
      
     DupObject->CurrentAlpha = 0.0f;
+    DupObject->MaxAlpha = MaxAlpha;
+
     DupObject->DecalCurrentState = EDecalState::FadeIn;
     
     //시작은 0에서  시작 
