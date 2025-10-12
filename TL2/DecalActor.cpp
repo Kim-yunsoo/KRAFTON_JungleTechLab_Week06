@@ -28,7 +28,23 @@ void ADecalActor::Tick(float DeltaTime)
 void ADecalActor::SetDecalComponent(UDecalComponent* InDecalComponent)
 {
     DecalComponent = InDecalComponent;
-    DecalComponent->SetupAttachment(RootComponent);
+    // RootComponent가 DecalComponent와 다를 때만 Attach
+    if (DecalComponent && RootComponent && DecalComponent != RootComponent)
+    {
+        DecalComponent->SetupAttachment(RootComponent);
+    }
+}
+
+void ADecalActor::ClearDefaultComponents()
+{
+    // 생성자가 만든 DecalComponent를 삭제
+    if (DecalComponent)
+    {
+        OwnedComponents.Remove(DecalComponent);
+        ObjectFactory::DeleteObject(DecalComponent);
+        DecalComponent = nullptr;
+        RootComponent = nullptr;
+    }
 }
 
 bool ADecalActor::DeleteComponent(USceneComponent* ComponentToDelete)

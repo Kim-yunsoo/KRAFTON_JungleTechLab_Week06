@@ -44,9 +44,9 @@ struct FComponentData
     FString DecalTexture;  // Decal texture path
     FVector DecalSize;  // Decal box size
     int32 SortOrder = 0;
-    float FadeInDuration = 3.0f;
-    float FadeStartDelay = 3.0f;
-    float FadeDuration = 3.0f;
+    float FadeInDuration = 1.0f;
+    float FadeStartDelay = 1.0f;
+    float FadeDuration = 1.0f;
 };
 
 struct FActorData

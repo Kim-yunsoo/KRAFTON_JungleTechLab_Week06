@@ -1144,6 +1144,17 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         NewActor->SetName(ActorData.Name);
         NewActor->SetWorld(this);
 
+        // DecalActor의 경우 생성자가 만든 DecalComponent를 삭제
+        if (ADecalActor* DecalActor = Cast<ADecalActor>(NewActor))
+        {
+            DecalActor->ClearDefaultComponents();
+        }
+        // StaticMeshActor의 경우 생성자가 만든 컴포넌트들을 삭제
+        else if (AStaticMeshActor* StaticMeshActor = Cast<AStaticMeshActor>(NewActor))
+        {
+            StaticMeshActor->ClearDefaultComponents();
+        }
+
         ActorMap.Add(ActorData.UUID, NewActor);
     }
 
@@ -1256,6 +1267,12 @@ void UWorld::LoadSceneV2(const FString& SceneName)
                     break;
                 }
             }
+        }
+        // DecalActor 전용 포인터 재설정
+        else if (ADecalActor* DecalActor = Cast<ADecalActor>(Actor))
+        {
+            // RootComponent를 DecalComponent로 재설정
+            DecalActor->SetDecalComponent(Cast<UDecalComponent>(DecalActor->RootComponent));
         }
     }
 
