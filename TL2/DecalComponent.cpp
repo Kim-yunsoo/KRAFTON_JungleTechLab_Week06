@@ -630,6 +630,7 @@ UObject* UDecalComponent::Duplicate(FObjectDuplicationParameters Parameters)
     DupObject->CurrentAlpha = 0.0f;
     DupObject->MaxAlpha = MaxAlpha;
 
+    DupObject->bIsOrthoMatrix = bIsOrthoMatrix;
     DupObject->DecalCurrentState = EDecalState::FadeIn;
     
     //시작은 0에서  시작 
