@@ -11,7 +11,7 @@ protected:
     ~UBillboardComponent() override;
 
 public:
-    void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj) override;
+    void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj, FViewport* Viewport) override;
     
     // Size settings
     void SetBillboardSize(float Width, float Height) { BillboardWidth = Width; BillboardHeight = Height; }

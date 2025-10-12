@@ -6,6 +6,7 @@
 #include "ResourceManager.h"
 #include "ObjManager.h"
 #include "SceneLoader.h"
+#include "FViewport.h"
 
 UStaticMeshComponent::UStaticMeshComponent()
 {
@@ -17,16 +18,24 @@ UStaticMeshComponent::~UStaticMeshComponent()
 
 }
 
-void UStaticMeshComponent::Render(URenderer* Renderer, const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix)
+void UStaticMeshComponent::Render(URenderer* Renderer, const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport)
 {
-    if (StaticMesh)
+    if (!StaticMesh || !Renderer || !Viewport)
     {
-        // 1. 메쉬 렌더링
+        return;
+    }
+
+    // 1. 메쉬 렌더링 (SF_StaticMeshes 플래그 확인)
+    if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
+    {
         Renderer->UpdateConstantBuffer(GetWorldMatrix(), ViewMatrix, ProjectionMatrix);
         Renderer->PrepareShader(GetMaterial()->GetShader());
         Renderer->DrawIndexedPrimitiveComponent(GetStaticMesh(), D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST, MaterailSlots);
+    }
 
-        // 2. AABB Bounding Box
+    // 2. AABB Bounding Box 렌더링 (SF_BoundingBoxes 플래그 확인)
+    if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_BoundingBoxes))
+    {
         RenderBoundingBox(Renderer);
     }
 }

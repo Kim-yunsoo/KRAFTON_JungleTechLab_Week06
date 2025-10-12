@@ -166,7 +166,7 @@ FBox UOBoundingBoxComponent::GetWorldOBBFromAttachParent() const
     return FBox(MinW, MaxW);
 }
 
-void UOBoundingBoxComponent::Render(URenderer* Renderer, const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix)
+void UOBoundingBoxComponent::Render(URenderer* Renderer, const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport)
 {
     // Draw oriented bounding box as lines using Center, Axis[3], Extent
     TArray<FVector> Start;

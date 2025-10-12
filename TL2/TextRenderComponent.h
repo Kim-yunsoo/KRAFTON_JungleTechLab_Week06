@@ -13,7 +13,7 @@ protected:
 public:
 	void InitCharInfoMap();
 	TArray<FBillboardVertexInfo_GPU> CreateVerticesForString(const FString& text,const FVector& StartPos);
-	virtual void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj) override;
+	virtual void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj, FViewport* Viewport = nullptr) override;
 	
 	const FString GetText() { return Text; }
 	void SetText(FString InText);

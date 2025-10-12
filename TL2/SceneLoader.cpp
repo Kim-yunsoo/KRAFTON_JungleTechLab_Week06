@@ -378,7 +378,7 @@ FSceneData FSceneLoader::ParseV2(const JSON& Json)
     if (Json.hasKey("Actors"))
     {
         const JSON& ActorsJson = Json.at("Actors");
-        for (size_t i = 0; i < ActorsJson.size(); ++i)
+        for (uint32 i = 0; i < static_cast<uint32>(ActorsJson.size()); ++i)
         {
             const JSON& ActorJson = ActorsJson.at(i);
             FActorData Actor;
@@ -400,7 +400,7 @@ FSceneData FSceneLoader::ParseV2(const JSON& Json)
     if (Json.hasKey("Components"))
     {
         const JSON& CompsJson = Json.at("Components");
-        for (size_t i = 0; i < CompsJson.size(); ++i)
+        for (uint32 i = 0; i < static_cast<uint32>(CompsJson.size()); ++i)
         {
             const JSON& CompJson = CompsJson.at(i);
             FComponentData Comp;
@@ -452,7 +452,7 @@ FSceneData FSceneLoader::ParseV2(const JSON& Json)
             if (CompJson.hasKey("Materials"))
             {
                 const JSON& matsJson = CompJson.at("Materials");
-                for (size_t m = 0; m < matsJson.size(); ++m)
+                for (uint32 m = 0; m < static_cast<uint32>(matsJson.size()); ++m)
                 {
                     Comp.Materials.push_back(matsJson.at(m).ToString());
                 }

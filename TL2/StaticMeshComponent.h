@@ -26,7 +26,7 @@ protected:
     ~UStaticMeshComponent() override;
 
 public:
-    void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj) override;
+    void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj, FViewport* Viewport) override;
 
     void SetStaticMesh(const FString& PathFileName);
     UStaticMesh* GetStaticMesh() const { return StaticMesh; }

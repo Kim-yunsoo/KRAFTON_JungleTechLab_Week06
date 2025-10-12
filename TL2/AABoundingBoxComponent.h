@@ -155,7 +155,7 @@ public:
     void SetFromVertices(const TArray<FVector>& Verts);
     void SetFromVertices(const TArray<FNormalVertex>& Verts);
     void SetMinMax(const FBound& Bound);
-    void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj) override;
+    void Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj, FViewport* Viewport = nullptr) override;
     void TickComponent(float DeltaTime) override;
     // 월드 좌표계에서의 AABB 반환
     FBound GetWorldBoundFromCube();

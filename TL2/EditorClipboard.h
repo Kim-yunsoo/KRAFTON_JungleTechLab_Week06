@@ -29,7 +29,7 @@ public:
     void Clear();
 
     /** 복사된 액터 개수 반환 */
-    int32 GetCopiedActorCount() const { return CopiedActors.size(); }
+    int32 GetCopiedActorCount() const { return static_cast<int32>(CopiedActors.size()); }
 
 private:
     UEditorClipboard() = default;

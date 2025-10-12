@@ -92,7 +92,7 @@ void UBillboardComponent::CreateBillboardVertices()
     UResourceManager::GetInstance().UpdateDynamicVertexBuffer("Billboard", vertices);
 }
 
-void UBillboardComponent::Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj)
+void UBillboardComponent::Render(URenderer* Renderer, const FMatrix& View, const FMatrix& Proj, FViewport* Viewport)
 {
     // 텍스처 로드
     Material->Load(TexturePath, Renderer->GetRHIDevice()->GetDevice());

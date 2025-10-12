@@ -75,7 +75,7 @@ void ULineComponent::ClearLines()
     Lines.Empty();
 }
 
-void ULineComponent::Render(URenderer* Renderer, const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix)
+void ULineComponent::Render(URenderer* Renderer, const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport)
 {
     if (!HasVisibleLines() || !Renderer)
         return;
