@@ -236,20 +236,17 @@ void UDecalComponent::RenderDecalProjection(URenderer* Renderer, const FMatrix& 
     Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqualReadOnly);
      
     // reset viewfrustum posision 
-    FTransform DecalXform = GetWorldTransform();
-    DecalXform.Scale3D = FVector(1.0f, 1.0f, 1.0f); 
-    FVector Scale = GetWorldScale(); 
-    {
-        const FVector projForward = DecalXform.Rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
-        DecalXform.Translation = DecalXform.Translation + projForward * (-0.5f * Scale.X);
-    }
-    FMatrix DecalView = DecalXform.ToMatrixWithScaleLocalXYZ().InverseAffine();
-
+   
+    FMatrix DecalView;
     FMatrix DecalProj;
 
     //Orthographic Matrix
     if(bIsOrthoMatrix)
     {
+        FTransform DecalXform = GetWorldTransform();  
+        DecalView = DecalXform.ToMatrixWithScaleLocalXYZ().InverseAffine();
+
+        FVector Scale = GetWorldScale();
         const float OrthoWidth = Scale.Y;
         const float OrthoHeight = Scale.Z;
         const float NearZ = -0.5f * Scale.X;
@@ -259,7 +256,16 @@ void UDecalComponent::RenderDecalProjection(URenderer* Renderer, const FMatrix& 
 
     //Perspective Matrix
     else
-    { 
+    {
+        FTransform DecalXform = GetWorldTransform();
+        DecalXform.Scale3D = FVector(1.0f, 1.0f, 1.0f);
+        FVector Scale = GetWorldScale();
+        {
+            const FVector projForward = DecalXform.Rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
+            DecalXform.Translation = DecalXform.Translation + projForward * (-0.5f * Scale.X);
+        }
+        DecalView = DecalXform.ToMatrixWithScaleLocalXYZ().InverseAffine();
+
         const float FarX = FMath::Max(Scale.X, 1e-3f);
         const float NearX = 0.01f;
 
