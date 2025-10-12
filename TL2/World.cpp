@@ -408,7 +408,8 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
     FDecalRenderingStats& DecalStats = StatsCollector.GetDecalStats();
     DecalStats.TotalDecalCount = TotalDecalCount;
 
-    if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals) &&
+    if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives) &&
+        Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals) &&
         Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
     {
         for (AActor* Actor : LevelActors)
