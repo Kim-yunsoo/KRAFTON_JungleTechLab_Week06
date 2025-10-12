@@ -18,6 +18,11 @@ ADecalActor::ADecalActor()
 
 ADecalActor::~ADecalActor()
 {
+    if (DecalComponent)
+    {
+        ObjectFactory::DeleteObject(DecalComponent);
+    }
+    DecalComponent = nullptr;
 }
 
 void ADecalActor::Tick(float DeltaTime)
