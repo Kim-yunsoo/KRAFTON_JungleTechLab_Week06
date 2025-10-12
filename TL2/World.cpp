@@ -20,6 +20,7 @@
 #include "UEContainer.h"
 #include "DecalComponent.h"
 #include "DecalActor.h"
+#include "BillboardComponent.h"
 #include "RenderingStats.h"
 
 extern float CLIENTWIDTH;
@@ -1061,6 +1062,19 @@ void UWorld::SaveSceneV2(const FString& SceneName)
                 CompData.FadeDuration = DecalComp->GetFadeDuration();
                 // SortOrder는 기본값 0 사용
             }
+            else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Comp))
+            {
+                // BillboardComponent 속성 저장
+                CompData.BillboardTexturePath = BillboardComp->GetTexturePath();
+                CompData.BillboardWidth = BillboardComp->GetBillboardWidth();
+                CompData.BillboardHeight = BillboardComp->GetBillboardHeight();
+                CompData.UCoord = BillboardComp->GetU();
+                CompData.VCoord = BillboardComp->GetV();
+                CompData.ULength = BillboardComp->GetUL();
+                CompData.VLength = BillboardComp->GetVL();
+                CompData.bIsScreenSizeScaled = BillboardComp->IsScreenSizeScaled();
+                CompData.ScreenSize = BillboardComp->GetScreenSize();
+            }
 
             SceneData.Components.push_back(CompData);
         }
@@ -1196,6 +1210,18 @@ void UWorld::LoadSceneV2(const FString& SceneName)
             DecalComp->SetFadeInDuration(CompData.FadeInDuration);
             DecalComp->SetFadeStartDelay(CompData.FadeStartDelay);
             DecalComp->SetFadeDuration(CompData.FadeDuration);
+        }
+        else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(NewComp))
+        {
+            // BillboardComponent 속성 복원
+            if (!CompData.BillboardTexturePath.empty())
+            {
+                BillboardComp->SetTexture(CompData.BillboardTexturePath);
+            }
+            BillboardComp->SetBillboardSize(CompData.BillboardWidth, CompData.BillboardHeight);
+            BillboardComp->SetUVCoords(CompData.UCoord, CompData.VCoord, CompData.ULength, CompData.VLength);
+            BillboardComp->SetScreenSizeScaled(CompData.bIsScreenSizeScaled);
+            BillboardComp->SetScreenSize(CompData.ScreenSize);
         }
 
         // Owner Actor 설정

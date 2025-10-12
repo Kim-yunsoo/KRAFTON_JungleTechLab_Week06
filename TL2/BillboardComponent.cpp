@@ -35,9 +35,24 @@ void UBillboardComponent::SetUVCoords(float U, float V, float UL, float VL)
 
 UObject* UBillboardComponent::Duplicate()
 {
-    UBillboardComponent* DuplicatedComponent = NewObject<UBillboardComponent>(*this);
-    DuplicatedComponent->DuplicateSubObjects();
+    UBillboardComponent* DuplicatedComponent = Cast<UBillboardComponent>(NewObject(GetClass()));
 
+    // 공통 속성 복사 (Transform, AttachChildren)
+    CopyCommonProperties(DuplicatedComponent);
+
+    // BillboardComponent 전용 속성 복사
+    DuplicatedComponent->BillboardQuad = this->BillboardQuad;
+    DuplicatedComponent->BillboardWidth = this->BillboardWidth;
+    DuplicatedComponent->BillboardHeight = this->BillboardHeight;
+    DuplicatedComponent->TexturePath = this->TexturePath;
+    DuplicatedComponent->UCoord = this->UCoord;
+    DuplicatedComponent->VCoord = this->VCoord;
+    DuplicatedComponent->ULength = this->ULength;
+    DuplicatedComponent->VLength = this->VLength;
+    DuplicatedComponent->bIsScreenSizeScaled = this->bIsScreenSizeScaled;
+    DuplicatedComponent->ScreenSize = this->ScreenSize;
+
+    DuplicatedComponent->DuplicateSubObjects();
     return DuplicatedComponent;
 }
 

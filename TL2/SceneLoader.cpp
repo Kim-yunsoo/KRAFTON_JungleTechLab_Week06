@@ -310,6 +310,25 @@ void FSceneLoader::SaveV2(const FSceneData& SceneData, const FString& SceneName)
             oss << "      \"FadeStartDelay\" : " << Comp.FadeStartDelay << ",\n";
             oss << "      \"FadeDuration\" : " << Comp.FadeDuration;
         }
+        else if (Comp.Type.find("BillboardComponent") != std::string::npos)
+        {
+            // BillboardComponent 전용 속성
+            if (!Comp.BillboardTexturePath.empty())
+            {
+                oss << ",\n";
+                FString AssetPath = NormalizePath(Comp.BillboardTexturePath);
+                oss << "      \"BillboardTexturePath\" : \"" << AssetPath << "\"";
+            }
+            oss << ",\n";
+            oss << "      \"BillboardWidth\" : " << Comp.BillboardWidth << ",\n";
+            oss << "      \"BillboardHeight\" : " << Comp.BillboardHeight << ",\n";
+            oss << "      \"UCoord\" : " << Comp.UCoord << ",\n";
+            oss << "      \"VCoord\" : " << Comp.VCoord << ",\n";
+            oss << "      \"ULength\" : " << Comp.ULength << ",\n";
+            oss << "      \"VLength\" : " << Comp.VLength << ",\n";
+            oss << "      \"bIsScreenSizeScaled\" : " << (Comp.bIsScreenSizeScaled ? "true" : "false") << ",\n";
+            oss << "      \"ScreenSize\" : " << Comp.ScreenSize;
+        }
 
         oss << "\n";
         oss << "    }" << (i + 1 < SceneData.Components.size() ? "," : "") << "\n";
@@ -483,6 +502,34 @@ FSceneData FSceneLoader::ParseV2(const JSON& Json)
 
             if (CompJson.hasKey("FadeDuration"))
                 Comp.FadeDuration = (float)CompJson.at("FadeDuration").ToFloat();
+
+            // BillboardComponent 전용 속성
+            if (CompJson.hasKey("BillboardTexturePath"))
+                Comp.BillboardTexturePath = CompJson.at("BillboardTexturePath").ToString();
+
+            if (CompJson.hasKey("BillboardWidth"))
+                Comp.BillboardWidth = (float)CompJson.at("BillboardWidth").ToFloat();
+
+            if (CompJson.hasKey("BillboardHeight"))
+                Comp.BillboardHeight = (float)CompJson.at("BillboardHeight").ToFloat();
+
+            if (CompJson.hasKey("UCoord"))
+                Comp.UCoord = (float)CompJson.at("UCoord").ToFloat();
+
+            if (CompJson.hasKey("VCoord"))
+                Comp.VCoord = (float)CompJson.at("VCoord").ToFloat();
+
+            if (CompJson.hasKey("ULength"))
+                Comp.ULength = (float)CompJson.at("ULength").ToFloat();
+
+            if (CompJson.hasKey("VLength"))
+                Comp.VLength = (float)CompJson.at("VLength").ToFloat();
+
+            if (CompJson.hasKey("bIsScreenSizeScaled"))
+                Comp.bIsScreenSizeScaled = CompJson.at("bIsScreenSizeScaled").ToBool();
+
+            if (CompJson.hasKey("ScreenSize"))
+                Comp.ScreenSize = (float)CompJson.at("ScreenSize").ToFloat();
 
             Data.Components.push_back(Comp);
         }
