@@ -40,40 +40,40 @@ static inline FString GetBaseNameNoExt(const FString& Path)
 	return Path;
 }
 
-// Editor/Icon 폴더에서 모든 .dds 파일을 동적으로 찾아서 반환
-static TArray<FString> GetIconFiles()
-{
-	TArray<FString> iconFiles;
-	try
-	{
-		fs::path iconPath = "Editor/Icon";
-		if (fs::exists(iconPath) && fs::is_directory(iconPath))
-		{
-			for (const auto& entry : fs::directory_iterator(iconPath))
-			{
-				if (entry.is_regular_file())
-				{
-					auto filename = entry.path().filename().string();
-					// .dds 확장자만 포함
-					if (filename.ends_with(".dds"))
-					{
-						// 상대경로 포맷으로 저장 (Editor/Icon/filename.dds)
-						FString relativePath = "Editor/Icon/" + filename;
-						iconFiles.push_back(relativePath);
-					}
-				}
-			}
-		}
-	}
-	catch (const std::exception&)
-	{
-		// 파일 시스템 오류 발생 시 기본값으로 폴백
-		iconFiles.push_back("Editor/Icon/Pawn_64x.dds");
-		iconFiles.push_back("Editor/Icon/PointLight_64x.dds");
-		iconFiles.push_back("Editor/Icon/SpotLight_64x.dds");
-	}
-	return iconFiles;
-}
+    // Editor/Icon 폴더에서 .dds/.png/.jpg 파일을 동적으로 찾아서 반환
+    static TArray<FString> GetIconFiles()
+    {
+        TArray<FString> iconFiles;
+        try
+        {
+            fs::path iconPath = "Editor/Icon";
+            if (fs::exists(iconPath) && fs::is_directory(iconPath))
+            {
+                for (const auto& entry : fs::directory_iterator(iconPath))
+                {
+                    if (entry.is_regular_file())
+                    {
+                        auto filename = entry.path().filename().string();
+                        // .dds, .png, .jpg 확장자 포함 (최소 수정)
+                        if (filename.ends_with(".dds") || filename.ends_with(".png") || filename.ends_with(".jpg"))
+                        {
+                            // 상대경로 포맷으로 저장 (Editor/Icon/filename)
+                            FString relativePath = "Editor/Icon/" + filename;
+                            iconFiles.push_back(relativePath);
+                        }
+                    }
+                }
+            }
+        }
+        catch (const std::exception&)
+        {
+            // 파일 시스템 오류 발생 시 기본값으로 폴백
+            iconFiles.push_back("Editor/Icon/Pawn_64x.dds");
+            iconFiles.push_back("Editor/Icon/PointLight_64x.dds");
+            iconFiles.push_back("Editor/Icon/SpotLight_64x.dds");
+        }
+        return iconFiles;
+    }
 
 // Editor/Decal 폴더의 사용 가능한 텍스처(.dds/.png/.jpg)를 수집
 static TArray<FString> GetDecalFiles()
@@ -644,8 +644,8 @@ void UTargetActorTransformWidget::RenderWidget()
 				
 				if (!bSpriteOptionsLoaded)
 				{
-					// Editor/Icon 폴더에서 .dds 파일들을 찾아서 추가
-					SpriteOptions = GetIconFiles();
+                // Editor/Icon 폴더에서 스프라이트 파일(.dds/.png/.jpg) 로드
+                SpriteOptions = GetIconFiles();
 					bSpriteOptionsLoaded = true;
 					
 					// 현재 텍스처와 일치하는 인덱스 찾기
