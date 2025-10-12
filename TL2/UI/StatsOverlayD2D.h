@@ -46,7 +46,7 @@ private:
     bool bInitialized = false;
     bool bShowFPS = true;
     bool bShowMemory = true;
-    bool bShowPicking = true;
+    bool bShowPicking = false;
     bool bShowRenderStats = true;
     bool bShowDecal = true;
     
