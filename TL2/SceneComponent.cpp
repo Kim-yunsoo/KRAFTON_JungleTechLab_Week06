@@ -92,7 +92,6 @@ FTransform USceneComponent::GetWorldTransform() const
         return AttachParent->GetWorldTransform() * RelativeTransform;
     return RelativeTransform;
 }
-
 void USceneComponent::SetWorldTransform(const FTransform& W)
 {
     if (AttachParent)

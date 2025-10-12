@@ -231,17 +231,43 @@ void UDecalComponent::RenderDecalProjection(URenderer* Renderer, const FMatrix& 
     Renderer->PrepareShader(DecalProjShader);
     Renderer->OMSetBlendState(true);
     Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqualReadOnly);
+     
+    // reset viewfrustum posision 
+    FTransform DecalXform = GetWorldTransform();
+    DecalXform.Scale3D = FVector(1.0f, 1.0f, 1.0f); 
+    FVector Scale = GetWorldScale(); 
+    {
+        const FVector projForward = DecalXform.Rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
+        DecalXform.Translation = DecalXform.Translation + projForward * (-0.5f * Scale.X);
+    }
+    FMatrix DecalView = DecalXform.ToMatrixWithScaleLocalXYZ().InverseAffine();
 
-    // Decal View/Proj from this component
-    FMatrix DecalView = GetWorldTransform().ToMatrixWithScaleLocalXYZ().InverseAffine();
-    FVector Scale = GetRelativeScale();
+    FMatrix DecalProj;
+    {//Ortho
+        const float OrthoWidth = Scale.Y;
+        const float OrthoHeight = Scale.Z;
+        const float NearZ = -0.5f * Scale.X;
+        const float FarZ = 0.5f * Scale.X;
+        DecalProj = FMatrix::OrthoLH(OrthoWidth, OrthoHeight, NearZ, FarZ);
+    }
+    //Perspective (set far-plane size to match OBB scale Y/Z)
+    {
+        // Depth along local +X
+        const float FarZ = FMath::Max(Scale.X, 1e-3f);
+        const float NearZ = 0.01f;
 
-    const float OrthoWidth = Scale.Y;
-    const float OrthoHeight = Scale.Z;
-    const float NearZ = -0.5f * Scale.X;
-    const float FarZ = 0.5f * Scale.X;
+        // Aspect based on OBB width/height (Y/Z)
+        const float SafeZ = FMath::Max(Scale.Z, 1e-6f);
+        const float Aspect = Scale.Y / SafeZ;
 
-    FMatrix DecalProj = FMatrix::OrthoLH(OrthoWidth, OrthoHeight, NearZ, FarZ);
+        // Choose vertical FOV so that far-plane height equals OBB Z scale
+        // farHeight = 2 * FarZ * tan(Fov/2) = Scale.Z
+        float tanHalfFov = SafeZ / (2.0f * FarZ);
+        tanHalfFov = FMath::Clamp(tanHalfFov, 1e-4f, 10.0f);
+        const float FovRad = 2.0f * atanf(tanHalfFov);
+
+        DecalProj = FMatrix::PerspectiveFovLH(FovRad, Aspect, NearZ, FarZ);
+    }
 
     ID3D11DeviceContext* DevieContext = Renderer->GetRHIDevice()->GetDeviceContext();
 

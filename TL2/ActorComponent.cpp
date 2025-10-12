@@ -57,6 +57,7 @@ UObject* UActorComponent::Duplicate(FObjectDuplicationParameters Parameters)
         // Deuplicat할 Component 체크      
         if (auto It = Parameters.DuplicationSeed.find(Owner); It != Parameters.DuplicationSeed.end() )
         {
+
             DupObject->Owner = static_cast<AActor*>(It->second);
         }
         else
