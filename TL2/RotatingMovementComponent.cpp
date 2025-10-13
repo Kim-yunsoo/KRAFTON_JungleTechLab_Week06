@@ -33,13 +33,8 @@ void URotatingMovementComponent::TickComponent(float DeltaSeconds)
     // 회전 델타 계산 (초당 도 * 델타 시간)
     FVector RotationDelta = RotationRate * DeltaSeconds;
 
-    // 도를 라디안으로 변환하고 쿼터니언 생성
-    float PitchRad = RotationDelta.X * (PI / 180.0f);
-    float YawRad = RotationDelta.Y * (PI / 180.0f);
-    float RollRad = RotationDelta.Z * (PI / 180.0f);
-
     // 오일러 각도로부터 쿼터니언 생성 (Pitch, Yaw, Roll)
-    FQuat DeltaRotation = FQuat::MakeFromEuler(FVector(PitchRad, YawRad, RollRad));
+    FQuat DeltaRotation = FQuat::MakeFromEuler(FVector(RotationDelta.X, RotationDelta.Y, RotationDelta.Z));
 
     if (bRotationInLocalSpace)
     {
