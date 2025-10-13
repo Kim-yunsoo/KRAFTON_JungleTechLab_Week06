@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include "StaticMeshActor.h"
 
+class UPointLightComponent;
+
 class AFireBallActor : public AStaticMeshActor
 {	
 public:
@@ -8,9 +10,13 @@ public:
 
 	AFireBallActor();
 
-protected:
-	~AFireBallActor();
+	UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
 
-	UObject* Duplicate(FObjectDuplicationParameters Parameters);
+protected:
+	~AFireBallActor() override;
+
+protected:
+	UPointLightComponent* PointLightComponent;
+
 };
 

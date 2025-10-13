@@ -47,7 +47,7 @@ struct FMaterial
     float3 EmissiveColor; // Ke
     uint IlluminationModel; // illum. Default illumination model to Phong for non-Pbr materials
     
-    float3 TransmissionFilter; // Tf  
+    float3 TransmissionFilter; // Tf
     float dummy;
 };
 
@@ -75,20 +75,20 @@ struct PS_INPUT
     float3 normal : NORMAL0;
     float4 color : COLOR; // Color to pass to the pixel shader
     float2 texCoord : TEXCOORD0;
-    float3 worldPos : TEXCOORD1;
 };
 
 PS_INPUT mainVS(VS_INPUT input)
 {
     PS_INPUT output;
     
-    // 상수버퍼를 통해 넘겨 받은 Offset을 더해서 버텍스를 이동 시켜 픽셀쉐이더로 넘김
+    // ?�수버퍼�??�해 ?�겨 받�? Offset???�해??버텍?��? ?�동 ?�켜 ?��??�이?�로 ?��?
     // float3 scaledPosition = input.position.xyz * Scale;
     // output.position = float4(Offset + scaledPosition, 1.0);
     
-    float4x4 MVP = mul(mul(WorldMatrix, ViewMatrix), ProjectionMatrix); 
-    float4 worldPos = mul(float4(input.position, 1.0f), WorldMatrix);
-    output.position = mul(worldPos, mul(ViewMatrix, ProjectionMatrix));
+    float4x4 MVP = mul(mul(WorldMatrix, ViewMatrix), ProjectionMatrix);
+    
+    float4 wpos = mul(float4(input.position, 1.0f), WorldMatrix);
+    output.position = mul(wpos, mul(ViewMatrix, ProjectionMatrix));
     
     
     // change color
@@ -115,12 +115,11 @@ PS_INPUT mainVS(VS_INPUT input)
     
     // Pass the color to the pixel shader
     output.color = c;
-     
-    // w를 0으로 초기화하면, vector이기 때문에 Translation이 무시된다.
+    
+    // Approximate world normal (assumes uniform scale)
     output.normal = normalize(mul(float4(input.normal, 0.0f), WorldMatrix).xyz);
-    //output.worldPos = worldPos.yzx;
-
     output.texCoord = input.texCoord;
+    output.worldPos = wpos.xyz;
     
     return output;
 }
@@ -142,21 +141,32 @@ float4 mainPS(PS_INPUT input) : SV_TARGET
         // preserve gizmo highlight blending
         float3 highlightColor = float3(1.0, 1.0, 0.0);
         finalColor.rgb = lerp(finalColor.rgb, highlightColor, 0.5);
-    } 
-    
+    }
+
     // Simple forward lighting (diffuse only)
     float3 N = normalize(input.normal);
     float3 worldPos = input.worldPos;
-    float3 lighting = float3(0.0f, 0.0f, 0.0f);
-    
+    float3 lighting = float3(0.05f, 0.05f, 0.05f);
     [unroll]
     for (int i = 0; i < MAX_LIGHTS; ++i)
     {
-        lighting += Calculate_PointLight_Diffuse(Lights[i], worldPos, N); 
-
-    } 
-    
+        lighting += Calculate_PointLight_Diffuse(Lights[i], worldPos, N);
+    }
     finalColor.rgb = saturate(finalColor.rgb * lighting);
-    
     return finalColor;
 }
+
+    if (Picked == 1)
+    {
+        // ?��????�이?�이?��? 50% 블렌??
+        float3 highlightColor = float3(1.0, 1.0, 0.0); // ?��???
+        finalColor.rgb = lerp(finalColor.rgb, highlightColor, 0.5);
+    }
+     
+    //Light ?�산 
+    return finalColor;
+}
+
+
+
+

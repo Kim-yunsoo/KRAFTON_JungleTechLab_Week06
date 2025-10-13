@@ -53,6 +53,7 @@ public:
     void UpdateUVScrollConstantBuffers(const FVector2D& Speed, float TimeSec) override;
     void UpdateInvWorldConstantBuffer(const FMatrix& InvWorldMatrix, const FMatrix& InvViewProjMatrix) override;
     void UpdateViewportConstantBuffer(float StartX, float StartY, float SizeX, float SizeY);
+    void UpdateLightConstantBuffers(const TArray<FLightInfo>& InLights) override;
 
     void IASetPrimitiveTopology() override;
     void RSSetState(EViewModeIndex ViewModeIndex) override;
@@ -152,6 +153,7 @@ private:
     ID3D11Buffer* UVScrollCB{};
     ID3D11Buffer* InvWorldCB{};
     ID3D11Buffer* ViewportCB{};
+    ID3D11Buffer* LightCB{}; 
 
     ID3D11Buffer* ConstantBuffer{};
 

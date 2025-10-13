@@ -120,6 +120,7 @@ void D3D11RHI::Release()
     if (ViewProjCB) { ViewProjCB->Release(); ViewProjCB = nullptr; }
     if (BillboardCB) { BillboardCB->Release(); BillboardCB = nullptr; }
     if (PixelConstCB) { PixelConstCB->Release(); PixelConstCB = nullptr; }
+    if (LightCB) { LightCB->Release(); LightCB = nullptr; }
     if (UVScrollCB) { UVScrollCB->Release(); UVScrollCB = nullptr; }
     if (InvWorldCB) { InvWorldCB->Release(); InvWorldCB = nullptr; }
     if (ViewportCB) { ViewportCB->Release(); ViewportCB = nullptr; }
@@ -643,6 +644,14 @@ void D3D11RHI::CreateConstantBuffer()
     viewportDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     viewportDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     Device->CreateBuffer(&viewportDesc, nullptr, &ViewportCB);
+
+    // b7 : Light array (FLightGPU[MAX_LIGHTS])
+    D3D11_BUFFER_DESC lightDesc = {};
+    lightDesc.Usage = D3D11_USAGE_DYNAMIC;
+    lightDesc.ByteWidth = sizeof(FLightInfo) * MAX_LIGHT_COUNT;
+    lightDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    lightDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&lightDesc, nullptr, &LightCB);  
 }
 
 void D3D11RHI::UpdateUVScrollConstantBuffers(const FVector2D& Speed, float TimeSec)
@@ -985,4 +994,30 @@ void D3D11RHI::ResizeSwapChain(UINT width, UINT height)
 void D3D11RHI::PSSetDefaultSampler(UINT StartSlot)
 {
 	DeviceContext->PSSetSamplers(StartSlot, 1, &DefaultSamplerState);
+}
+
+void D3D11RHI::UpdateLightConstantBuffers(const TArray<FLightInfo>& InLights)
+{
+    if (!LightCB) return;
+    D3D11_MAPPED_SUBRESOURCE mapped{};
+
+    if (SUCCEEDED(DeviceContext->Map(LightCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        const size_t maxBytes = sizeof(FLightInfo) * static_cast<size_t>(MAX_LIGHT_COUNT);
+        memset(mapped.pData, 0, maxBytes);
+         
+        size_t copyCount = InLights.size();
+
+        if (copyCount > static_cast<size_t>(MAX_LIGHT_COUNT))
+            copyCount = static_cast<size_t>(MAX_LIGHT_COUNT);
+
+        const size_t bytes = sizeof(FLightInfo) * copyCount;
+        if (bytes > 0)
+        {
+            memcpy(mapped.pData, InLights.data(), bytes);
+        }
+
+        DeviceContext->Unmap(LightCB, 0);
+        DeviceContext->PSSetConstantBuffers(7, 1, &LightCB);
+    } 
 }

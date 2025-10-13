@@ -70,8 +70,16 @@ public:
     void OMSetDepthStencilState(EComparisonFunc Func);
 
     URHIDevice* GetRHIDevice() { return RHIDevice; }
+
+    // Lighting: per-frame visible lights cache and upload
+    void SetWorldLights(const TArray<FLightInfo>& InLights);
+    const TArray<FLightInfo>& GetWorldLights() const;
+    void UpdateLightBuffer();
+    void UpdateLightBuffer(const TArray<FLightInfo>& InLights);
+     
+
 private:
-	URHIDevice* RHIDevice;
+    URHIDevice* RHIDevice;
 
     // Batch Line Rendering System using UDynamicMesh for efficiency
     ULineDynamicMesh* DynamicLineMesh = nullptr;
@@ -95,5 +103,8 @@ private:
 
     void InitializeLineBatch();
     void ResetRenderStateTracking();
+
+    // Visible Light
+    TArray<FLightInfo> WorldLights;
 };
 

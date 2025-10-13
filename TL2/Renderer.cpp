@@ -375,6 +375,27 @@ void URenderer::OMSetDepthStencilState(EComparisonFunc Func)
     RHIDevice->OmSetDepthStencilState(Func);
 }
 
+// Lighting cache API
+void URenderer::SetWorldLights(const TArray<FLightInfo>& InLights)
+{
+    WorldLights = InLights;
+}
+
+const TArray<FLightInfo>& URenderer::GetWorldLights() const
+{
+    return WorldLights;
+}
+
+void URenderer::UpdateLightBuffer()
+{
+    RHIDevice->UpdateLightConstantBuffers(WorldLights);
+}
+
+void URenderer::UpdateLightBuffer(const TArray<FLightInfo>& InLights)
+{
+    RHIDevice->UpdateLightConstantBuffers(InLights);
+}
+
 void URenderer::InitializeLineBatch()
 {
     // Create UDynamicMesh for efficient line batching

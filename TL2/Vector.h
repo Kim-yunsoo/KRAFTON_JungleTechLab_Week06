@@ -219,6 +219,12 @@ struct FVector
     float Size()         const { return std::sqrt(X * X + Y * Y + Z * Z); }
     float SizeSquared()  const { return X * X + Y * Y + Z * Z; }
 
+    // 0에 가까운 수인지 확인
+    bool IsNearlyZero(float Tolerance = KINDA_SMALL_NUMBER) const
+    {
+        return std::fabs(X) <= Tolerance && std::fabs(Y) <= Tolerance && std::fabs(Z) <= Tolerance;
+    }
+
     // 정규화
     FVector GetNormalized() const
     {

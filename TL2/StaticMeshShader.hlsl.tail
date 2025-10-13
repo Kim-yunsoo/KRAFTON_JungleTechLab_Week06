@@ -1,0 +1,24 @@
+float4 mainPS(PS_INPUT input) : SV_TARGET
+{
+    // Lerp the incoming color with the global LerpColor
+    float4 finalColor = input.color;
+    finalColor.rgb = lerp(finalColor.rgb, LerpColor.rgb, LerpColor.a) * (1.0f - HasMaterial);
+    //finalColor.rgb += Material.DiffuseColor * HasMaterial;
+    
+    if (HasMaterial && HasTexture)
+    {
+        float2 uv = input.texCoord + UVScrollSpeed * UVScrollTime;
+        finalColor.rgb = g_DiffuseTexColor.Sample(g_Sample, uv);
+    }
+    if (Picked == 1)
+    {
+        // ?∏Î????òÏù¥?ºÏù¥?∏Î? 50% Î∏îÎ†å??
+        float3 highlightColor = float3(1.0, 1.0, 0.0); // ?∏Î???
+        finalColor.rgb = lerp(finalColor.rgb, highlightColor, 0.5);
+    }
+     
+    //Light ?∞ÏÇ∞ 
+    return finalColor;
+}
+
+

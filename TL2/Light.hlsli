@@ -5,41 +5,50 @@
 #define SPOT_LIGHT 1
 #define DIRECTIONAL_LIGHT 2
 
-
-struct FLinearColor
-{   
-    float4 Color; 
-};
+#define MAX_LIGHTS 8
+ 
 
 struct FLightInfo
 {
-    float4 LightPos;
-
     int Type;
+    float3 LightPos;
+
+    float4 Color;
     
     //Point Light
     float Intensity;
     float Radius;
     float RadiusFallOff;
-  
-    FLinearColor Color;
+    float Padding;
+    
+    float4 LightDir;
 };
 
-float SoftAttenuate(FLightInfo LightInfo, float4 Position)
-{ 
-    float4 d = length(Position - LightInfo.LightPos);
-    float x = saturate(d / max(LightInfo.Radius, 1e-4));   
-    return pow(1.0f - x, max(LightInfo.RadiusFallOff, 1e-4));
-}
 
-float4 Calculate_PointLight(FLightInfo LightInfo)
+cbuffer LightBuffer : register(b7)
 {
-    // 감쇠 구하기
-    
-    // diffuse, specular 구하기
-    
-    // (diffuse + specular) * Color * 감쇠
-    return float4(1, 1, 1, 1);
+    FLightInfo Lights[MAX_LIGHTS];
 }
 
+float SoftAttenuate(FLightInfo LightInfo, float3 Position)
+{
+    float dist = length(Position - LightInfo.LightPos);
+    float x = saturate(dist / LightInfo.Radius);
+    return pow(1.0f - x, LightInfo.RadiusFallOff);
+}
+
+// Diffuse-only point light helper (world-space)
+float3 Calculate_PointLight_Diffuse(FLightInfo LightInfo, float3 worldPos, float3 worldNormal)
+{
+    //LightInfo.LightPos = float3(0, 0, 0);
+
+    float3 L = normalize(LightInfo.LightPos - worldPos);
+    float NdotL = max(dot(worldNormal, L),1e-3);
+    
+    float atten = SoftAttenuate(LightInfo, worldPos);
+    
+    float3 lightColor = LightInfo.Color.rgb * LightInfo.Intensity;
+
+    return lightColor * NdotL * atten;
+} 
 #endif // _LIGHT_HLSLI_

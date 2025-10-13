@@ -35,7 +35,7 @@ public:
 private:
 	UUIManager* UIManager = nullptr;
 	AActor* SelectedActor = nullptr;
-	USceneComponent* SelectedComponent = nullptr;	// 현재 선택된 SceneComponent를 저장할 포인터
+	UActorComponent* SelectedComponent = nullptr;	// 현재 선택된 Component를 저장할 포인터 (SceneComponent 또는 ActorComponent)
 	FString CachedActorName; // 액터 이름 캐시 (안전한 출력을 위해)
 
 	// Transform UI 상태

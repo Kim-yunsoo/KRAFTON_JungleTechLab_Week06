@@ -2,6 +2,7 @@
 #include <d3d11.h>
 #include <d3dcompiler.h>
 #include "Vector.h"
+#include "Enums.h"
 enum class EComparisonFunc
 {
     Always,
@@ -48,6 +49,8 @@ public:
     virtual void UpdateColorConstantBuffers(const FVector4& InColor) = 0;
     virtual void UpdateUVScrollConstantBuffers(const FVector2D& Speed, float TimeSec) = 0;
     virtual void UpdateInvWorldConstantBuffer(const FMatrix& InvWorldMatrix, const FMatrix& InvViewProjMatrix) = 0;
+    // Lighting
+    virtual void UpdateLightConstantBuffers(const TArray<FLightInfo>& InLights) = 0;
 
     // clear
     virtual void ClearBackBuffer() = 0;

@@ -53,19 +53,27 @@
 #include"DecalActor.h"
 #include "FireBallComponent.h"
 #include "FireBallActor.h"
+#include "LightComponent.h"
+#include "PointLightComponent.h"
 
+#include"MovementComponent.h"
+#include"RotatingMovementComponent.h"
 // ... (rest of the file)
 IMPLEMENT_CLASS(UWorld)
 
 
 IMPLEMENT_CLASS(UPrimitiveComponent)
 IMPLEMENT_CLASS(UActorComponent)
+IMPLEMENT_CLASS(UMovementComponent)
+IMPLEMENT_CLASS(URotatingMovementComponent)
 IMPLEMENT_CLASS(USceneComponent)
 IMPLEMENT_CLASS(UCameraComponent)
 IMPLEMENT_CLASS(UStaticMeshComponent)
 IMPLEMENT_CLASS(UAABoundingBoxComponent)
 IMPLEMENT_CLASS(UOBoundingBoxComponent)
 IMPLEMENT_CLASS(UShapeComponent)
+IMPLEMENT_CLASS(ULightComponent)
+IMPLEMENT_CLASS(UPointLightComponent)
 
 IMPLEMENT_CLASS(AActor)
 IMPLEMENT_CLASS(ACameraActor)

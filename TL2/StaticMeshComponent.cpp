@@ -7,6 +7,9 @@
 #include "ObjManager.h"
 #include "SceneLoader.h"
 #include "FViewport.h"
+#include "Renderer.h"
+#include "AABoundingBoxComponent.h"
+#include "Enums.h"
 
 UStaticMeshComponent::UStaticMeshComponent()
 {
@@ -25,6 +28,10 @@ void UStaticMeshComponent::Render(URenderer* Renderer, const FMatrix& ViewMatrix
         return;
     }
 
+    //Light Upate
+    CalAffectingLight(Renderer);
+     
+     
     // 1. 메쉬 렌더링 (SF_StaticMeshes 플래그 확인)
     if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
     {
@@ -223,6 +230,39 @@ void UStaticMeshComponent::DuplicateSubObjects()
 {
     // 부모의 깊은 복사 수행 (AttachChildren 재귀 복제)
     Super_t::DuplicateSubObjects();
+}
+
+void UStaticMeshComponent::CalAffectingLight(URenderer* Renderer)
+{
+    const auto& Lights = Renderer->GetWorldLights();
+
+    TArray<FLightInfo> Affecting;
+    Affecting.reserve(Lights.size());
+    FBound MeshAABB = GetWorldBoundingBox();
+
+    for (const FLightInfo& L : Lights)
+    {
+        if (MeshAABB.SphereInstersects(L.LightPos, L.Radius))
+        {
+            Affecting.Add(L);
+        }
+    }
+
+    //MAX LIGHT가 정해져있기 때문에, sorting이 필수적이다.
+    const FVector MeshCenter = MeshAABB.GetCenter();
+    std::sort(Affecting.begin(), Affecting.end(), [&](const FLightInfo& A, const FLightInfo& B)
+        {
+            float DistA = (A.LightPos - MeshCenter).SizeSquared();
+            float DistB = (B.LightPos - MeshCenter).SizeSquared();
+            return DistA < DistB;
+        });
+
+    if (Affecting.size() > static_cast<size_t>(MAX_LIGHT_COUNT))
+    {
+        Affecting.resize(static_cast<size_t>(MAX_LIGHT_COUNT));
+    }
+
+    Renderer->UpdateLightBuffer(Affecting);
 }
 
 void UStaticMeshComponent::RenderBoundingBox(URenderer* Renderer)

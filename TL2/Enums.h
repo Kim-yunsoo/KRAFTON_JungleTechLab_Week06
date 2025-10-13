@@ -411,6 +411,15 @@ enum class ELighType : int
  */
 struct FLinearColor
 {
+    FLinearColor(): R(0), G(0), B(0), A(1) {} 
+    FLinearColor(const FVector4& Color)
+    {
+        R = Color.X;
+        G = Color.Y;
+        B = Color.Z;
+        A = Color.Z;
+    }
+
     union
     {
         struct
@@ -430,10 +439,17 @@ struct FLightInfo
 {
     ELighType Type;
     
+    FVector LightPos;
+    FLinearColor Color; 
+
     //Point Light
     float Intensity;
     float Radius;
     float RadiusFallOff;
-    
-    FLinearColor Color; 
+    float Padding;
+
+    FVector4 LightDir; 
 };
+
+const int MAX_LIGHT_COUNT = 8;
+ 

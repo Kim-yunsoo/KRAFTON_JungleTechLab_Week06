@@ -7,9 +7,9 @@ public:
 	DECLARE_CLASS(UFireBallComponent, UPrimitiveComponent)
 	UFireBallComponent();
 
+	UObject* Duplicate(FObjectDuplicationParameters Parameters) override; 
 protected:
 	~UFireBallComponent() override;
-
-	UObject* Duplicate(FObjectDuplicationParameters Parameters) override; 
+	
 };
 

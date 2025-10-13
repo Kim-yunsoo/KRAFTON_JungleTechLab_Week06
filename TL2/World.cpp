@@ -22,6 +22,9 @@
 #include "DecalActor.h"
 #include "BillboardComponent.h"
 #include "RenderingStats.h"
+#include "LightComponent.h"
+#include "MovementComponent.h"
+#include "RotatingMovementComponent.h"
 
 extern float CLIENTWIDTH;
 extern float CLIENTHEIGHT;
@@ -261,33 +264,72 @@ void UWorld::Render()
 
 void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 {
-	// 뷰포트의 실제 크기로 aspect ratio 계산
-	float ViewportAspectRatio = static_cast<float>(Viewport->GetSizeX()) / static_cast<float>(
-		Viewport->GetSizeY());
-	if (Viewport->GetSizeY() == 0)
-	{
-		ViewportAspectRatio = 1.0f;
-	} // 0으로 나누기 방지
+    // 뷰포트의 실제 크기로 aspect ratio 계산
+    float ViewportAspectRatio = static_cast<float>(Viewport->GetSizeX()) / static_cast<float>(
+        Viewport->GetSizeY());
+    if (Viewport->GetSizeY() == 0)
+    {
+        ViewportAspectRatio = 1.0f;
+    } // 0으로 나누기 방지
 
-	FMatrix ViewMatrix = Camera->GetViewMatrix();
-	FMatrix ProjectionMatrix = Camera->GetProjectionMatrix(ViewportAspectRatio, Viewport);
-	if (!Renderer)
-	{
-		return;
-	}
-	FVector rgb(1.0f, 1.0f, 1.0f);
+    FMatrix ViewMatrix = Camera->GetViewMatrix();
+    FMatrix ProjectionMatrix = Camera->GetProjectionMatrix(ViewportAspectRatio, Viewport);
+    if (!Renderer)
+    {
+        return;
+    }
 
-	FFrustum ViewFrustum;
-	ViewFrustum.Update(ViewMatrix * ProjectionMatrix);
+    // Pass 0: Visible Lights 를 Pruning하는 과정
+    {
+        TArray<FLightInfo> VisibleFrameLights;
 
-	Renderer->BeginLineBatch();
-	Renderer->SetViewModeType(ViewModeIndex);
+        const TArray<AActor*>& Actors = Level ? Level->GetActors() : TArray<AActor*>();
 
-	int AllActorCount = 0;
-	int FrustumCullCount = 0;
-	int32 TotalDecalCount = 0;
+        for (AActor* Actor : Actors)
+        {
+            if (!Actor || Actor->GetActorHiddenInGame()) continue;
 
-	const TArray<AActor*>& LevelActors = Level ? Level->GetActors() : TArray<AActor*>();
+            for (UActorComponent* Comp : Actor->GetComponents())
+            {
+                USceneComponent* SceneComp = Cast<USceneComponent>(Comp);
+                if (SceneComp == nullptr) continue;
+
+                if (ULightComponent* LightComp = Cast<ULightComponent>(SceneComp))
+                {
+                    FLightInfo LightInfo;
+                    LightInfo.Type = ELighType::Spot;
+
+                    LightInfo.LightPos = SceneComp->GetWorldLocation();
+                    LightInfo.Radius = 10.0f;
+                    LightInfo.RadiusFallOff = 1.0f;
+                    LightInfo.Color = FVector4(1, 0, 0, 1);
+                    LightInfo.Intensity = 1.0f;
+                    //TODO: Light Dir
+                    if (VisibleFrameLights.size() < 8)
+                    {
+                        VisibleFrameLights.Add(LightInfo);
+                    }
+                }
+            }
+        }
+
+        Renderer->SetWorldLights(VisibleFrameLights);
+        Renderer->UpdateLightBuffer();
+    }
+
+    FVector rgb(1.0f, 1.0f, 1.0f);
+
+    FFrustum ViewFrustum;
+    ViewFrustum.Update(ViewMatrix * ProjectionMatrix);
+
+    Renderer->BeginLineBatch();
+    Renderer->SetViewModeType(ViewModeIndex);
+
+    int AllActorCount = 0;
+    int FrustumCullCount = 0;
+    int32 TotalDecalCount = 0;
+
+    const TArray<AActor*>& LevelActors = Level ? Level->GetActors() : TArray<AActor*>();
 
 	// Pass 1: 데칼을 제외한 모든 오브젝트 렌더링 (Depth 버퍼 채우기)
 	for (AActor* Actor : LevelActors)
@@ -974,67 +1016,86 @@ void UWorld::SaveSceneV2(const FString& SceneName)
         {
             if (!ActorComp) continue;
 
-            // SceneComponent만 처리 (Transform 정보가 있는 컴포넌트)
-            USceneComponent* Comp = Cast<USceneComponent>(ActorComp);
-            if (!Comp) continue;
-
             FComponentData CompData;
-            CompData.UUID = Comp->UUID;
+            CompData.UUID = ActorComp->UUID;
             CompData.OwnerActorUUID = Actor->UUID;
+            CompData.Type = ActorComp->GetClass()->Name;
 
-            // 부모 컴포넌트 UUID (RootComponent면 0)
-            if (Comp->GetAttachParent())
-                CompData.ParentComponentUUID = Comp->GetAttachParent()->UUID;
+            // SceneComponent인 경우 Transform과 계층 구조 정보 저장
+            if (USceneComponent* Comp = Cast<USceneComponent>(ActorComp))
+            {
+                // 부모 컴포넌트 UUID (RootComponent면 0)
+                if (Comp->GetAttachParent())
+                    CompData.ParentComponentUUID = Comp->GetAttachParent()->UUID;
+                else
+                    CompData.ParentComponentUUID = 0;
+
+                // Transform
+                CompData.RelativeLocation = Comp->GetRelativeLocation();
+                CompData.RelativeRotation = Comp->GetRelativeRotation().ToEuler();
+                CompData.RelativeScale = Comp->GetRelativeScale();
+
+                // Type별 속성
+                if (UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(Comp))
+                {
+                    if (StaticMeshComponent->GetStaticMesh())
+                    {
+                        CompData.StaticMesh = StaticMeshComponent->GetStaticMesh()->GetAssetPathFileName();
+                        UE_LOG("SaveScene: StaticMesh saved: %s", CompData.StaticMesh.c_str());
+                    }
+                    else
+                    {
+                        UE_LOG("SaveScene: StaticMeshComponent has no StaticMesh assigned");
+                    }
+                    // TODO: Materials 수집
+                }
+                else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Comp))
+                {
+                    // DecalComponent 속성 저장
+                    if (DecalComp->GetDecalTexture())
+                    {
+                        CompData.DecalTexture = DecalComp->GetDecalTexture()->GetFilePath();
+                    }
+                    CompData.DecalSize = DecalComp->GetDecalSize();
+                    CompData.FadeInDuration = DecalComp->GetFadeInDuration();
+                    CompData.FadeStartDelay = DecalComp->GetFadeStartDelay();
+                    CompData.FadeDuration = DecalComp->GetFadeDuration();
+                    CompData.bIsOrthoMatrix = DecalComp->GetOrthoMatrixFlag();
+                }
+                else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Comp))
+                {
+                    // BillboardComponent 속성 저장
+                    CompData.BillboardTexturePath = BillboardComp->GetTexturePath();
+                    CompData.BillboardWidth = BillboardComp->GetBillboardWidth();
+                    CompData.BillboardHeight = BillboardComp->GetBillboardHeight();
+                    CompData.UCoord = BillboardComp->GetU();
+                    CompData.VCoord = BillboardComp->GetV();
+                    CompData.ULength = BillboardComp->GetUL();
+                    CompData.VLength = BillboardComp->GetVL();
+                    CompData.bIsScreenSizeScaled = BillboardComp->IsScreenSizeScaled();
+                    CompData.ScreenSize = BillboardComp->GetScreenSize();
+                }
+            }
             else
+            {
+                // ActorComponent (Transform 없음)
                 CompData.ParentComponentUUID = 0;
 
-            // Transform
-            CompData.RelativeLocation = Comp->GetRelativeLocation();
-            CompData.RelativeRotation = Comp->GetRelativeRotation().ToEuler();
-            CompData.RelativeScale = Comp->GetRelativeScale();
+                // MovementComponent 속성 저장
+                if (UMovementComponent* MovementComp = Cast<UMovementComponent>(ActorComp))
+                {
+                    CompData.Velocity = MovementComp->GetVelocity();
+                    CompData.Acceleration = MovementComp->GetAcceleration();
+                    CompData.bUpdateOnlyIfRendered = MovementComp->GetUpdateOnlyIfRendered();
 
-            // Type 자동 가져오기
-            CompData.Type = Comp->GetClass()->Name;
-
-            // Type별 속성
-            if (UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(Comp))
-            {
-                if (StaticMeshComponent->GetStaticMesh())
-                {
-                    CompData.StaticMesh = StaticMeshComponent->GetStaticMesh()->GetAssetPathFileName();
-                    UE_LOG("SaveScene: StaticMesh saved: %s", CompData.StaticMesh.c_str());
+                    // RotatingMovementComponent 추가 속성 저장
+                    if (URotatingMovementComponent* RotatingComp = Cast<URotatingMovementComponent>(MovementComp))
+                    {
+                        CompData.RotationRate = RotatingComp->GetRotationRate();
+                        CompData.PivotTranslation = RotatingComp->GetPivotTranslation();
+                        CompData.bRotationInLocalSpace = RotatingComp->IsRotationInLocalSpace();
+                    }
                 }
-                else
-                {
-                    UE_LOG("SaveScene: StaticMeshComponent has no StaticMesh assigned");
-                }
-                // TODO: Materials 수집
-            }
-            else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Comp))
-            {
-                // DecalComponent 속성 저장
-                if (DecalComp->GetDecalTexture())
-                {
-                    CompData.DecalTexture = DecalComp->GetDecalTexture()->GetFilePath();
-                }
-                CompData.DecalSize = DecalComp->GetDecalSize();
-                CompData.FadeInDuration = DecalComp->GetFadeInDuration();
-                CompData.FadeStartDelay = DecalComp->GetFadeStartDelay();
-                CompData.FadeDuration = DecalComp->GetFadeDuration();
-                CompData.bIsOrthoMatrix = DecalComp->GetOrthoMatrixFlag();
-            }
-            else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Comp))
-            {
-                // BillboardComponent 속성 저장
-                CompData.BillboardTexturePath = BillboardComp->GetTexturePath();
-                CompData.BillboardWidth = BillboardComp->GetBillboardWidth();
-                CompData.BillboardHeight = BillboardComp->GetBillboardHeight();
-                CompData.UCoord = BillboardComp->GetU();
-                CompData.VCoord = BillboardComp->GetV();
-                CompData.ULength = BillboardComp->GetUL();
-                CompData.VLength = BillboardComp->GetVL();
-                CompData.bIsScreenSizeScaled = BillboardComp->IsScreenSizeScaled();
-                CompData.ScreenSize = BillboardComp->GetScreenSize();
             }
 
             SceneData.Components.push_back(CompData);
@@ -1075,8 +1136,6 @@ void UWorld::LoadSceneV2(const FString& SceneName)
     // 마우스 델타 초기화
     const FVector2D CurrentMousePos = UInputManager::GetInstance().GetMousePosition();
     UInputManager::GetInstance().SetLastMousePosition(CurrentMousePos);
-
-
 
     if (MainCameraActor && MainCameraActor->GetCameraComponent())
     {
@@ -1138,61 +1197,101 @@ void UWorld::LoadSceneV2(const FString& SceneName)
     // Component 생성
     for (const FComponentData& CompData : SceneData.Components)
     {
-        USceneComponent* NewComp = Cast<USceneComponent>(NewObject(CompData.Type));
+        UObject* NewCompObject = NewObject(CompData.Type);
 
-        if (!NewComp)
+        if (!NewCompObject)
         {
             UE_LOG("Failed to create Component: %s", CompData.Type.c_str());
             continue;
         }
 
-        NewComp->UUID = CompData.UUID;
-        NewComp->SetRelativeLocation(CompData.RelativeLocation);
-        NewComp->SetRelativeRotation(FQuat::MakeFromEuler(CompData.RelativeRotation));
-        NewComp->SetRelativeScale(CompData.RelativeScale);
-
-        // Type별 속성 복원
-        if (UStaticMeshComponent* SMC = Cast<UStaticMeshComponent>(NewComp))
+        UActorComponent* NewActorComp = Cast<UActorComponent>(NewCompObject);
+        if (!NewActorComp)
         {
-            if (!CompData.StaticMesh.empty())
-            {
-                SMC->SetStaticMesh(CompData.StaticMesh);
-            }
-            // TODO: Materials 복원
-        }
-        else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(NewComp))
-        {
-            // DecalComponent 속성 복원
-            if (!CompData.DecalTexture.empty())
-            {
-                DecalComp->SetDecalTexture(CompData.DecalTexture);
-            }
-            DecalComp->SetDecalSize(CompData.DecalSize);
-            DecalComp->SetFadeInDuration(CompData.FadeInDuration);
-            DecalComp->SetFadeStartDelay(CompData.FadeStartDelay);
-            DecalComp->SetFadeDuration(CompData.FadeDuration);
-            DecalComp->SetOrthoMatrixFlag(CompData.bIsOrthoMatrix);
-        }
-        else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(NewComp))
-        {
-            // BillboardComponent 속성 복원
-            if (!CompData.BillboardTexturePath.empty())
-            {
-                BillboardComp->SetTexture(CompData.BillboardTexturePath);
-            }
-            BillboardComp->SetBillboardSize(CompData.BillboardWidth, CompData.BillboardHeight);
-            BillboardComp->SetUVCoords(CompData.UCoord, CompData.VCoord, CompData.ULength, CompData.VLength);
-            BillboardComp->SetScreenSizeScaled(CompData.bIsScreenSizeScaled);
-            BillboardComp->SetScreenSize(CompData.ScreenSize);
+            UE_LOG("Created object is not an ActorComponent: %s", CompData.Type.c_str());
+            ObjectFactory::DeleteObject(NewCompObject);
+            continue;
         }
 
-        // Owner Actor 설정
-        if (AActor** OwnerActor = ActorMap.Find(CompData.OwnerActorUUID))
-        {
-            NewComp->SetOwner(*OwnerActor);
-        }
+        NewActorComp->UUID = CompData.UUID;
 
-        ComponentMap.Add(CompData.UUID, NewComp);
+        // SceneComponent인 경우 Transform 설정
+        if (USceneComponent* NewComp = Cast<USceneComponent>(NewActorComp))
+        {
+            NewComp->SetRelativeLocation(CompData.RelativeLocation);
+            NewComp->SetRelativeRotation(FQuat::MakeFromEuler(CompData.RelativeRotation));
+            NewComp->SetRelativeScale(CompData.RelativeScale);
+
+            // Type별 속성 복원
+            if (UStaticMeshComponent* SMC = Cast<UStaticMeshComponent>(NewComp))
+            {
+                if (!CompData.StaticMesh.empty())
+                {
+                    SMC->SetStaticMesh(CompData.StaticMesh);
+                }
+                // TODO: Materials 복원
+            }
+            else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(NewComp))
+            {
+                // DecalComponent 속성 복원
+                if (!CompData.DecalTexture.empty())
+                {
+                    DecalComp->SetDecalTexture(CompData.DecalTexture);
+                }
+                DecalComp->SetDecalSize(CompData.DecalSize);
+                DecalComp->SetFadeInDuration(CompData.FadeInDuration);
+                DecalComp->SetFadeStartDelay(CompData.FadeStartDelay);
+                DecalComp->SetFadeDuration(CompData.FadeDuration);
+                DecalComp->SetOrthoMatrixFlag(CompData.bIsOrthoMatrix);
+            }
+            else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(NewComp))
+            {
+                // BillboardComponent 속성 복원
+                if (!CompData.BillboardTexturePath.empty())
+                {
+                    BillboardComp->SetTexture(CompData.BillboardTexturePath);
+                }
+                BillboardComp->SetBillboardSize(CompData.BillboardWidth, CompData.BillboardHeight);
+                BillboardComp->SetUVCoords(CompData.UCoord, CompData.VCoord, CompData.ULength, CompData.VLength);
+                BillboardComp->SetScreenSizeScaled(CompData.bIsScreenSizeScaled);
+                BillboardComp->SetScreenSize(CompData.ScreenSize);
+            }
+
+            // Owner Actor 설정
+            if (AActor** OwnerActor = ActorMap.Find(CompData.OwnerActorUUID))
+            {
+                NewComp->SetOwner(*OwnerActor);
+            }
+
+            ComponentMap.Add(CompData.UUID, NewComp);
+        }
+        // ActorComponent (Transform 없음)
+        else
+        {
+            // MovementComponent 속성 복원
+            if (UMovementComponent* MovementComp = Cast<UMovementComponent>(NewActorComp))
+            {
+                MovementComp->SetVelocity(CompData.Velocity);
+                MovementComp->SetAcceleration(CompData.Acceleration);
+                MovementComp->SetUpdateOnlyIfRendered(CompData.bUpdateOnlyIfRendered);
+
+                // RotatingMovementComponent 추가 속성 복원
+                if (URotatingMovementComponent* RotatingComp = Cast<URotatingMovementComponent>(MovementComp))
+                {
+                    RotatingComp->SetRotationRate(CompData.RotationRate);
+                    RotatingComp->SetPivotTranslation(CompData.PivotTranslation);
+                    RotatingComp->SetRotationInLocalSpace(CompData.bRotationInLocalSpace);
+                }
+            }
+
+            // Owner Actor 설정
+            if (AActor** OwnerActor = ActorMap.Find(CompData.OwnerActorUUID))
+            {
+                NewActorComp->SetOwner(*OwnerActor);
+                // ActorComponent를 Actor의 OwnedComponents에 직접 추가
+                (*OwnerActor)->OwnedComponents.Add(NewActorComp);
+            }
+        }
     }
 
     // ========================================
@@ -1263,6 +1362,15 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         {
             // RootComponent를 DecalComponent로 재설정
             DecalActor->SetDecalComponent(Cast<UDecalComponent>(DecalActor->RootComponent));
+        }
+
+        // MovementComponent의 UpdatedComponent를 RootComponent로 설정
+        for (UActorComponent* Comp : Actor->OwnedComponents)
+        {
+            if (UMovementComponent* MovementComp = Cast<UMovementComponent>(Comp))
+            {
+                MovementComp->SetUpdatedComponent(Actor->GetRootComponent());
+            }
         }
     }
 
