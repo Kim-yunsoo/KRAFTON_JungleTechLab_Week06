@@ -36,8 +36,13 @@ void FObjManager::Preload()
 
         if (Extension == ".obj")
         {
-            // 경로 정규화 - 절대경로로 변환하고 슬래시로 통일
-            std::filesystem::path NormalizedPath = std::filesystem::absolute(Path);
+            // 경로 정규화 - 상대경로로 변환하고 슬래시로 통일
+            std::error_code ec;
+            std::filesystem::path NormalizedPath = std::filesystem::relative(Path, std::filesystem::current_path(), ec);
+            if (ec)
+            {
+                NormalizedPath = Path;
+            }
             FString PathStr = NormalizedPath.string();
             std::replace(PathStr.begin(), PathStr.end(), '\\', '/');
 
@@ -66,8 +71,13 @@ void FObjManager::Clear()
 
 FStaticMesh* FObjManager::LoadObjStaticMeshAsset(const FString& PathFileName)
 {
-    // 1) 경로 정규화 - 절대경로로 변환하고 백슬래시를 슬래시로 통일
-    std::filesystem::path NormalizedPath = std::filesystem::absolute(PathFileName);
+    // 1) 경로 정규화 - 상대경로로 변환하고 백슬래시를 슬래시로 통일
+    std::error_code ec;
+    std::filesystem::path NormalizedPath = std::filesystem::relative(PathFileName, std::filesystem::current_path(), ec);
+    if (ec)
+    {
+        NormalizedPath = PathFileName;
+    }
     FString NormalizedPathStr = NormalizedPath.string();
     std::replace(NormalizedPathStr.begin(), NormalizedPathStr.end(), '\\', '/');
 
@@ -127,7 +137,7 @@ FStaticMesh* FObjManager::LoadObjStaticMeshAsset(const FString& PathFileName)
             FWindowsBinReader MatReader(StemPath + "Mat.bin");
             Serialization::ReadArray<FObjMaterialInfo>(MatReader, MaterialInfos);
             MatReader.Close();
-        }  
+        }
     }
     else
     {
@@ -171,15 +181,20 @@ FStaticMesh* FObjManager::LoadObjStaticMeshAsset(const FString& PathFileName)
 UStaticMesh* FObjManager::LoadObjStaticMesh(const FString& PathFileName)
 {
     // 0) 경로 정규화
-    std::filesystem::path NormalizedPath = std::filesystem::absolute(PathFileName);
+    std::error_code ec;
+    std::filesystem::path NormalizedPath = std::filesystem::relative(PathFileName, std::filesystem::current_path(), ec);
+    if (ec)
+    {
+        NormalizedPath = PathFileName;
+    }
     FString NormalizedPathStr = NormalizedPath.string();
     std::replace(NormalizedPathStr.begin(), NormalizedPathStr.end(), '\\', '/');
 
-	// 1) 이미 로드된 UStaticMesh가 있는지 전체 검색 (정규화된 경로로 비교)
+    // 1) 이미 로드된 UStaticMesh가 있는지 전체 검색 (정규화된 경로로 비교)
     for (TObjectIterator<UStaticMesh> It; It; ++It)
     {
         UStaticMesh* StaticMesh = *It;
-        std::filesystem::path ExistingPath = std::filesystem::absolute(StaticMesh->GetFilePath());
+        std::filesystem::path ExistingPath = StaticMesh->GetFilePath();
         FString ExistingNormalizedStr = ExistingPath.string();
         std::replace(ExistingNormalizedStr.begin(), ExistingNormalizedStr.end(), '\\', '/');
 
@@ -189,9 +204,9 @@ UStaticMesh* FObjManager::LoadObjStaticMesh(const FString& PathFileName)
         }
     }
 
-	// 2) 없으면 새로 로드 (정규화된 경로 사용)
+    // 2) 없으면 새로 로드 (정규화된 경로 사용)
     UStaticMesh* StaticMesh = UResourceManager::GetInstance().Load<UStaticMesh>(NormalizedPathStr);
 
     UE_LOG("UStaticMesh(filename: \'%s\') is successfully crated!", NormalizedPathStr.c_str());
-	return StaticMesh;
+    return StaticMesh;
 }
