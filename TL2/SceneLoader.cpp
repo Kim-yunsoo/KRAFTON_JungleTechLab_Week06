@@ -330,6 +330,28 @@ void FSceneLoader::SaveV2(const FSceneData& SceneData, const FString& SceneName)
             oss << "      \"bIsScreenSizeScaled\" : " << (Comp.bIsScreenSizeScaled ? "true" : "false") << ",\n";
             oss << "      \"ScreenSize\" : " << Comp.ScreenSize;
         }
+        else if (Comp.Type.find("MovementComponent") != std::string::npos ||
+                 Comp.Type.find("RotatingMovementComponent") != std::string::npos)
+        {
+            // MovementComponent 공통 속성
+            oss << ",\n";
+            writeVec3("Velocity", Comp.Velocity, 6);
+            oss << ",\n";
+            writeVec3("Acceleration", Comp.Acceleration, 6);
+            oss << ",\n";
+            oss << "      \"bUpdateOnlyIfRendered\" : " << (Comp.bUpdateOnlyIfRendered ? "true" : "false");
+
+            // RotatingMovementComponent 전용 속성
+            if (Comp.Type.find("RotatingMovementComponent") != std::string::npos)
+            {
+                oss << ",\n";
+                writeVec3("RotationRate", Comp.RotationRate, 6);
+                oss << ",\n";
+                writeVec3("PivotTranslation", Comp.PivotTranslation, 6);
+                oss << ",\n";
+                oss << "      \"bRotationInLocalSpace\" : " << (Comp.bRotationInLocalSpace ? "true" : "false");
+            }
+        }
 
         oss << "\n";
         oss << "    }" << (i + 1 < SceneData.Components.size() ? "," : "") << "\n";
@@ -534,6 +556,54 @@ FSceneData FSceneLoader::ParseV2(const JSON& Json)
 
             if (CompJson.hasKey("ScreenSize"))
                 Comp.ScreenSize = (float)CompJson.at("ScreenSize").ToFloat();
+
+            // MovementComponent 전용 속성
+            if (CompJson.hasKey("Velocity"))
+            {
+                auto vel = CompJson.at("Velocity");
+                Comp.Velocity = FVector(
+                    (float)vel[0].ToFloat(),
+                    (float)vel[1].ToFloat(),
+                    (float)vel[2].ToFloat()
+                );
+            }
+
+            if (CompJson.hasKey("Acceleration"))
+            {
+                auto acc = CompJson.at("Acceleration");
+                Comp.Acceleration = FVector(
+                    (float)acc[0].ToFloat(),
+                    (float)acc[1].ToFloat(),
+                    (float)acc[2].ToFloat()
+                );
+            }
+
+            if (CompJson.hasKey("bUpdateOnlyIfRendered"))
+                Comp.bUpdateOnlyIfRendered = CompJson.at("bUpdateOnlyIfRendered").ToBool();
+
+            // RotatingMovementComponent 전용 속성
+            if (CompJson.hasKey("RotationRate"))
+            {
+                auto rate = CompJson.at("RotationRate");
+                Comp.RotationRate = FVector(
+                    (float)rate[0].ToFloat(),
+                    (float)rate[1].ToFloat(),
+                    (float)rate[2].ToFloat()
+                );
+            }
+
+            if (CompJson.hasKey("PivotTranslation"))
+            {
+                auto pivot = CompJson.at("PivotTranslation");
+                Comp.PivotTranslation = FVector(
+                    (float)pivot[0].ToFloat(),
+                    (float)pivot[1].ToFloat(),
+                    (float)pivot[2].ToFloat()
+                );
+            }
+
+            if (CompJson.hasKey("bRotationInLocalSpace"))
+                Comp.bRotationInLocalSpace = CompJson.at("bRotationInLocalSpace").ToBool();
 
             Data.Components.push_back(Comp);
         }
