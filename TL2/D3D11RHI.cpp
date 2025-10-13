@@ -124,6 +124,7 @@ void D3D11RHI::Release()
     if (InvWorldCB) { InvWorldCB->Release(); InvWorldCB = nullptr; }
     if (ViewportCB) { ViewportCB->Release(); ViewportCB = nullptr; }
     if (ConstantBuffer) { ConstantBuffer->Release(); ConstantBuffer = nullptr; }
+    if (DepthVisualizationCB) { DepthVisualizationCB->Release(); DepthVisualizationCB = nullptr; }
 
     // 상태 객체
     if (DepthStencilState) { DepthStencilState->Release(); DepthStencilState = nullptr; }
@@ -643,6 +644,14 @@ void D3D11RHI::CreateConstantBuffer()
     viewportDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     viewportDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     Device->CreateBuffer(&viewportDesc, nullptr, &ViewportCB);
+
+    // b6 : DepthVisualizationBuffer (Scene Depth 시각화용)
+    D3D11_BUFFER_DESC depthVisDesc = {};
+    depthVisDesc.Usage = D3D11_USAGE_DYNAMIC;
+    depthVisDesc.ByteWidth = sizeof(float) * 4; // NearPlane, FarPlane, padding
+    depthVisDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    depthVisDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&depthVisDesc, nullptr, &DepthVisualizationCB);
 }
 
 void D3D11RHI::UpdateUVScrollConstantBuffers(const FVector2D& Speed, float TimeSec)
@@ -696,6 +705,32 @@ void D3D11RHI::UpdateViewportConstantBuffer(float StartX, float StartY, float Si
         memcpy(mapped.pData, &data, sizeof(ViewportBufferType));
         DeviceContext->Unmap(ViewportCB, 0);
         DeviceContext->PSSetConstantBuffers(6, 1, &ViewportCB);
+    }
+}
+
+void D3D11RHI::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane)
+{
+    if (!DepthVisualizationCB) return;
+
+    struct DepthVisualizationBufferType
+    {
+        float NearPlane;
+        float FarPlane;
+        float Padding[2];
+    };
+
+    DepthVisualizationBufferType data;
+    data.NearPlane = NearPlane;
+    data.FarPlane = FarPlane;
+    data.Padding[0] = 0.0f;
+    data.Padding[1] = 0.0f;
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(DepthVisualizationCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(DepthVisualizationBufferType));
+        DeviceContext->Unmap(DepthVisualizationCB, 0);
+        DeviceContext->PSSetConstantBuffers(6, 1, &DepthVisualizationCB);
     }
 }
 

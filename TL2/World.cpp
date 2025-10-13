@@ -1427,6 +1427,19 @@ void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& Proj
     ID3D11DeviceContext* DeviceContext = D3D11Device->GetDeviceContext();
 
     // ============================================================
+    // 0. 카메라 Near/Far Plane 가져오기
+    // ============================================================
+    float NearPlane = 0.1f; // 기본값
+    float FarPlane = 1000.0f; // 기본값
+
+    if (MainCameraActor && MainCameraActor->GetCameraComponent())
+    {
+        UCameraComponent* CameraComp = MainCameraActor->GetCameraComponent();
+        NearPlane = CameraComp->GetNearClip();
+        FarPlane = CameraComp->GetFarClip();
+    }
+
+    // ============================================================
     // 1. Depth buffer를 SRV로 읽기 위해 DSV 언바인딩
     // ============================================================
     ID3D11RenderTargetView* pRTV = nullptr;
@@ -1455,14 +1468,13 @@ void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& Proj
         return;
     }
 
-    // ✨ SRV 상태 확인
-    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
-    DepthSRV->GetDesc(&srvDesc);
-
     DeviceContext->PSSetShaderResources(0, 1, &DepthSRV);
 
     // Scene Depth 셰이더 설정
     Renderer->PrepareShader(SceneDepthShader);
+
+    // Near/Far Plane 업데이트
+    Renderer->UpdateDepthVisualizationBuffer(NearPlane, FarPlane);
 
     // Sampler 설정
     D3D11Device->PSSetDefaultSampler(0);
