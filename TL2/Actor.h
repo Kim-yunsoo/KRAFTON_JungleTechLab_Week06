@@ -92,11 +92,14 @@ public:
         return Set;
     }
 
-    // 지정된 부모 하위에 새로운 컴포넌트를 생성하고 붙입니다.
     USceneComponent* CreateAndAttachComponent(USceneComponent* ParentComponent, UClass* ComponentClass);
-    // 이 액터가 소유한 씬 컴포넌트를 안전하게 제거하고 삭제합니다.
+    UActorComponent* CreateActorComponent(UClass* ComponentClass);
+
     virtual bool DeleteComponent(USceneComponent* ComponentToDelete);
+    virtual bool DeleteActorComponent(UActorComponent* ComponentToDelete);
+
     void AddComponent(USceneComponent* InComponent);
+
     // Duplicate function
     UObject* Duplicate() override;
     UObject* Duplicate(FObjectDuplicationParameters Parameters) override;

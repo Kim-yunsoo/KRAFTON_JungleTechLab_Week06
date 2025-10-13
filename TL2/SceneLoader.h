@@ -59,6 +59,16 @@ struct FComponentData
     float VLength = 1.0f;
     bool bIsScreenSizeScaled = false;
     float ScreenSize = 0.0025f;
+
+    // MovementComponent 전용 속성
+    FVector Velocity;
+    FVector Acceleration;
+    bool bUpdateOnlyIfRendered = false;
+
+    // RotatingMovementComponent 전용 속성
+    FVector RotationRate;
+    FVector PivotTranslation;
+    bool bRotationInLocalSpace = true;
 };
 
 struct FActorData

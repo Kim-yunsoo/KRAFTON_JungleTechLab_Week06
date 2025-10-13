@@ -22,6 +22,8 @@
 #include "DecalActor.h"
 #include "BillboardComponent.h"
 #include "RenderingStats.h"
+#include "MovementComponent.h"
+#include "RotatingMovementComponent.h"
 
 extern float CLIENTWIDTH;
 extern float CLIENTHEIGHT;
@@ -974,67 +976,86 @@ void UWorld::SaveSceneV2(const FString& SceneName)
         {
             if (!ActorComp) continue;
 
-            // SceneComponent만 처리 (Transform 정보가 있는 컴포넌트)
-            USceneComponent* Comp = Cast<USceneComponent>(ActorComp);
-            if (!Comp) continue;
-
             FComponentData CompData;
-            CompData.UUID = Comp->UUID;
+            CompData.UUID = ActorComp->UUID;
             CompData.OwnerActorUUID = Actor->UUID;
+            CompData.Type = ActorComp->GetClass()->Name;
 
-            // 부모 컴포넌트 UUID (RootComponent면 0)
-            if (Comp->GetAttachParent())
-                CompData.ParentComponentUUID = Comp->GetAttachParent()->UUID;
+            // SceneComponent인 경우 Transform과 계층 구조 정보 저장
+            if (USceneComponent* Comp = Cast<USceneComponent>(ActorComp))
+            {
+                // 부모 컴포넌트 UUID (RootComponent면 0)
+                if (Comp->GetAttachParent())
+                    CompData.ParentComponentUUID = Comp->GetAttachParent()->UUID;
+                else
+                    CompData.ParentComponentUUID = 0;
+
+                // Transform
+                CompData.RelativeLocation = Comp->GetRelativeLocation();
+                CompData.RelativeRotation = Comp->GetRelativeRotation().ToEuler();
+                CompData.RelativeScale = Comp->GetRelativeScale();
+
+                // Type별 속성
+                if (UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(Comp))
+                {
+                    if (StaticMeshComponent->GetStaticMesh())
+                    {
+                        CompData.StaticMesh = StaticMeshComponent->GetStaticMesh()->GetAssetPathFileName();
+                        UE_LOG("SaveScene: StaticMesh saved: %s", CompData.StaticMesh.c_str());
+                    }
+                    else
+                    {
+                        UE_LOG("SaveScene: StaticMeshComponent has no StaticMesh assigned");
+                    }
+                    // TODO: Materials 수집
+                }
+                else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Comp))
+                {
+                    // DecalComponent 속성 저장
+                    if (DecalComp->GetDecalTexture())
+                    {
+                        CompData.DecalTexture = DecalComp->GetDecalTexture()->GetFilePath();
+                    }
+                    CompData.DecalSize = DecalComp->GetDecalSize();
+                    CompData.FadeInDuration = DecalComp->GetFadeInDuration();
+                    CompData.FadeStartDelay = DecalComp->GetFadeStartDelay();
+                    CompData.FadeDuration = DecalComp->GetFadeDuration();
+                    CompData.bIsOrthoMatrix = DecalComp->GetOrthoMatrixFlag();
+                }
+                else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Comp))
+                {
+                    // BillboardComponent 속성 저장
+                    CompData.BillboardTexturePath = BillboardComp->GetTexturePath();
+                    CompData.BillboardWidth = BillboardComp->GetBillboardWidth();
+                    CompData.BillboardHeight = BillboardComp->GetBillboardHeight();
+                    CompData.UCoord = BillboardComp->GetU();
+                    CompData.VCoord = BillboardComp->GetV();
+                    CompData.ULength = BillboardComp->GetUL();
+                    CompData.VLength = BillboardComp->GetVL();
+                    CompData.bIsScreenSizeScaled = BillboardComp->IsScreenSizeScaled();
+                    CompData.ScreenSize = BillboardComp->GetScreenSize();
+                }
+            }
             else
+            {
+                // ActorComponent (Transform 없음)
                 CompData.ParentComponentUUID = 0;
 
-            // Transform
-            CompData.RelativeLocation = Comp->GetRelativeLocation();
-            CompData.RelativeRotation = Comp->GetRelativeRotation().ToEuler();
-            CompData.RelativeScale = Comp->GetRelativeScale();
+                // MovementComponent 속성 저장
+                if (UMovementComponent* MovementComp = Cast<UMovementComponent>(ActorComp))
+                {
+                    CompData.Velocity = MovementComp->GetVelocity();
+                    CompData.Acceleration = MovementComp->GetAcceleration();
+                    CompData.bUpdateOnlyIfRendered = MovementComp->GetUpdateOnlyIfRendered();
 
-            // Type 자동 가져오기
-            CompData.Type = Comp->GetClass()->Name;
-
-            // Type별 속성
-            if (UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(Comp))
-            {
-                if (StaticMeshComponent->GetStaticMesh())
-                {
-                    CompData.StaticMesh = StaticMeshComponent->GetStaticMesh()->GetAssetPathFileName();
-                    UE_LOG("SaveScene: StaticMesh saved: %s", CompData.StaticMesh.c_str());
+                    // RotatingMovementComponent 추가 속성 저장
+                    if (URotatingMovementComponent* RotatingComp = Cast<URotatingMovementComponent>(MovementComp))
+                    {
+                        CompData.RotationRate = RotatingComp->GetRotationRate();
+                        CompData.PivotTranslation = RotatingComp->GetPivotTranslation();
+                        CompData.bRotationInLocalSpace = RotatingComp->IsRotationInLocalSpace();
+                    }
                 }
-                else
-                {
-                    UE_LOG("SaveScene: StaticMeshComponent has no StaticMesh assigned");
-                }
-                // TODO: Materials 수집
-            }
-            else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Comp))
-            {
-                // DecalComponent 속성 저장
-                if (DecalComp->GetDecalTexture())
-                {
-                    CompData.DecalTexture = DecalComp->GetDecalTexture()->GetFilePath();
-                }
-                CompData.DecalSize = DecalComp->GetDecalSize();
-                CompData.FadeInDuration = DecalComp->GetFadeInDuration();
-                CompData.FadeStartDelay = DecalComp->GetFadeStartDelay();
-                CompData.FadeDuration = DecalComp->GetFadeDuration();
-                CompData.bIsOrthoMatrix = DecalComp->GetOrthoMatrixFlag();
-            }
-            else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Comp))
-            {
-                // BillboardComponent 속성 저장
-                CompData.BillboardTexturePath = BillboardComp->GetTexturePath();
-                CompData.BillboardWidth = BillboardComp->GetBillboardWidth();
-                CompData.BillboardHeight = BillboardComp->GetBillboardHeight();
-                CompData.UCoord = BillboardComp->GetU();
-                CompData.VCoord = BillboardComp->GetV();
-                CompData.ULength = BillboardComp->GetUL();
-                CompData.VLength = BillboardComp->GetVL();
-                CompData.bIsScreenSizeScaled = BillboardComp->IsScreenSizeScaled();
-                CompData.ScreenSize = BillboardComp->GetScreenSize();
             }
 
             SceneData.Components.push_back(CompData);
@@ -1075,8 +1096,6 @@ void UWorld::LoadSceneV2(const FString& SceneName)
     // 마우스 델타 초기화
     const FVector2D CurrentMousePos = UInputManager::GetInstance().GetMousePosition();
     UInputManager::GetInstance().SetLastMousePosition(CurrentMousePos);
-
-
 
     if (MainCameraActor && MainCameraActor->GetCameraComponent())
     {
@@ -1184,6 +1203,21 @@ void UWorld::LoadSceneV2(const FString& SceneName)
             BillboardComp->SetUVCoords(CompData.UCoord, CompData.VCoord, CompData.ULength, CompData.VLength);
             BillboardComp->SetScreenSizeScaled(CompData.bIsScreenSizeScaled);
             BillboardComp->SetScreenSize(CompData.ScreenSize);
+        }
+        else if (UMovementComponent* MovementComp = Cast<UMovementComponent>(NewComp))
+        {
+            // MovementComponent 속성 복원
+            MovementComp->SetVelocity(CompData.Velocity);
+            MovementComp->SetAcceleration(CompData.Acceleration);
+            MovementComp->SetUpdateOnlyIfRendered(CompData.bUpdateOnlyIfRendered);
+
+            // RotatingMovementComponent 추가 속성 복원
+            if (URotatingMovementComponent* RotatingComp = Cast<URotatingMovementComponent>(NewComp))
+            {
+                RotatingComp->SetRotationRate(CompData.RotationRate);
+                RotatingComp->SetPivotTranslation(CompData.PivotTranslation);
+                RotatingComp->SetRotationInLocalSpace(CompData.bRotationInLocalSpace);
+            }
         }
 
         // Owner Actor 설정

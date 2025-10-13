@@ -6,6 +6,7 @@
 #include "AABoundingBoxComponent.h"
 #include "MeshComponent.h"
 #include "TextRenderComponent.h"
+#include "MovementComponent.h"
 
 AActor::AActor()
 {
@@ -232,6 +233,34 @@ USceneComponent* AActor::CreateAndAttachComponent(USceneComponent* ParentCompone
     return NewComponent;
 }
 
+// Transform이 없는 ActorComponent를 생성하고 액터에 추가합니다
+UActorComponent* AActor::CreateActorComponent(UClass* ComponentClass)
+{
+    if (!ComponentClass)
+    {
+        return nullptr;
+    }
+
+    UActorComponent* NewComponent = nullptr;
+
+    if (UObject* NewComponentObject = NewObject(ComponentClass))
+    {
+        if (NewComponent = Cast<UActorComponent>(NewComponentObject))
+        {
+            NewComponent->SetOwner(this);
+            OwnedComponents.Add(NewComponent);
+
+            // MovementComponent의 경우 UpdatedComponent를 RootComponent로 자동 설정
+            if (UMovementComponent* MovementComp = Cast<UMovementComponent>(NewComponent))
+            {
+                MovementComp->SetUpdatedComponent(GetRootComponent());
+            }
+        }
+    }
+
+    return NewComponent;
+}
+
 bool AActor::DeleteComponent(USceneComponent* ComponentToDelete)
 {
     // 1. [유효성 검사] nullptr이거나 이 액터가 소유한 컴포넌트가 아니면 실패 처리합니다.
@@ -268,6 +297,24 @@ bool AActor::DeleteComponent(USceneComponent* ComponentToDelete)
     OwnedComponents.Remove(ComponentToDelete);
 
     // 6. [메모리 해제] 모든 연결이 정리되었으므로, 마지막으로 객체를 삭제합니다.
+    ObjectFactory::DeleteObject(ComponentToDelete);
+
+    return true;
+}
+
+// ActorComponent를 안전하게 제거하고 삭제합니다
+bool AActor::DeleteActorComponent(UActorComponent* ComponentToDelete)
+{
+    // 1. [유효성 검사] nullptr이거나 이 액터가 소유한 컴포넌트가 아니면 실패 처리합니다.
+    if (!ComponentToDelete || !OwnedComponents.Contains(ComponentToDelete))
+    {
+        return false;
+    }
+
+    // 2. [소유 목록에서 제거] 액터의 관리 목록에서 포인터를 제거합니다.
+    OwnedComponents.Remove(ComponentToDelete);
+
+    // 3. [메모리 해제] 객체를 삭제합니다.
     ObjectFactory::DeleteObject(ComponentToDelete);
 
     return true;
