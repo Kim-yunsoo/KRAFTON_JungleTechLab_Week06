@@ -1,4 +1,4 @@
-ï»¿#include "pch.h"
+#include "pch.h"
 
 #include "BillboardComponent.h"
 #include "TextRenderComponent.h"
@@ -26,15 +26,15 @@ URenderer::~URenderer()
 
 void URenderer::BeginFrame()
 {
-    // ë Œë”ë§ í†µê³„ ìˆ˜ì§‘ ì‹œì‘
+    // ·»´õ¸µ Åë°è ¼öÁı ½ÃÀÛ
     URenderingStatsCollector::GetInstance().BeginFrame();
     
-    // ìƒíƒœ ì¶”ì  ë¦¬ì…‹
+    // »óÅÂ ÃßÀû ¸®¼Â
     ResetRenderStateTracking();
     
-    // ë°±ë²„í¼/ê¹Šì´ë²„í¼ë¥¼ í´ë¦¬ì–´
-    RHIDevice->ClearBackBuffer();  // ë°°ê²½ìƒ‰
-    RHIDevice->ClearDepthBuffer(1.0f, 0);                 // ê¹Šì´ê°’ ì´ˆê¸°í™”
+    // ¹é¹öÆÛ/±íÀÌ¹öÆÛ¸¦ Å¬¸®¾î
+    RHIDevice->ClearBackBuffer();  // ¹è°æ»ö
+    RHIDevice->ClearDepthBuffer(1.0f, 0);                 // ±íÀÌ°ª ÃÊ±âÈ­
     RHIDevice->CreateBlendState();
     RHIDevice->IASetPrimitiveTopology();
     // RS
@@ -54,7 +54,7 @@ void URenderer::PrepareShader(FShader& InShader)
 
 void URenderer::PrepareShader(UShader* InShader)
 {
-    // ì…°ì´ë” ë³€ê²½ ì¶”ì 
+    // ¼ÎÀÌ´õ º¯°æ ÃßÀû
     if (LastShader != InShader)
     {
         URenderingStatsCollector::GetInstance().IncrementShaderChanges();
@@ -147,7 +147,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITI
 {
     URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
     
-    // ë””ë²„ê·¸: StaticMesh ë Œë”ë§ í†µê³„
+    // µğ¹ö±×: StaticMesh ·»´õ¸µ Åë°è
     
     UINT stride = 0;
     switch (InMesh->GetVertexType())
@@ -194,7 +194,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITI
             const FObjMaterialInfo& MaterialInfo = Material->GetMaterialInfo();
             bool bHasTexture = !(MaterialInfo.DiffuseTextureFileName == FName::None());
             
-            // ì¬ë£Œ ë³€ê²½ ì¶”ì 
+            // Àç·á º¯°æ ÃßÀû
             if (LastMaterial != Material)
             {
                 StatsCollector.IncrementMaterialChanges();
@@ -206,7 +206,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITI
             {
                 TextureData = UResourceManager::GetInstance().CreateOrGetTextureData(MaterialInfo.DiffuseTextureFileName);
                 
-                // í…ìŠ¤ì²˜ ë³€ê²½ ì¶”ì  (ì„ì‹œë¡œ FTextureData*ë¥¼ UTexture*ë¡œ ìº ìŠ¤íŠ¸)
+                // ÅØ½ºÃ³ º¯°æ ÃßÀû (ÀÓ½Ã·Î FTextureData*¸¦ UTexture*·Î Ä·½ºÆ®)
                 UTexture* CurrentTexture = reinterpret_cast<UTexture*>(TextureData);
                 if (LastTexture != CurrentTexture)
                 {
@@ -217,9 +217,9 @@ void URenderer::DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITI
                 RHIDevice->GetDeviceContext()->PSSetShaderResources(0, 1, &(TextureData->TextureSRV));
             }
             
-            RHIDevice->UpdatePixelConstantBuffers(MaterialInfo, true, bHasTexture); // PSSetë„ í•´ì¤Œ
+            RHIDevice->UpdatePixelConstantBuffers(MaterialInfo, true, bHasTexture); // PSSetµµ ÇØÁÜ
             
-            // DrawCall ìˆ˜ì‹¤í–‰ ë° í†µê³„ ì¶”ê°€
+            // DrawCall ¼ö½ÇÇà ¹× Åë°è Ãß°¡
             RHIDevice->GetDeviceContext()->DrawIndexed(MeshGroupInfos[i].IndexCount, MeshGroupInfos[i].StartIndex, 0);
             StatsCollector.IncrementDrawCalls();
         }
@@ -227,7 +227,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITI
     else
     {
         FObjMaterialInfo ObjMaterialInfo;
-        RHIDevice->UpdatePixelConstantBuffers(ObjMaterialInfo, false, false); // PSSetë„ í•´ì¤Œ
+        RHIDevice->UpdatePixelConstantBuffers(ObjMaterialInfo, false, false); // PSSetµµ ÇØÁÜ
         RHIDevice->GetDeviceContext()->DrawIndexed(IndexCount, 0, 0);
         StatsCollector.IncrementDrawCalls();
     }
@@ -237,13 +237,13 @@ void URenderer::DrawIndexedPrimitiveComponent(UTextRenderComponent* Comp, D3D11_
 {
     URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
     
-    // ë””ë²„ê·¸: TextRenderComponent ë Œë”ë§ í†µê³„
+    // µğ¹ö±×: TextRenderComponent ·»´õ¸µ Åë°è
     
     UINT Stride = sizeof(FBillboardVertexInfo_GPU);
     ID3D11Buffer* VertexBuff = Comp->GetStaticMesh()->GetVertexBuffer();
     ID3D11Buffer* IndexBuff = Comp->GetStaticMesh()->GetIndexBuffer();
 
-    // ë§¤í…Œë¦¬ì–¼ ë³€ê²½ ì¶”ì 
+    // ¸ÅÅ×¸®¾ó º¯°æ ÃßÀû
     UMaterial* CompMaterial = Comp->GetMaterial();
     if (LastMaterial != CompMaterial)
     {
@@ -252,7 +252,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UTextRenderComponent* Comp, D3D11_
     }
     
     UShader* CompShader = CompMaterial->GetShader();
-    // ì…°ì´ë” ë³€ê²½ ì¶”ì 
+    // ¼ÎÀÌ´õ º¯°æ ÃßÀû
     if (LastShader != CompShader)
     {
         StatsCollector.IncrementShaderChanges();
@@ -270,7 +270,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UTextRenderComponent* Comp, D3D11_
         IndexBuff, DXGI_FORMAT_R32_UINT, 0
     );
 
-    // í…ìŠ¤ì²˜ ë³€ê²½ ì¶”ì  (í…ìŠ¤ì²˜ ë¹„êµ)
+    // ÅØ½ºÃ³ º¯°æ ÃßÀû (ÅØ½ºÃ³ ºñ±³)
     UTexture* CompTexture = CompMaterial->GetTexture();
     if (LastTexture != CompTexture)
     {
@@ -291,13 +291,13 @@ void URenderer::DrawIndexedPrimitiveComponent(UBillboardComponent* Comp, D3D11_P
 {
     URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
     
-    // ë””ë²„ê·¸: TextRenderComponent ë Œë”ë§ í†µê³„
+    // µğ¹ö±×: TextRenderComponent ·»´õ¸µ Åë°è
     
     UINT Stride = sizeof(FBillboardVertexInfo_GPU);
     ID3D11Buffer* VertexBuff = Comp->GetStaticMesh()->GetVertexBuffer();
     ID3D11Buffer* IndexBuff = Comp->GetStaticMesh()->GetIndexBuffer();
 
-    // ë§¤í…Œë¦¬ì–¼ ë³€ê²½ ì¶”ì 
+    // ¸ÅÅ×¸®¾ó º¯°æ ÃßÀû
     UMaterial* CompMaterial = Comp->GetMaterial();
     if (LastMaterial != CompMaterial)
     {
@@ -306,7 +306,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UBillboardComponent* Comp, D3D11_P
     }
     
     UShader* CompShader = CompMaterial->GetShader();
-    // ì…°ì´ë” ë³€ê²½ ì¶”ì 
+    // ¼ÎÀÌ´õ º¯°æ ÃßÀû
     if (LastShader != CompShader)
     {
         StatsCollector.IncrementShaderChanges();
@@ -324,7 +324,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UBillboardComponent* Comp, D3D11_P
         IndexBuff, DXGI_FORMAT_R32_UINT, 0
     );
 
-    // í…ìŠ¤ì²˜ ë³€ê²½ ì¶”ì  (í…ìŠ¤ì²˜ ë¹„êµ)
+    // ÅØ½ºÃ³ º¯°æ ÃßÀû (ÅØ½ºÃ³ ºñ±³)
     UTexture* CompTexture = CompMaterial->GetTexture();
     if (LastTexture != CompTexture)
     {
@@ -351,15 +351,15 @@ void URenderer::SetViewModeType(EViewModeIndex ViewModeIndex)
 
 void URenderer::EndFrame()
 {
-    // ë Œë”ë§ í†µê³„ ìˆ˜ì§‘ ì¢…ë£Œ
+    // ·»´õ¸µ Åë°è ¼öÁı Á¾·á
     URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
     StatsCollector.EndFrame();
     
-    // í˜„ì¬ í”„ë ˆì„ í†µê³„ë¥¼ ì—…ë°ì´íŠ¸
+    // ÇöÀç ÇÁ·¹ÀÓ Åë°è¸¦ ¾÷µ¥ÀÌÆ®
     const FRenderingStats& CurrentStats = StatsCollector.GetCurrentFrameStats();
     StatsCollector.UpdateFrameStats(CurrentStats);
     
-    // í‰ê·  í†µê³„ë¥¼ ì–»ì–´ì„œ ì˜¤ë²„ë ˆì´ì— ì—…ë°ì´íŠ¸
+    // Æò±Õ Åë°è¸¦ ¾ò¾î¼­ ¿À¹ö·¹ÀÌ¿¡ ¾÷µ¥ÀÌÆ®
     const FRenderingStats& AvgStats = StatsCollector.GetAverageStats();
     UStatsOverlayD2D::Get().UpdateRenderingStats(
         AvgStats.TotalDrawCalls,
@@ -374,6 +374,8 @@ void URenderer::EndFrame()
         FXAAShader = UResourceManager::GetInstance().Load<UShader>("FXAA.hlsl");
     }
 
+    // Update viewport CB (b6) and bind backbuffer for FXAA
+    static_cast<D3D11RHI*>(RHIDevice)->UpdateViewportCBFromCurrent();
     // Bind backbuffer as target (no depth) for FXAA output
     static_cast<D3D11RHI*>(RHIDevice)->OMSetBackBufferNoDepth();
 
@@ -541,7 +543,7 @@ void URenderer::EndLineBatch(const FMatrix& ModelMatrix, const FMatrix& ViewMatr
         RHIDevice->GetDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
         RHIDevice->GetDeviceContext()->DrawIndexed(DynamicLineMesh->GetCurrentIndexCount(), 0, 0);
         
-        // ë¼ì¸ ë Œë”ë§ì— ëŒ€í•œ DrawCall í†µê³„ ì¶”ê°€
+        // ¶óÀÎ ·»´õ¸µ¿¡ ´ëÇÑ DrawCall Åë°è Ãß°¡
         URenderingStatsCollector::GetInstance().IncrementDrawCalls();
     }
     
@@ -565,4 +567,5 @@ void URenderer::ClearLineBatch()
     
     bLineBatchActive = false;
 }
+
 

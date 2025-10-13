@@ -420,6 +420,8 @@ void D3D11RHI::RSSetDefaultState()
 void D3D11RHI::RSSetViewport()
 {
     DeviceContext->RSSetViewports(1, &ViewportInfo);
+    // Keep FXAA constants in sync with the active viewport size
+    RefreshFXAAConstantsFromSwapchain();
 }
 
 void D3D11RHI::OMSetRenderTargets()
@@ -1059,15 +1061,25 @@ void D3D11RHI::OMSetBackBufferNoDepth()
     DeviceContext->OMSetRenderTargets(1, &RenderTargetView, nullptr);
 }
 
+void D3D11RHI::UpdateViewportCBFromCurrent()
+{
+    UpdateViewportConstantBuffer(ViewportInfo.TopLeftX, ViewportInfo.TopLeftY, ViewportInfo.Width, ViewportInfo.Height);
+}
+
 void D3D11RHI::RefreshFXAAConstantsFromSwapchain()
 {
-    if (!SwapChain)
-        return;
+    // Prefer the currently bound viewport dimensions instead of swapchain/backbuffer.
+    float w = ViewportInfo.Width;
+    float h = ViewportInfo.Height;
 
-    DXGI_SWAP_CHAIN_DESC scd{};
-    SwapChain->GetDesc(&scd);
-    const float w = static_cast<float>(scd.BufferDesc.Width);
-    const float h = static_cast<float>(scd.BufferDesc.Height);
+    // Fallback to swapchain size if viewport is not initialized yet
+    if ((w <= 0.0f || h <= 0.0f) && SwapChain)
+    {
+        DXGI_SWAP_CHAIN_DESC scd{};
+        SwapChain->GetDesc(&scd);
+        w = static_cast<float>(scd.BufferDesc.Width);
+        h = static_cast<float>(scd.BufferDesc.Height);
+    }
     if (w <= 0.0f || h <= 0.0f)
         return;
 

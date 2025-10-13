@@ -24,6 +24,12 @@ cbuffer FXAAConstantBuffer : register(b0)
 Texture2D ColorLdr : register(t0);
 SamplerState LinearClamp : register(s0);
 
+// Optional viewport input: x=StartX, y=StartY, z=SizeX, w=SizeY (pixels)
+cbuffer FXAAViewportCB : register(b6)
+{
+    float4 ViewportRect;
+}
+
 struct VS_OUT
 {
     float4 pos : SV_Position;
@@ -59,7 +65,12 @@ float ComputeLuma(float3 rgb)
 
 float4 PS_FXAA(VS_OUT input) : SV_Target
 {
-    float3 color = ColorLdr.Sample(LinearClamp, input.uv).rgb;
+    // Remap UV to the viewport sub-rect actually rendered into the source texture
+    float2 vpStart = ViewportRect.xy * rcpFrame;
+    float2 vpSize  = ViewportRect.zw * rcpFrame;
+    float2 uv = vpStart + input.uv * vpSize;
+
+    float3 color = ColorLdr.Sample(LinearClamp, uv).rgb;
     float luma = ComputeLuma(color);
     // For now, return original color while we build subsequent steps
     // (edge detection & filtering will follow next steps)
