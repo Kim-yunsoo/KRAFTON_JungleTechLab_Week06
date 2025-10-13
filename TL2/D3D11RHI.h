@@ -91,9 +91,9 @@ public:
     {
         return SwapChain;
     }
-    inline ID3D11ShaderResourceView* GetDepthSRV()
+    inline ID3D11ShaderResourceView* GetDepthShaderResourceView()
     {
-        return DepthSRV;
+        return DepthShaderResourceView;
     }
 
 private:
@@ -140,7 +140,7 @@ private:
     ID3D11Texture2D* FrameBuffer{};//
     ID3D11RenderTargetView* RenderTargetView{};//
     ID3D11DepthStencilView* DepthStencilView{};//
-    ID3D11ShaderResourceView* DepthSRV{}; // Depth buffer를 셰이더에서 읽기 위한 SRV
+    ID3D11ShaderResourceView* DepthShaderResourceView{}; // Depth buffer를 셰이더에서 읽기 위한 SRV
 
     // 버퍼 핸들
     ID3D11Buffer* ModelCB{};

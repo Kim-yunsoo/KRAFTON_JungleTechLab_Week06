@@ -166,6 +166,9 @@ void UWorld::Initialize()
     InitializeGrid();
     InitializeGizmo();
 
+    // Fullscreen quad 초기화 추가
+    InitializeFullscreenQuad();
+
     // BVH 초기화 (빈 상태로 시작)
     if (!BVH)
     {
@@ -261,138 +264,148 @@ void UWorld::Render()
 
 void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 {
-	// 뷰포트의 실제 크기로 aspect ratio 계산
-	float ViewportAspectRatio = static_cast<float>(Viewport->GetSizeX()) / static_cast<float>(
-		Viewport->GetSizeY());
-	if (Viewport->GetSizeY() == 0)
-	{
-		ViewportAspectRatio = 1.0f;
-	} // 0으로 나누기 방지
+    // 뷰포트의 실제 크기로 aspect ratio 계산
+    float ViewportAspectRatio = static_cast<float>(Viewport->GetSizeX()) / static_cast<float>(
+        Viewport->GetSizeY());
+    if (Viewport->GetSizeY() == 0)
+    {
+        ViewportAspectRatio = 1.0f;
+    }
 
-	FMatrix ViewMatrix = Camera->GetViewMatrix();
-	FMatrix ProjectionMatrix = Camera->GetProjectionMatrix(ViewportAspectRatio, Viewport);
-	if (!Renderer)
-	{
-		return;
-	}
-	FVector rgb(1.0f, 1.0f, 1.0f);
+    FMatrix ViewMatrix = Camera->GetViewMatrix();
+    FMatrix ProjectionMatrix = Camera->GetProjectionMatrix(ViewportAspectRatio, Viewport);
+    if (!Renderer)
+    {
+        return;
+    }
+    FVector rgb(1.0f, 1.0f, 1.0f);
 
-	FFrustum ViewFrustum;
-	ViewFrustum.Update(ViewMatrix * ProjectionMatrix);
+    FFrustum ViewFrustum;
+    ViewFrustum.Update(ViewMatrix * ProjectionMatrix);
 
-	Renderer->BeginLineBatch();
-	Renderer->SetViewModeType(ViewModeIndex);
+    Renderer->BeginLineBatch();
 
-	int AllActorCount = 0;
-	int FrustumCullCount = 0;
-	int32 TotalDecalCount = 0;
+    // ====================================================================
+    // View Mode 설정
+    // ====================================================================
+    Renderer->SetViewModeType(ViewModeIndex);
 
-	const TArray<AActor*>& LevelActors = Level ? Level->GetActors() : TArray<AActor*>();
+    // ====================================================================
+    // Depth Write 명시적 활성화
+    // ====================================================================
+    // Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
 
-	// Pass 1: 데칼을 제외한 모든 오브젝트 렌더링 (Depth 버퍼 채우기)
-	for (AActor* Actor : LevelActors)
-	{
-		// 일반 액터들 렌더링
-		if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives))
-		{
-			continue;
-		}
-		if (!Actor)
-		{
-			continue;
-		}
-		if (Actor->GetActorHiddenInGame())
-		{
-			continue;
-		}
-		
-		AllActorCount++;
-		for (UActorComponent* Component : Actor->GetComponents())
-		{
-			if (!Component)
-			{
-				continue;
-			}
+    int AllActorCount = 0;
+    int FrustumCullCount = 0;
+    int32 TotalDecalCount = 0;
 
-			if (UActorComponent* ActorComp = Cast<UActorComponent>(Component))
-			{
-				if (!ActorComp->IsActive())
-				{
-					continue;
-				}
-			}
+    const TArray<AActor*>& LevelActors = Level ? Level->GetActors() : TArray<AActor*>();
 
-			if (Cast<UTextRenderComponent>(Component) &&
-				!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_BillboardText))
-			{
-				continue;
-			}
+    // ====================================================================
+    // Pass 1: 일반 렌더링 - Depth Buffer 채우기
+    // ====================================================================
+    
+    for (AActor* Actor : LevelActors)
+    {
+        if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives))
+        {
+            continue;
+        }
+        if (!Actor)
+        {
+            continue;
+        }
+        if (Actor->GetActorHiddenInGame())
+        {
+            continue;
+        }
 
-			// Decal Component인 경우 Editor Visuals만 렌더링 (실제 데칼 투영은 패스 2에서)
-            if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
+        AllActorCount++;
+        for (UActorComponent* Component : Actor->GetComponents())
+        {
+            if (!Component)
             {
-                DecalComp->RenderEditorVisuals(Renderer, ViewMatrix, ProjectionMatrix);
-				TotalDecalCount++;
                 continue;
             }
 
-			if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
-			{
-				bool bIsSelected = SelectionManager.IsActorSelected(Actor);
+            if (UActorComponent* ActorComp = Cast<UActorComponent>(Component))
+            {
+                if (!ActorComp->IsActive())
+                {
+                    continue;
+                }
+            }
 
-				//// 선택된 액터는 항상 앞에 보이도록 depth test를 Always로 설정
-				//if (bIsSelected)//나중에 추가구현
-				//{
-				//    Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
-				//}
+            if (Cast<UTextRenderComponent>(Component) &&
+                !Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_BillboardText))
+            {
+                continue;
+            }
 
-				Renderer->UpdateHighLightConstantBuffer(bIsSelected, rgb, 0, 0, 0, 0);
-				Primitive->Render(Renderer, ViewMatrix, ProjectionMatrix, Viewport);
+            // Decal Component는 Editor Visuals만 렌더링
+            if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
+            {
+                DecalComp->RenderEditorVisuals(Renderer, ViewMatrix, ProjectionMatrix);
+                TotalDecalCount++;
+                continue;
+            }
 
-				//// depth test 원래대로 복원
-				//if (bIsSelected)
-				//{
-				//    Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
-				//}
-			}
-		}
-		Renderer->OMSetBlendState(false);
-	}
+            if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
+            {
+                bool bIsSelected = SelectionManager.IsActorSelected(Actor);
+                Renderer->UpdateHighLightConstantBuffer(bIsSelected, rgb, 0, 0, 0, 0);
+                Primitive->Render(Renderer, ViewMatrix, ProjectionMatrix, Viewport);
+            }
+        }
+        Renderer->OMSetBlendState(false);
+    }
 
     // 엔진 액터들 (그리드 등) 렌더링
     RenderEngineActors(ViewMatrix, ProjectionMatrix, Viewport);
 
     URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
-    
-    // Pass 2: 데칼 렌더링
-    StatsCollector.BeginDecalPass();
 
-    FDecalRenderingStats& DecalStats = StatsCollector.GetDecalStats();
-    DecalStats.TotalDecalCount = TotalDecalCount;
-
-    if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives) &&
-        Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals) &&
-        Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
+    // ====================================================================
+    // Pass 2: Decal Projection Pass (Scene Depth 모드가 아닐 때만)
+    // ====================================================================
+    if (ViewModeIndex != EViewModeIndex::VMI_SceneDepth)
     {
-        for (AActor* Actor : LevelActors)
-        {
-            if (!Actor || Actor->GetActorHiddenInGame())
-            {
-                continue;
-            }
+        StatsCollector.BeginDecalPass();
+        FDecalRenderingStats& DecalStats = StatsCollector.GetDecalStats();
+        DecalStats.TotalDecalCount = TotalDecalCount;
 
-            for (UActorComponent* Component : Actor->GetComponents())
+        if (Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives) &&
+            Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Decals) &&
+            Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_StaticMeshes))
+        {
+            for (AActor* Actor : LevelActors)
             {
-                if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
+                if (!Actor || Actor->GetActorHiddenInGame())
                 {
-                    DecalComp->RenderDecalProjection(Renderer, ViewMatrix, ProjectionMatrix);
+                    continue;
+                }
+
+                for (UActorComponent* Component : Actor->GetComponents())
+                {
+                    if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
+                    {
+                        DecalComp->RenderDecalProjection(Renderer, ViewMatrix, ProjectionMatrix);
+                    }
                 }
             }
         }
+        StatsCollector.EndDecalPass();
     }
-    StatsCollector.EndDecalPass();
 
-	Renderer->EndLineBatch(FMatrix::Identity(), ViewMatrix, ProjectionMatrix);
+    Renderer->EndLineBatch(FMatrix::Identity(), ViewMatrix, ProjectionMatrix);
+
+    // ====================================================================
+    // Pass 3: Post-Process - Scene Depth 시각화 (VMI_SceneDepth 모드일 때만)
+    // ====================================================================
+    if (ViewModeIndex == EViewModeIndex::VMI_SceneDepth)
+    {
+        RenderSceneDepthPass(ViewMatrix, ProjectionMatrix);
+    }
 }
 
 void UWorld::RenderEngineActors(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport)
@@ -1391,6 +1404,96 @@ void UWorld::CleanupWorld()
             }
         }
     }
+}
+
+void UWorld::InitializeFullscreenQuad()
+{
+    SceneDepthShader = ResourceManager.Load<UShader>("SceneDepthShader.hlsl");
+    if (!SceneDepthShader)
+    {
+        UE_LOG("ERROR: Failed to load SceneDepthShader.hlsl");
+    }
+}
+
+void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix)
+{
+    if (!SceneDepthShader || !Renderer)
+    {
+        UE_LOG("ERROR: SceneDepthPass skipped - shader or renderer is null");
+        return;
+    }
+
+    D3D11RHI* D3D11Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
+    ID3D11DeviceContext* DeviceContext = D3D11Device->GetDeviceContext();
+
+    // ============================================================
+    // 1. Depth buffer를 SRV로 읽기 위해 DSV 언바인딩
+    // ============================================================
+    ID3D11RenderTargetView* pRTV = nullptr;
+    ID3D11DepthStencilView* pDSV = nullptr;
+    DeviceContext->OMGetRenderTargets(1, &pRTV, &pDSV);
+
+    // Depth를 nullptr로 언바인딩
+    DeviceContext->OMSetRenderTargets(1, &pRTV, nullptr);
+
+    // 참조 카운트 감소
+    if (pRTV) pRTV->Release();
+    if (pDSV) pDSV->Release();
+
+    // ============================================================
+    // 2. 렌더링 상태 설정
+    // ============================================================
+
+    // Depth test 비활성화
+    Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
+
+    // Depth SRV 바인딩
+    ID3D11ShaderResourceView* DepthSRV = D3D11Device->GetDepthShaderResourceView();
+    if (!DepthSRV)
+    {
+        D3D11Device->OMSetRenderTargets(); // 복원
+        return;
+    }
+
+    // ✨ SRV 상태 확인
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+    DepthSRV->GetDesc(&srvDesc);
+
+    DeviceContext->PSSetShaderResources(0, 1, &DepthSRV);
+
+    // Scene Depth 셰이더 설정
+    Renderer->PrepareShader(SceneDepthShader);
+
+    // Sampler 설정
+    D3D11Device->PSSetDefaultSampler(0);
+
+    // ============================================================
+    // 3. 메시 없이 Fullscreen Triangle 렌더링
+    // ============================================================
+
+    // Vertex Buffer와 Index Buffer를 nullptr로 설정 (사용 안 함)
+    DeviceContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+    DeviceContext->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
+
+    // Primitive Topology를 Triangle List로 설정
+    DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // Draw(3, 0) - 3개의 정점으로 fullscreen triangle 그리기
+    DeviceContext->Draw(3, 0);
+
+    // ============================================================
+    // 4. 정리 및 복원
+    // ============================================================
+
+    // SRV 언바인딩
+    ID3D11ShaderResourceView* NullSRV = nullptr;
+    DeviceContext->PSSetShaderResources(0, 1, &NullSRV);
+
+    // Depth buffer를 DSV로 재바인딩
+    D3D11Device->OMSetRenderTargets();
+
+    // Depth test 복원
+    Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
 }
 
 /**

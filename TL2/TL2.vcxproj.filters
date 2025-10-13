@@ -460,6 +460,7 @@
     </ClCompile>
     <ClCompile Include="OrientedBox.cpp" />
     <ClCompile Include="Name.cpp" />
+    <ClCompile Include="UI\Widget\ActorSpawnWidget.cpp" />
   </ItemGroup>
   <!-- ==================== 헤더 파일 (.h) ==================== -->
   <ItemGroup>
@@ -838,6 +839,7 @@
       <Filter>ThirdParty\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="OrientedBox.h" />
+    <ClInclude Include="UI\Widget\ActorSpawnWidget.h" />
   </ItemGroup>
   <!-- ==================== 셰이더 파일 (.hlsl) ==================== -->
   <ItemGroup>
@@ -866,6 +868,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="ProjectionDecal.hlsl" />
+    <FxCompile Include="SceneDepthShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <!-- ==================== 리소스 파일 ==================== -->
   <ItemGroup>

@@ -342,10 +342,28 @@ void URenderer::DrawIndexedPrimitiveComponent(UBillboardComponent* Comp, D3D11_P
 void URenderer::SetViewModeType(EViewModeIndex ViewModeIndex)
 {
     RHIDevice->RSSetState(ViewModeIndex);
-    if(ViewModeIndex == EViewModeIndex::VMI_Wireframe)
+
+    if (ViewModeIndex == EViewModeIndex::VMI_Wireframe)
+    {
         RHIDevice->UpdateColorConstantBuffers(FVector4{ 1.f, 0.f, 0.f, 1.f });
+    }
+    else if (ViewModeIndex == EViewModeIndex::VMI_SceneDepth)
+    {
+        //// Scene Depth 모드: Depth SRV를 픽셀 셰이더 t0 슬롯에 바인딩
+        //ID3D11ShaderResourceView* DepthShaderResourceView = static_cast<D3D11RHI*>(RHIDevice)->GetDepthShaderResourceView();
+        //if (DepthShaderResourceView)
+        //{
+        //    RHIDevice->GetDeviceContext()->PSSetShaderResources(0, 1, &DepthShaderResourceView);
+        //}
+
+        //// Scene Depth 셰이더로 전환하기 위한 플래그 설정
+        //RHIDevice->UpdateColorConstantBuffers(FVector4{ 1.f, 1.f, 1.f, 1.f });
+        return;
+    }
     else
+    {
         RHIDevice->UpdateColorConstantBuffers(FVector4{ 1.f, 1.f, 1.f, 0.f });
+    }
 }
 
 void URenderer::EndFrame()
