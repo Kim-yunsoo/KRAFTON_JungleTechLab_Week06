@@ -117,11 +117,11 @@ PS_INPUT mainVS(VS_INPUT input)
     output.color = c;
      
     // w를 0으로 초기화하면, vector이기 때문에 Translation이 무시된다.
-    output.normal = normalize(mul(float4(input.normal, 0.0f), WorldMatrix).xyz);
-    //output.worldPos = worldPos.yzx;
-
-    output.texCoord = input.texCoord;
+    output.normal = normalize(mul(float4(input.normal, 0.0f), WorldMatrix).xyz); 
+    //output.worldPos = worldPos.zx; 
+    output.worldPos = worldPos.xyz;
     
+    output.texCoord = input.texCoord;
     return output;
 }
 
@@ -152,8 +152,7 @@ float4 mainPS(PS_INPUT input) : SV_TARGET
     [unroll]
     for (int i = 0; i < MAX_LIGHTS; ++i)
     {
-        lighting += Calculate_PointLight_Diffuse(Lights[i], worldPos, N); 
-
+        lighting += Calculate_PointLight_Diffuse(Lights[i], worldPos, N);    
     } 
     
     finalColor.rgb = saturate(finalColor.rgb * lighting);
