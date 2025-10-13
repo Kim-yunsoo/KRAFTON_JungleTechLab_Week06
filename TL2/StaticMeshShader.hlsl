@@ -137,6 +137,8 @@ float4 mainPS(PS_INPUT input) : SV_TARGET
         float3 highlightColor = float3(1.0, 1.0, 0.0); // 노란색
         finalColor.rgb = lerp(finalColor.rgb, highlightColor, 0.5);
     }
+     
+    //Light 연산 
     return finalColor;
 }
 

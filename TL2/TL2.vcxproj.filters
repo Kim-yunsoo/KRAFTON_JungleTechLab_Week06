@@ -460,6 +460,7 @@
     </ClCompile>
     <ClCompile Include="OrientedBox.cpp" />
     <ClCompile Include="Name.cpp" />
+    <ClCompile Include="UI\Widget\ActorSpawnWidget.cpp" />
   </ItemGroup>
   <!-- ==================== 헤더 파일 (.h) ==================== -->
   <ItemGroup>
@@ -838,6 +839,7 @@
       <Filter>ThirdParty\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="OrientedBox.h" />
+    <ClInclude Include="UI\Widget\ActorSpawnWidget.h" />
   </ItemGroup>
   <!-- ==================== 셰이더 파일 (.hlsl) ==================== -->
   <ItemGroup>
@@ -872,5 +874,10 @@
     <Content Include="Editor\Icon\Pawn_64x.dds" />
     <Content Include="Editor\Icon\PointLight_64x.dds" />
     <Content Include="Editor\Icon\SpotLight_64x.dds" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Light.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

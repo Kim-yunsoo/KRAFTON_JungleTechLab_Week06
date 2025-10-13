@@ -397,3 +397,43 @@ namespace EEndPlayReason
 }
 
 //#endif /** UE_ENUMS_H */
+
+
+enum class ELighType : int
+{
+    Point = 0,
+    Spot = 1,
+    Directional = 2,
+};
+
+/**
+ * A linear, 32-bit/component floating point RGBA color.
+ */
+struct FLinearColor
+{
+    union
+    {
+        struct
+        {
+            float R, G, B, A;
+        };
+
+        //Internal use only
+        float RGBA[4];
+    };
+
+
+    // TODO: 각종 operator
+};
+
+struct FLightInfo
+{
+    ELighType Type;
+    
+    //Point Light
+    float Intensity;
+    float Radius;
+    float RadiusFallOff;
+    
+    FLinearColor Color; 
+};
