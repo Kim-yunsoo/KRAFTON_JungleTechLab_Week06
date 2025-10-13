@@ -54,6 +54,7 @@ public:
     void UpdateInvWorldConstantBuffer(const FMatrix& InvWorldMatrix, const FMatrix& InvViewProjMatrix) override;
     void UpdateViewportConstantBuffer(float StartX, float StartY, float SizeX, float SizeY);
     void UpdateLightConstantBuffers(const TArray<FLightInfo>& InLights) override;
+    void UpdateFXAAConstantBuffers(const FXAAInfo& InFXAAInfo) override;
 
     void IASetPrimitiveTopology() override;
     void RSSetState(EViewModeIndex ViewModeIndex) override;
@@ -77,6 +78,10 @@ public:
     void setviewort(UINT width, UINT height);
 
     void ResizeSwapChain(UINT width, UINT height);
+
+private:
+    // Compute and upload default FXAA constants from current swapchain size
+    void RefreshFXAAConstantsFromSwapchain();
 
 public:
     // getter
@@ -143,6 +148,11 @@ private:
     ID3D11DepthStencilView* DepthStencilView{};//
     ID3D11ShaderResourceView* DepthSRV{}; // Depth buffer를 셰이더에서 읽기 위한 SRV
 
+    //FXAA 
+    ID3D11Texture2D* FXAATex = nullptr;
+    ID3D11RenderTargetView* FXAARTV = nullptr;
+    ID3D11ShaderResourceView* FXAASRV = nullptr;
+
     // 버퍼 핸들
     ID3D11Buffer* ModelCB{};
     ID3D11Buffer* ViewProjCB{};
@@ -154,6 +164,7 @@ private:
     ID3D11Buffer* InvWorldCB{};
     ID3D11Buffer* ViewportCB{};
     ID3D11Buffer* LightCB{}; 
+    ID3D11Buffer* FXAACB{};
 
     ID3D11Buffer* ConstantBuffer{};
 

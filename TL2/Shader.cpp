@@ -41,6 +41,14 @@ void UShader::CreateInputLayout(ID3D11Device* Device, const FString& InShaderPat
     const D3D11_INPUT_ELEMENT_DESC* layout = descArray.data();
     uint32 layoutCount = static_cast<uint32>(descArray.size());
 
+    // For shaders using SV_VertexID (e.g., fullscreen triangle), the input signature is empty.
+    // In that case, skip creating an input layout and use IASetInputLayout(nullptr).
+    if (layoutCount == 0)
+    {
+        InputLayout = nullptr;
+        return;
+    }
+
     HRESULT hr = Device->CreateInputLayout(
         layout,
         layoutCount,

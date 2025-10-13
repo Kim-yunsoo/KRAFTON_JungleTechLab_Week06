@@ -79,7 +79,7 @@ private:
     ID3D11DeviceContext* D3DDeviceContext = nullptr;
 
     ID3D11Texture2D* RenderTargetTexture = nullptr;
-    ID3D11RenderTargetView* RenderTargetView = nullptr;
+    ID3D11RenderTargetView* RenderTargetView = nullptr; 
 
     ID3D11Texture2D* DepthStencilTexture = nullptr;
     ID3D11DepthStencilView* DepthStencilView = nullptr;

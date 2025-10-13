@@ -95,6 +95,9 @@ void D3D11RHI::Initialize(HWND hWindow)
 
     // Initialize Direct2D overlay after device/swapchain ready
     UStatsOverlayD2D::Get().Initialize(Device, DeviceContext, SwapChain);
+
+    // Initialize FXAA constants once swapchain is ready
+    RefreshFXAAConstantsFromSwapchain();
 }
 
 void D3D11RHI::Release()
@@ -125,6 +128,7 @@ void D3D11RHI::Release()
     if (InvWorldCB) { InvWorldCB->Release(); InvWorldCB = nullptr; }
     if (ViewportCB) { ViewportCB->Release(); ViewportCB = nullptr; }
     if (ConstantBuffer) { ConstantBuffer->Release(); ConstantBuffer = nullptr; }
+    if (FXAACB) { FXAACB->Release(); FXAACB = nullptr; }
 
     // 상태 객체
     if (DepthStencilState) { DepthStencilState->Release(); DepthStencilState = nullptr; }
@@ -486,6 +490,7 @@ void D3D11RHI::CreateFrameBuffer()
 
     Device->CreateRenderTargetView(FrameBuffer, &framebufferRTVdesc, &RenderTargetView);
 
+     
     // =====================================
     // 깊이/스텐실 버퍼 생성
     // =====================================
@@ -523,6 +528,29 @@ void D3D11RHI::CreateFrameBuffer()
     Device->CreateShaderResourceView(depthBuffer, &srvDesc, &DepthSRV);
 
     depthBuffer->Release(); // 뷰만 참조 유지
+
+    // FXAA SRV생성
+    D3D11_TEXTURE2D_DESC FXAAtd = {};
+    FXAAtd.Width = swapDesc.BufferDesc.Width;
+    FXAAtd.Height = swapDesc.BufferDesc.Height;
+    FXAAtd.MipLevels = 1;
+    FXAAtd.ArraySize = 1;
+    FXAAtd.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; 
+    FXAAtd.SampleDesc.Count = 1;
+    FXAAtd.Usage = D3D11_USAGE_DEFAULT;
+    FXAAtd.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    Device->CreateTexture2D(&FXAAtd, nullptr, &FXAATex);
+    
+    // FXAA용 RTV 생성 
+    /*D3D11_RENDER_TARGET_VIEW_DESC FXAARTVdesc = {};
+    FXAARTVdesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    FXAARTVdesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;*/
+
+    Device->CreateRenderTargetView(FXAATex, nullptr, &FXAARTV);
+    Device->CreateShaderResourceView(FXAATex, nullptr, &FXAASRV);
+
+
+
 }
 
 void D3D11RHI::CreateRasterizerState()
@@ -652,6 +680,15 @@ void D3D11RHI::CreateConstantBuffer()
     lightDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     lightDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     Device->CreateBuffer(&lightDesc, nullptr, &LightCB);  
+
+    //b0 : FXAA 
+    D3D11_BUFFER_DESC fxaaDesc = {};
+    fxaaDesc.Usage = D3D11_USAGE_DYNAMIC;
+    fxaaDesc.ByteWidth = sizeof(FXAAInfo);
+    fxaaDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    fxaaDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&fxaaDesc, nullptr, &FXAACB);
+
 }
 
 void D3D11RHI::UpdateUVScrollConstantBuffers(const FVector2D& Speed, float TimeSec)
@@ -758,18 +795,30 @@ void D3D11RHI::ReleaseFrameBuffer()
         FrameBuffer->Release();
         FrameBuffer = nullptr;
     }
+    if (FXAATex)
+    {
+        FXAATex->Release();
+        FXAATex = nullptr;
+    }
     if (RenderTargetView)
     {
         RenderTargetView->Release();
         RenderTargetView = nullptr;
     }
-
+    if (FXAARTV)
+    {
+        FXAARTV->Release();
+    }
     if (DepthSRV)
     {
         DepthSRV->Release();
         DepthSRV = nullptr;
     }
-
+    if (FXAASRV)
+    {
+        FXAASRV->Release();
+        FXAASRV = nullptr;
+    }
     if (DepthStencilView)
     {
         DepthStencilView->Release();
@@ -876,6 +925,9 @@ void D3D11RHI::OnResize(UINT NewWidth, UINT NewHeight)
     ViewportInfo.MaxDepth = 1.0f;
 
     DeviceContext->RSSetViewports(1, &ViewportInfo);
+
+    // Update FXAA constants to match new resolution
+    RefreshFXAAConstantsFromSwapchain();
 }
 void D3D11RHI::CreateBackBufferAndDepthStencil(UINT width, UINT height)
 {
@@ -993,7 +1045,29 @@ void D3D11RHI::ResizeSwapChain(UINT width, UINT height)
 
 void D3D11RHI::PSSetDefaultSampler(UINT StartSlot)
 {
-	DeviceContext->PSSetSamplers(StartSlot, 1, &DefaultSamplerState);
+    DeviceContext->PSSetSamplers(StartSlot, 1, &DefaultSamplerState);
+}
+
+void D3D11RHI::RefreshFXAAConstantsFromSwapchain()
+{
+    if (!SwapChain)
+        return;
+
+    DXGI_SWAP_CHAIN_DESC scd{};
+    SwapChain->GetDesc(&scd);
+    const float w = static_cast<float>(scd.BufferDesc.Width);
+    const float h = static_cast<float>(scd.BufferDesc.Height);
+    if (w <= 0.0f || h <= 0.0f)
+        return;
+
+    FXAAInfo info{};
+    info.RCPFrame[0] = 1.0f / w;
+    info.RCPFrame[1] = 1.0f / h;
+    info.SubPix = 0.75f;             // recommended default
+    info.EdgeThreshhold = 0.125f;    // recommended default
+    info.EdgeThreshholdMin = 0.0312f;// recommended default
+
+    UpdateFXAAConstantBuffers(info);
 }
 
 void D3D11RHI::UpdateLightConstantBuffers(const TArray<FLightInfo>& InLights)
@@ -1020,4 +1094,19 @@ void D3D11RHI::UpdateLightConstantBuffers(const TArray<FLightInfo>& InLights)
         DeviceContext->Unmap(LightCB, 0);
         DeviceContext->PSSetConstantBuffers(7, 1, &LightCB);
     } 
+}
+
+void D3D11RHI::UpdateFXAAConstantBuffers(const FXAAInfo& InFXAAInfo)
+{
+    if (!FXAACB) return;
+    D3D11_MAPPED_SUBRESOURCE mapped{};
+     
+    if (SUCCEEDED(DeviceContext->Map(FXAACB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {  
+        auto* dataPtr = reinterpret_cast<FXAAInfo*>(mapped.pData);
+        *dataPtr = InFXAAInfo;
+        DeviceContext->Unmap(FXAACB, 0);
+        // Bind to PS b0
+        DeviceContext->PSSetConstantBuffers(0, 1, &FXAACB);
+    }
 }

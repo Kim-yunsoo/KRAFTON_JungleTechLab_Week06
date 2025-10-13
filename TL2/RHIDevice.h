@@ -51,6 +51,7 @@ public:
     virtual void UpdateInvWorldConstantBuffer(const FMatrix& InvWorldMatrix, const FMatrix& InvViewProjMatrix) = 0;
     // Lighting
     virtual void UpdateLightConstantBuffers(const TArray<FLightInfo>& InLights) = 0;
+    virtual void UpdateFXAAConstantBuffers(const FXAAInfo& InFXAA) = 0;
 
     // clear
     virtual void ClearBackBuffer() = 0;
