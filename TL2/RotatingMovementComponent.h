@@ -5,7 +5,7 @@
 /**
  * URotatingMovementComponent
  * 지정된 속도로 UpdatedComponent를 회전시키는 컴포넌트
- * 로컬 공간과 월드 공간 회전을 모두 지원합니다.
+ * 로컬 공간과 월드 공간 회전을 모두 지원
  */
 class URotatingMovementComponent : public UMovementComponent
 {

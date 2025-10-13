@@ -1,12 +1,12 @@
 {
   "Version" : 2,
-  "NextUUID" : 615,
+  "NextUUID" : 710,
   "PerspectiveCamera" : {
     "FOV" : [60.000000],
     "FarClip" : [4000.000000],
-    "Location" : [-23.521502, 0.286078, 6.550984],
+    "Location" : [-9.006973, -7.500783, 4.758699],
     "NearClip" : [0.100000],
-    "Rotation" : [0.000000, 15.700001, 6.400000]
+    "Rotation" : [0.000000, 16.500004, 38.299992]
   },
   "Actors" : [
     {
@@ -28,19 +28,9 @@
       "Velocity" : [0.000000, 0.000000, 0.000000],
       "Acceleration" : [0.000000, 0.000000, 0.000000],
       "bUpdateOnlyIfRendered" : false,
-      "RotationRate" : [0.000000, 4000.000000, 4000.000000],
+      "RotationRate" : [0.000000, 13290.000000, 0.000000],
       "PivotTranslation" : [0.000000, 10.000000, 0.000000],
       "bRotationInLocalSpace" : true
-    },
-    {
-      "UUID" : 530,
-      "OwnerActorUUID" : 528,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [0.000000, 0.661795, 0.775511],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/mcube.obj"
     },
     {
       "UUID" : 566,
@@ -51,6 +41,16 @@
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
       "StaticMesh" : "Data/ship/ship.obj"
+    },
+    {
+      "UUID" : 530,
+      "OwnerActorUUID" : 528,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [0.000000, 0.661795, 0.775511],
+      "RelativeRotation" : [50.706772, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/mcube.obj"
     }
   ]
 }

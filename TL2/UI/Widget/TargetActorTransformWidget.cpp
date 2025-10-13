@@ -17,6 +17,7 @@
 #include "DecalComponent.h"
 #include "MovementComponent.h"
 #include "RotatingMovementComponent.h"
+#include "ProjectileMovementComponent.h"
 #include <filesystem>
 #include <vector>
 
@@ -216,7 +217,8 @@ void UTargetActorTransformWidget::RenderWidget()
 			{ "Scene Component", USceneComponent::StaticClass() },
 			{ "Billboard Component", UBillboardComponent::StaticClass() },
 			{ "Decal Component", UDecalComponent::StaticClass() },
-			{ "Rotating Movement Component", URotatingMovementComponent::StaticClass() }
+			{ "Rotating Movement Component", URotatingMovementComponent::StaticClass() },
+			{ "Projectile Movement Component", UProjectileMovementComponent::StaticClass() }
 		};
 
 		// 컴포넌트 추가 메뉴
@@ -862,17 +864,12 @@ void UTargetActorTransformWidget::RenderWidget()
 			}
 			else if (UMovementComponent* MovementComp = Cast<UMovementComponent>(SelectedComponent))
 			{
-				// RotatingMovementComponent로 캐스팅을 시도하여 성공 여부를 저장
+				// RotatingMovementComponent와 ProjectileMovementComponent 캐스팅 시도
 				URotatingMovementComponent* RotatingComp = Cast<URotatingMovementComponent>(MovementComp);
+				UProjectileMovementComponent* ProjectileComp = Cast<UProjectileMovementComponent>(MovementComp);
 
 				ImGui::Separator();
 				ImGui::Text("Movement Component Settings");
-
-				// MovementComp가 URotatingMovementComponent일 경우 UI 비활성화 시작
-				if (RotatingComp)
-				{
-					ImGui::BeginDisabled(true); // UI 비활성화
-				}
 
 				// MovementComponent 공통 속성
 				FVector velocity = MovementComp->GetVelocity();
@@ -889,12 +886,6 @@ void UTargetActorTransformWidget::RenderWidget()
 				if (ImGui::Checkbox("Update Only If Rendered", &bUpdateOnlyIfRendered))
 				{
 					MovementComp->SetUpdateOnlyIfRendered(bUpdateOnlyIfRendered);
-				}
-
-				// MovementComp가 URotatingMovementComponent일 경우 비활성화 끝
-				if (RotatingComp)
-				{
-					ImGui::EndDisabled(); // UI 비활성화 종료
 				}
 
 				// RotatingMovementComponent 전용 속성
@@ -917,6 +908,154 @@ void UTargetActorTransformWidget::RenderWidget()
 					if (ImGui::Checkbox("Rotation In Local Space", &bRotationInLocalSpace))
 					{
 						RotatingComp->SetRotationInLocalSpace(bRotationInLocalSpace);
+					}
+				}
+
+				// ProjectileMovementComponent 전용 속성
+				if (ProjectileComp)
+				{
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Text("Projectile Physics Settings");
+
+					// 중력
+					FVector gravity = ProjectileComp->GetGravity();
+					if (ImGui::DragFloat3("Gravity (cm/s^2)", &gravity.X, 0.1f))
+					{
+						ProjectileComp->SetGravity(gravity);
+					}
+
+					// 초기 속도
+					float initialSpeed = ProjectileComp->GetInitialSpeed();
+					if (ImGui::DragFloat("Initial Speed (cm/s)", &initialSpeed, 1.0f, 0.0f, 10000.0f))
+					{
+						ProjectileComp->SetInitialSpeed(initialSpeed);
+					}
+
+					// 최대 속도
+					float maxSpeed = ProjectileComp->GetMaxSpeed();
+					if (ImGui::DragFloat("Max Speed (cm/s)", &maxSpeed, 1.0f, 0.0f, 10000.0f))
+					{
+						ProjectileComp->SetMaxSpeed(maxSpeed);
+					}
+					if (ImGui::IsItemHovered())
+					{
+						ImGui::SetTooltip("0 = No Limit");
+					}
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Text("Bounce Settings");
+
+					// 바운스 활성화
+					bool bShouldBounce = ProjectileComp->ShouldBounce();
+					if (ImGui::Checkbox("Enable Bounce", &bShouldBounce))
+					{
+						ProjectileComp->SetShouldBounce(bShouldBounce);
+					}
+
+					// 반발 계수
+					float bounciness = ProjectileComp->GetBounciness();
+					if (ImGui::DragFloat("Bounciness", &bounciness, 0.01f, 0.0f, 1.0f))
+					{
+						ProjectileComp->SetBounciness(bounciness);
+					}
+
+					// 마찰 계수
+					float friction = ProjectileComp->GetFriction();
+					if (ImGui::DragFloat("Friction", &friction, 0.01f, 0.0f, 1.0f))
+					{
+						ProjectileComp->SetFriction(friction);
+					}
+
+					// 최대 바운스 횟수
+					int32 maxBounces = ProjectileComp->GetMaxBounces();
+					if (ImGui::DragInt("Max Bounces", &maxBounces, 1.0f, 0, 100))
+					{
+						ProjectileComp->SetMaxBounces(maxBounces);
+					}
+					if (ImGui::IsItemHovered())
+					{
+						ImGui::SetTooltip("0 = Unlimited");
+					}
+
+					// 현재 바운스 횟수 (읽기 전용)
+					int32 currentBounces = ProjectileComp->GetCurrentBounceCount();
+					ImGui::Text("Current Bounces: %d", currentBounces);
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Text("Homing Settings");
+
+					// 호밍 활성화
+					bool bIsHoming = ProjectileComp->IsHomingProjectile();
+					if (ImGui::Checkbox("Enable Homing", &bIsHoming))
+					{
+						ProjectileComp->SetIsHomingProjectile(bIsHoming);
+					}
+
+					// 호밍 가속도
+					float homingAccel = ProjectileComp->GetHomingAccelerationMagnitude();
+					if (ImGui::DragFloat("Homing Acceleration (cm/s^2)", &homingAccel, 1.0f, 0.0f, 10000.0f))
+					{
+						ProjectileComp->SetHomingAccelerationMagnitude(homingAccel);
+					}
+
+					// TODO: 호밍 타겟 설정 UI (Actor/Component 선택)
+					ImGui::TextDisabled("Homing Target: Set via code");
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Text("Rotation Settings");
+
+					// 속도 방향 추적
+					bool bRotationFollows = ProjectileComp->GetRotationFollowsVelocity();
+					if (ImGui::Checkbox("Rotation Follows Velocity", &bRotationFollows))
+					{
+						ProjectileComp->SetRotationFollowsVelocity(bRotationFollows);
+					}
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Text("Lifespan Settings");
+
+					// 생명 시간
+					float lifespan = ProjectileComp->GetProjectileLifespan();
+					if (ImGui::DragFloat("Lifespan (seconds)", &lifespan, 0.1f, 0.0f, 100.0f))
+					{
+						ProjectileComp->SetProjectileLifespan(lifespan);
+					}
+					if (ImGui::IsItemHovered())
+					{
+						ImGui::SetTooltip("0 = Unlimited");
+					}
+
+					// 자동 파괴
+					bool bAutoDestroy = ProjectileComp->GetAutoDestroyWhenLifespanExceeded();
+					if (ImGui::Checkbox("Auto Destroy When Expired", &bAutoDestroy))
+					{
+						ProjectileComp->SetAutoDestroyWhenLifespanExceeded(bAutoDestroy);
+					}
+
+					// 현재 생존 시간 (읽기 전용)
+					float currentLifetime = ProjectileComp->GetCurrentLifetime();
+					ImGui::Text("Current Lifetime: %.2f s", currentLifetime);
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Text("State");
+
+					// 활성화 상태
+					bool bIsActive = ProjectileComp->IsActive();
+					if (ImGui::Checkbox("Is Active", &bIsActive))
+					{
+						ProjectileComp->SetActive(bIsActive);
+					}
+
+					// 생존 시간 리셋 버튼
+					if (ImGui::Button("Reset Lifetime"))
+					{
+						ProjectileComp->ResetLifetime();
 					}
 				}
 			}
