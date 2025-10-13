@@ -115,6 +115,9 @@
     <Filter Include="ThirdParty\ImGui">
       <UniqueIdentifier>{340a9369-98be-4580-af67-945e0e2bcbef}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Components\Movement">
+      <UniqueIdentifier>{8e0e27c7-80d3-44be-99db-70a80f0a0f52}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <!-- ==================== 소스 파일 (.cpp) ==================== -->
   <ItemGroup>
@@ -460,6 +463,13 @@
     </ClCompile>
     <ClCompile Include="OrientedBox.cpp" />
     <ClCompile Include="Name.cpp" />
+    <ClCompile Include="UI\Widget\ActorSpawnWidget.cpp" />
+    <ClCompile Include="MovementComponent.cpp">
+      <Filter>Components\Movement</Filter>
+    </ClCompile>
+    <ClCompile Include="RotatingMovementComponent.cpp">
+      <Filter>Components\Movement</Filter>
+    </ClCompile>
   </ItemGroup>
   <!-- ==================== 헤더 파일 (.h) ==================== -->
   <ItemGroup>
@@ -838,6 +848,13 @@
       <Filter>ThirdParty\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="OrientedBox.h" />
+    <ClInclude Include="UI\Widget\ActorSpawnWidget.h" />
+    <ClInclude Include="MovementComponent.h">
+      <Filter>Components\Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="RotatingMovementComponent.h">
+      <Filter>Components\Movement</Filter>
+    </ClInclude>
   </ItemGroup>
   <!-- ==================== 셰이더 파일 (.hlsl) ==================== -->
   <ItemGroup>
