@@ -63,6 +63,8 @@ public:
     void RSSetDefaultState() override;
     void RSSetViewport() override;
     void OMSetRenderTargets() override;
+    // Bind backbuffer RTV with no depth for post-process
+    void OMSetBackBufferNoDepth();
     void OMSetBlendState(bool bIsBlendMode) override;
     void Present() override;
 	void PSSetDefaultSampler(UINT StartSlot) override;
@@ -100,6 +102,10 @@ public:
     inline ID3D11ShaderResourceView* GetDepthSRV()
     {
         return DepthSRV;
+    }
+    inline ID3D11ShaderResourceView* GetFXAASRV()
+    {
+        return FXAASRV;
     }
 
 private:

@@ -154,7 +154,10 @@ void D3D11RHI::Release()
 void D3D11RHI::ClearBackBuffer()
 {
     float ClearColor[4] = { 0.025f, 0.025f, 0.025f, 1.0f };
-    DeviceContext->ClearRenderTargetView(RenderTargetView, ClearColor);
+    if (RenderTargetView)
+        DeviceContext->ClearRenderTargetView(RenderTargetView, ClearColor);
+    if (FXAARTV)
+        DeviceContext->ClearRenderTargetView(FXAARTV, ClearColor);
 }
 
 void D3D11RHI::ClearDepthBuffer(float Depth, UINT Stencil)
@@ -421,7 +424,10 @@ void D3D11RHI::RSSetViewport()
 
 void D3D11RHI::OMSetRenderTargets()
 {
-    DeviceContext->OMSetRenderTargets(1, &RenderTargetView, DepthStencilView);
+    if (FXAARTV)
+        DeviceContext->OMSetRenderTargets(1, &FXAARTV, DepthStencilView);
+    else
+        DeviceContext->OMSetRenderTargets(1, &RenderTargetView, DepthStencilView);
 }
 
 void D3D11RHI::OMSetBlendState(bool bIsBlendMode)
@@ -1046,6 +1052,11 @@ void D3D11RHI::ResizeSwapChain(UINT width, UINT height)
 void D3D11RHI::PSSetDefaultSampler(UINT StartSlot)
 {
     DeviceContext->PSSetSamplers(StartSlot, 1, &DefaultSamplerState);
+}
+
+void D3D11RHI::OMSetBackBufferNoDepth()
+{
+    DeviceContext->OMSetRenderTargets(1, &RenderTargetView, nullptr);
 }
 
 void D3D11RHI::RefreshFXAAConstantsFromSwapchain()

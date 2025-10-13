@@ -1,4 +1,4 @@
-ï»¿#include "pch.h"
+#include "pch.h"
 #include "SelectionManager.h"
 #include "Picking.h"
 #include "SceneLoader.h"
@@ -56,7 +56,7 @@ UWorld::UWorld() : ResourceManager(UResourceManager::GetInstance())
 
 UWorld::~UWorld()
 {
-    // Levelì˜ Actors ì •ë¦¬ (PIEëŠ” ë³µì œëœ ì•¡í„°ë“¤ë§Œ ì‚­ì œ)
+    // LevelÀÇ Actors Á¤¸® (PIE´Â º¹Á¦µÈ ¾×ÅÍµé¸¸ »èÁ¦)
     if (Level)
     {
         for (AActor* Actor : Level->GetActors())
@@ -64,46 +64,46 @@ UWorld::~UWorld()
             ObjectFactory::DeleteObject(Actor);
         }
 
-        // Level ìì²´ ì •ë¦¬
+        // Level ÀÚÃ¼ Á¤¸®
         ObjectFactory::DeleteObject(Level);
         Level = nullptr;
     }
 
-    // PIE ì›”ë“œê°€ ì•„ë‹ ë•Œë§Œ ê³µìœ  ë¦¬ì†ŒìŠ¤ ì‚­ì œ
+    // PIE ¿ùµå°¡ ¾Æ´Ò ¶§¸¸ °øÀ¯ ¸®¼Ò½º »èÁ¦
     if (WorldType == EWorldType::Editor)
     {
-        // ì¹´ë©”ë¼ ì •ë¦¬
+        // Ä«¸Ş¶ó Á¤¸®
         ObjectFactory::DeleteObject(MainCameraActor);
         MainCameraActor = nullptr;
 
-        // Grid ì •ë¦¬
+        // Grid Á¤¸®
         ObjectFactory::DeleteObject(GridActor);
         GridActor = nullptr;
 
-        // GizmoActor ì •ë¦¬
+        // GizmoActor Á¤¸®
         ObjectFactory::DeleteObject(GizmoActor);
         GizmoActor = nullptr;
 
-        // BVH ì •ë¦¬
+        // BVH Á¤¸®
         if (BVH)
         {
             delete BVH;
             BVH = nullptr;
         }
 
-        // ObjManager ì •ë¦¬
+        // ObjManager Á¤¸®
         FObjManager::Clear();
     }
     else if (WorldType == EWorldType::PIE)
     {
-        // PIE ì›”ë“œì˜ BVH ì •ë¦¬ (PIE ì „ìš©ìœ¼ë¡œ ìƒˆë¡œ ìƒì„±í–ˆìœ¼ë¯€ë¡œ ì‚­ì œ í•„ìš”)
+        // PIE ¿ùµåÀÇ BVH Á¤¸® (PIE Àü¿ëÀ¸·Î »õ·Î »ı¼ºÇßÀ¸¹Ç·Î »èÁ¦ ÇÊ¿ä)
         if (BVH)
         {
             delete BVH;
             BVH = nullptr;
         }
 
-        // PIE ì›”ë“œëŠ” ê³µìœ  í¬ì¸í„°ë§Œ nullptrë¡œ ì„¤ì • (ì‚­ì œí•˜ì§€ ì•ŠìŒ)
+        // PIE ¿ùµå´Â °øÀ¯ Æ÷ÀÎÅÍ¸¸ nullptr·Î ¼³Á¤ (»èÁ¦ÇÏÁö ¾ÊÀ½)
         MainCameraActor = nullptr;
         GridActor = nullptr;
         GizmoActor = nullptr;
@@ -129,23 +129,23 @@ static void DebugRTTI_UObject(UObject* Obj, const char* Title)
         UE_LOG(buf);
     }
 
-    // 1) í˜„ì¬ ë™ì  íƒ€ì… ì´ë¦„
+    // 1) ÇöÀç µ¿Àû Å¸ÀÔ ÀÌ¸§
     std::snprintf(buf, sizeof(buf), "[RTTI] TypeName = %s\r\n", Obj->GetClass()->Name);
     UE_LOG(buf);
 
-    // 2) IsA ì²´í¬ (íŒŒìƒ í¬í•¨)
+    // 2) IsA Ã¼Å© (ÆÄ»ı Æ÷ÇÔ)
     std::snprintf(buf, sizeof(buf), "[RTTI] IsA<AActor>      = %d\r\n", (int)Obj->IsA<AActor>());
     UE_LOG(buf);
     std::snprintf(buf, sizeof(buf), "[RTTI] IsA<ACameraActor> = %d\r\n",
                   (int)Obj->IsA<ACameraActor>());
     UE_LOG(buf);
 
-    //// 3) ì •í™•í•œ íƒ€ì… ë¹„êµ (íŒŒìƒ ì œì™¸)
+    //// 3) Á¤È®ÇÑ Å¸ÀÔ ºñ±³ (ÆÄ»ı Á¦¿Ü)
     //std::snprintf(buf, sizeof(buf), "[RTTI] EXACT ACameraActor = %d\r\n",
     //    (int)(Obj->GetClass() == ACameraActor::StaticClass()));
     //UE_LOG(buf);
 
-    // 4) ìƒì† ì²´ì¸ ì¶œë ¥
+    // 4) »ó¼Ó Ã¼ÀÎ Ãâ·Â
     UE_LOG("[RTTI] Inheritance chain: ");
     for (const UClass* c = Obj->GetClass(); c; c = c->Super)
     {
@@ -162,20 +162,20 @@ void UWorld::Initialize()
 {
     FObjManager::Preload();
 
-    // ìƒˆ ì”¬ ìƒì„±
+    // »õ ¾À »ı¼º
     CreateNewScene();
 
     InitializeMainCamera();
     InitializeGrid();
     InitializeGizmo();
 
-    // BVH ì´ˆê¸°í™” (ë¹ˆ ìƒíƒœë¡œ ì‹œì‘)
+    // BVH ÃÊ±âÈ­ (ºó »óÅÂ·Î ½ÃÀÛ)
     if (!BVH)
     {
         BVH = new FBVH();
     }
 
-    // ì•¡í„° ê°„ ì°¸ì¡° ì„¤ì •
+    // ¾×ÅÍ °£ ÂüÁ¶ ¼³Á¤
     //SetupActorReferences();
 }
 
@@ -201,13 +201,13 @@ void UWorld::InitializeGrid()
 
 void UWorld::InitializeGizmo()
 {
-    // === ê¸°ì¦ˆëª¨ ì—‘í„° ì´ˆê¸°í™” ===
+    // === ±âÁî¸ğ ¿¢ÅÍ ÃÊ±âÈ­ ===
     GizmoActor = NewObject<AGizmoActor>();
     GizmoActor->SetWorld(this);
     GizmoActor->SetActorTransform(FTransform(FVector{0, 0, 0},
                                              FQuat::MakeFromEuler(FVector{0, -90, 0}),
                                              FVector{1, 1, 1}));
-    // ê¸°ì¦ˆëª¨ì— ì¹´ë©”ë¼ ì°¸ì¡° ì„¤ì •
+    // ±âÁî¸ğ¿¡ Ä«¸Ş¶ó ÂüÁ¶ ¼³Á¤
     if (MainCameraActor)
     {
         GizmoActor->SetCameraActor(MainCameraActor);
@@ -223,10 +223,10 @@ void UWorld::InitializeSceneGraph(TArray<AActor*>& Actors)
     //const TArray<AActor*>& InActors, FBound& WorldBounds, int32 Depth = 0
     Octree->Build(Actors, FBound({-100, -100, -100}, {100, 100, 100}), 0);
 
-    // ë¹Œë“œ ì™„ë£Œ í›„ ëª¨ë“  ë§ˆì´í¬ë¡œ BVH ë¯¸ë¦¬ ìƒì„±
+    // ºôµå ¿Ï·á ÈÄ ¸ğµç ¸¶ÀÌÅ©·Î BVH ¹Ì¸® »ı¼º
     Octree->PreBuildAllMicroBVH();
 
-    // BVH ì´ˆê¸°í™” ë° ë¹Œë“œ
+    // BVH ÃÊ±âÈ­ ¹× ºôµå
     BVH = new FBVH();
     BVH->Build(Actors);
 }
@@ -250,27 +250,28 @@ void UWorld::Render()
     Renderer->BeginFrame();
     UIManager.Render();
 
-    // UIManagerì˜ ë·°í¬íŠ¸ ì „í™˜ ìƒíƒœì— ë”°ë¼ ë Œë”ë§ ë³€ê²½ SWidgetìœ¼ë¡œ ë³€ê²½í•´ì¤„ê±°ì„
+    // UIManagerÀÇ ºäÆ÷Æ® ÀüÈ¯ »óÅÂ¿¡ µû¶ó ·»´õ¸µ º¯°æ SWidgetÀ¸·Î º¯°æÇØÁÙ°ÅÀÓ
 
     if (MultiViewport)
     {
         MultiViewport->OnRender();
     }
 
-    //í”„ë ˆì„ ì¢…ë£Œ 
-    UIManager.EndFrame();
+    //ÇÁ·¹ÀÓ Á¾·á 
     Renderer->EndFrame();
+    UIManager.EndFrame();
+    Renderer->GetRHIDevice()->Present();
 }
 
 void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 {
-    // ë·°í¬íŠ¸ì˜ ì‹¤ì œ í¬ê¸°ë¡œ aspect ratio ê³„ì‚°
+    // ºäÆ÷Æ®ÀÇ ½ÇÁ¦ Å©±â·Î aspect ratio °è»ê
     float ViewportAspectRatio = static_cast<float>(Viewport->GetSizeX()) / static_cast<float>(
         Viewport->GetSizeY());
     if (Viewport->GetSizeY() == 0)
     {
         ViewportAspectRatio = 1.0f;
-    } // 0ìœ¼ë¡œ ë‚˜ëˆ„ê¸° ë°©ì§€
+    } // 0À¸·Î ³ª´©±â ¹æÁö
 
     FMatrix ViewMatrix = Camera->GetViewMatrix();
     FMatrix ProjectionMatrix = Camera->GetProjectionMatrix(ViewportAspectRatio, Viewport);
@@ -279,7 +280,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
         return;
     }
 
-    // Pass 0: Visible Lights ë¥¼ Pruningí•˜ëŠ” ê³¼ì •
+    // Pass 0: Visible Lights ¸¦ PruningÇÏ´Â °úÁ¤
     {
         TArray<FLightInfo> VisibleFrameLights;
 
@@ -331,10 +332,10 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 
     const TArray<AActor*>& LevelActors = Level ? Level->GetActors() : TArray<AActor*>();
 
-	// Pass 1: ë°ì¹¼ì„ ì œì™¸í•œ ëª¨ë“  ì˜¤ë¸Œì íŠ¸ ë Œë”ë§ (Depth ë²„í¼ ì±„ìš°ê¸°)
+	// Pass 1: µ¥Ä®À» Á¦¿ÜÇÑ ¸ğµç ¿ÀºêÁ§Æ® ·»´õ¸µ (Depth ¹öÆÛ Ã¤¿ì±â)
 	for (AActor* Actor : LevelActors)
 	{
-		// ì¼ë°˜ ì•¡í„°ë“¤ ë Œë”ë§
+		// ÀÏ¹İ ¾×ÅÍµé ·»´õ¸µ
 		if (!Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Primitives))
 		{
 			continue;
@@ -370,7 +371,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 				continue;
 			}
 
-			// Decal Componentì¸ ê²½ìš° Editor Visualsë§Œ ë Œë”ë§ (ì‹¤ì œ ë°ì¹¼ íˆ¬ì˜ì€ íŒ¨ìŠ¤ 2ì—ì„œ)
+			// Decal ComponentÀÎ °æ¿ì Editor Visuals¸¸ ·»´õ¸µ (½ÇÁ¦ µ¥Ä® Åõ¿µÀº ÆĞ½º 2¿¡¼­)
             if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
             {
                 DecalComp->RenderEditorVisuals(Renderer, ViewMatrix, ProjectionMatrix);
@@ -382,8 +383,8 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 			{
 				bool bIsSelected = SelectionManager.IsActorSelected(Actor);
 
-				//// ì„ íƒëœ ì•¡í„°ëŠ” í•­ìƒ ì•ì— ë³´ì´ë„ë¡ depth testë¥¼ Alwaysë¡œ ì„¤ì •
-				//if (bIsSelected)//ë‚˜ì¤‘ì— ì¶”ê°€êµ¬í˜„
+				//// ¼±ÅÃµÈ ¾×ÅÍ´Â Ç×»ó ¾Õ¿¡ º¸ÀÌµµ·Ï depth test¸¦ Always·Î ¼³Á¤
+				//if (bIsSelected)//³ªÁß¿¡ Ãß°¡±¸Çö
 				//{
 				//    Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
 				//}
@@ -391,7 +392,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 				Renderer->UpdateHighLightConstantBuffer(bIsSelected, rgb, 0, 0, 0, 0);
 				Primitive->Render(Renderer, ViewMatrix, ProjectionMatrix, Viewport);
 
-				//// depth test ì›ë˜ëŒ€ë¡œ ë³µì›
+				//// depth test ¿ø·¡´ë·Î º¹¿ø
 				//if (bIsSelected)
 				//{
 				//    Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
@@ -401,12 +402,12 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 		Renderer->OMSetBlendState(false);
 	}
 
-    // ì—”ì§„ ì•¡í„°ë“¤ (ê·¸ë¦¬ë“œ ë“±) ë Œë”ë§
+    // ¿£Áø ¾×ÅÍµé (±×¸®µå µî) ·»´õ¸µ
     RenderEngineActors(ViewMatrix, ProjectionMatrix, Viewport);
 
     URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
     
-    // Pass 2: ë°ì¹¼ ë Œë”ë§
+    // Pass 2: µ¥Ä® ·»´õ¸µ
     StatsCollector.BeginDecalPass();
 
     FDecalRenderingStats& DecalStats = StatsCollector.GetDecalStats();
@@ -484,7 +485,7 @@ void UWorld::RenderEngineActors(const FMatrix& ViewMatrix, const FMatrix& Projec
 
 void UWorld::Tick(float DeltaSeconds)
 {
-    // Levelì˜ Actors Tick
+    // LevelÀÇ Actors Tick
     if (Level)
     {
         for (AActor* Actor : Level->GetActors())
@@ -494,8 +495,8 @@ void UWorld::Tick(float DeltaSeconds)
                Actor->Tick(DeltaSeconds);
             }
 
-            // Actorì˜ Tickì´ ëë‚œ í›„ì— 
-            // Decalê³¼ ì¶©ëŒí•œ Actorë¥¼ ìˆ˜ì§‘í•œë‹¤. 
+            // ActorÀÇ TickÀÌ ³¡³­ ÈÄ¿¡ 
+            // Decal°ú Ãæµ¹ÇÑ Actor¸¦ ¼öÁıÇÑ´Ù. 
             //for (ADecalActor* DecalActor: Level->GetDecalActors())
             //{
             //     
@@ -521,9 +522,9 @@ void UWorld::Tick(float DeltaSeconds)
 
     //ProcessActorSelection();
     ProcessViewportInput();
-    //Input Managerê°€ ì¹´ë©”ë¼ í›„ì— ì—…ë°ì´íŠ¸ ë˜ì–´ì•¼í•¨
+    //Input Manager°¡ Ä«¸Ş¶ó ÈÄ¿¡ ¾÷µ¥ÀÌÆ® µÇ¾î¾ßÇÔ
 
-    // ë·°í¬íŠ¸ ì—…ë°ì´íŠ¸ - UIManagerì˜ ë·°í¬íŠ¸ ì „í™˜ ìƒíƒœì— ë”°ë¼
+    // ºäÆ÷Æ® ¾÷µ¥ÀÌÆ® - UIManagerÀÇ ºäÆ÷Æ® ÀüÈ¯ »óÅÂ¿¡ µû¶ó
     if (MultiViewport)
     {
         MultiViewport->OnUpdate(DeltaSeconds);
@@ -532,7 +533,7 @@ void UWorld::Tick(float DeltaSeconds)
     //InputManager.Update();
     UIManager.Update(DeltaSeconds);
 
-    // BVH ì—…ë°ì´íŠ¸ (Transform ë³€ê²½ì´ ìˆì„ ê²½ìš°)
+    // BVH ¾÷µ¥ÀÌÆ® (Transform º¯°æÀÌ ÀÖÀ» °æ¿ì)
     UpdateBVHIfNeeded();
 }
 
@@ -547,7 +548,7 @@ bool UWorld::FrustumCullActors(const FFrustum& ViewFrustum, const AActor* Actor,
     {
         FBound Test = Actor->CollisionComponent->GetWorldBoundFromCube();
 
-        // ì ˆë‘ì²´ ë°–ì— ìˆë‹¤ë©´, ì´ ì•¡í„°ì˜ ë Œë”ë§ ê³¼ì •ì„ ëª¨ë‘ ê±´ë„ˆëœë‹ˆë‹¤.
+        // ÀıµÎÃ¼ ¹Û¿¡ ÀÖ´Ù¸é, ÀÌ ¾×ÅÍÀÇ ·»´õ¸µ °úÁ¤À» ¸ğµÎ °Ç³Ê¶İ´Ï´Ù.
         if (!ViewFrustum.IsVisible(Test))
         {
             FrustumCullCount++;
@@ -568,42 +569,42 @@ FString UWorld::GenerateUniqueActorName(const FString& ActorType)
 }
 
 //
-// ì•¡í„° ì œê±°
+// ¾×ÅÍ Á¦°Å
 //
 bool UWorld::DestroyActor(AActor* Actor)
 {
     if (!Actor)
     {
-        return false; // nullptr ë“¤ì–´ì˜´ â†’ ì‹¤íŒ¨
+        return false; // nullptr µé¾î¿È ¡æ ½ÇÆĞ
     }
 
-    // SelectionManagerì—ì„œ ì„ íƒ í•´ì œ (ë©”ëª¨ë¦¬ í•´ì œ ì „ì— í•˜ì)
+    // SelectionManager¿¡¼­ ¼±ÅÃ ÇØÁ¦ (¸Ş¸ğ¸® ÇØÁ¦ Àü¿¡ ÇÏÀÚ)
     USelectionManager::GetInstance().DeselectActor(Actor);
 
-    // UIManagerì—ì„œ í”½ëœ ì•¡í„° ì •ë¦¬
+    // UIManager¿¡¼­ ÇÈµÈ ¾×ÅÍ Á¤¸®
     if (UIManager.GetPickedActor() == Actor)
     {
         UIManager.ResetPickedActor();
     }
 
-    // ë°°ì—´ì—ì„œ  ì œê±° ì‹œë„
-    // Levelì—ì„œ ì œê±° ì‹œë„
+    // ¹è¿­¿¡¼­  Á¦°Å ½Ãµµ
+    // Level¿¡¼­ Á¦°Å ½Ãµµ
     if (Level)
     {
         Level->RemoveActor(Actor);
 
-        // ë©”ëª¨ë¦¬ í•´ì œ
+        // ¸Ş¸ğ¸® ÇØÁ¦
         ObjectFactory::DeleteObject(Actor);
-        // ì‚­ì œëœ ì•¡í„° ì •ë¦¬
+        // »èÁ¦µÈ ¾×ÅÍ Á¤¸®
         USelectionManager::GetInstance().CleanupInvalidActors();
 
-        // BVH ë”í‹° í”Œë˜ê·¸ ì„¤ì •
+        // BVH ´õÆ¼ ÇÃ·¡±× ¼³Á¤
         MarkBVHDirty();
 
-        return true; // ì„±ê³µì ìœ¼ë¡œ ì‚­ì œ
+        return true; // ¼º°øÀûÀ¸·Î »èÁ¦
     }
 
-    return false; // ì›”ë“œì— ì—†ëŠ” ì•¡í„°
+    return false; // ¿ùµå¿¡ ¾ø´Â ¾×ÅÍ
 }
 
 inline FString ToObjFileName(const FString& TypeName)
@@ -615,11 +616,11 @@ inline FString RemoveObjExtension(const FString& FileName)
 {
     const FString Extension = ".obj";
 
-    // ë§ˆì§€ë§‰ ê²½ë¡œ êµ¬ë¶„ì ìœ„ì¹˜ íƒìƒ‰ (POSIX/Windows ëª¨ë‘ ì§€ì›)
+    // ¸¶Áö¸· °æ·Î ±¸ºĞÀÚ À§Ä¡ Å½»ö (POSIX/Windows ¸ğµÎ Áö¿ø)
     const uint64 Sep = FileName.find_last_of("/\\");
     const uint64 Start = (Sep == FString::npos) ? 0 : Sep + 1;
 
-    // í™•ì¥ì ì œê±° ìœ„ì¹˜ ê²°ì •
+    // È®ÀåÀÚ Á¦°Å À§Ä¡ °áÁ¤
     uint64 End = FileName.size();
     if (End >= Extension.size() &&
         FileName.compare(End - Extension.size(), Extension.size(), Extension) == 0)
@@ -627,13 +628,13 @@ inline FString RemoveObjExtension(const FString& FileName)
         End -= Extension.size();
     }
 
-    // ë² ì´ìŠ¤ ì´ë¦„(í™•ì¥ì ì—†ëŠ” íŒŒì¼ëª…) ë°˜í™˜
+    // º£ÀÌ½º ÀÌ¸§(È®ÀåÀÚ ¾ø´Â ÆÄÀÏ¸í) ¹İÈ¯
     if (Start <= End)
     {
         return FileName.substr(Start, End - Start);
     }
 
-    // ë¹„ì •ìƒ ì…ë ¥ ì‹œ ì›ë³¸ ë°˜í™˜ (ì•ˆì „ì¥ì¹˜)
+    // ºñÁ¤»ó ÀÔ·Â ½Ã ¿øº» ¹İÈ¯ (¾ÈÀüÀåÄ¡)
     return FileName;
 }
 
@@ -642,7 +643,7 @@ void UWorld::CreateNewScene()
     // Safety: clear interactions that may hold stale pointers
     SelectionManager.ClearSelection();
     UIManager.ResetPickedActor();
-    // Levelì˜ Actors ì •ë¦¬
+    // LevelÀÇ Actors Á¤¸®
     if (Level)
     {
         for (AActor* Actor : Level->GetActors())
@@ -654,17 +655,17 @@ void UWorld::CreateNewScene()
 
     if (Octree)
     {
-        Octree->Release();//ìƒˆë¡œìš´ ì”¬ì´ ìƒê¸°ë©´ Octreeë¥¼ ì§€ì›Œì¤€ë‹¤.
+        Octree->Release();//»õ·Î¿î ¾ÀÀÌ »ı±â¸é Octree¸¦ Áö¿öÁØ´Ù.
     }
     if (BVH)
     {
-        BVH->Clear();//ìƒˆë¡œìš´ ì”¬ì´ ìƒê¸°ë©´ BVHë¥¼ ì§€ì›Œì¤€ë‹¤.
+        BVH->Clear();//»õ·Î¿î ¾ÀÀÌ »ı±â¸é BVH¸¦ Áö¿öÁØ´Ù.
     }
-    // ì´ë¦„ ì¹´ìš´í„° ì´ˆê¸°í™”: ì”¬ì„ ìƒˆë¡œ ì‹œì‘í•  ë•Œ ê° BaseName ë³„ suffixë¥¼ 0ë¶€í„° ë‹¤ì‹œ ì‹œì‘
+    // ÀÌ¸§ Ä«¿îÅÍ ÃÊ±âÈ­: ¾ÀÀ» »õ·Î ½ÃÀÛÇÒ ¶§ °¢ BaseName º° suffix¸¦ 0ºÎÅÍ ´Ù½Ã ½ÃÀÛ
     ObjectTypeCounts.clear();
 }
 
-// ì•¡í„° ì¸í„°í˜ì´ìŠ¤ ê´€ë¦¬ ë©”ì†Œë“œë“¤
+// ¾×ÅÍ ÀÎÅÍÆäÀÌ½º °ü¸® ¸Ş¼Òµåµé
 void UWorld::SetupActorReferences()
 {
     /*if (GizmoActor && MainCameraActor)
@@ -673,7 +674,7 @@ void UWorld::SetupActorReferences()
     }*/
 }
 
-//ë§ˆìš°ìŠ¤ í”¼í‚¹ê´€ë ¨ ë©”ì†Œë“œ
+//¸¶¿ì½º ÇÇÅ·°ü·Ã ¸Ş¼Òµå
 void UWorld::ProcessActorSelection()
 {
     if (InputManager.IsMouseButtonPressed(LeftButton))
@@ -776,10 +777,10 @@ void UWorld::LoadScene(const FString& SceneName)
 
     const FString FilePath = path.make_preferred().string();
 
-    // [1] ë¡œë“œ ì‹œì‘ ì „ í˜„ì¬ ì¹´ìš´í„° ë°±ì—…
+    // [1] ·Îµå ½ÃÀÛ Àü ÇöÀç Ä«¿îÅÍ ¹é¾÷
     const uint32 PreLoadNext = UObject::PeekNextUUID();
 
-    // [2] íŒŒì¼ NextUUIDëŠ” í˜„ì¬ë³´ë‹¤ í´ ë•Œë§Œ ë°˜ì˜(ì ˆëŒ€ í•˜í–¥ ì„¤ì • ê¸ˆì§€)
+    // [2] ÆÄÀÏ NextUUID´Â ÇöÀçº¸´Ù Å¬ ¶§¸¸ ¹İ¿µ(Àı´ë ÇÏÇâ ¼³Á¤ ±İÁö)
     uint32 LoadedNextUUID = 0;
     if (FSceneLoader::TryReadNextUUID(FilePath, LoadedNextUUID))
     {
@@ -789,72 +790,72 @@ void UWorld::LoadScene(const FString& SceneName)
         }
     }
 
-    // [3] ê¸°ì¡´ ì”¬ ë¹„ìš°ê¸°
+    // [3] ±âÁ¸ ¾À ºñ¿ì±â
     CreateNewScene();
 
-    // [4] ë¡œë“œ
+    // [4] ·Îµå
     FPerspectiveCameraData CamData{};
     const TArray<FPrimitiveData>& Primitives = FSceneLoader::Load(FilePath, &CamData);
 
-    // ë§ˆìš°ìŠ¤ ë¸íƒ€ ì´ˆê¸°í™”
+    // ¸¶¿ì½º µ¨Å¸ ÃÊ±âÈ­
     const FVector2D CurrentMousePos = UInputManager::GetInstance().GetMousePosition();
     UInputManager::GetInstance().SetLastMousePosition(CurrentMousePos);
 
-    // ì¹´ë©”ë¼ ì ìš©
+    // Ä«¸Ş¶ó Àû¿ë
     if (MainCameraActor && MainCameraActor->GetCameraComponent())
     {
         UCameraComponent* Cam = MainCameraActor->GetCameraComponent();
 
-        // ìœ„ì¹˜/íšŒì „(ì›”ë“œ íŠ¸ëœìŠ¤í¼)
+        // À§Ä¡/È¸Àü(¿ùµå Æ®·£½ºÆû)
         MainCameraActor->SetActorLocation(CamData.Location);
         MainCameraActor->SetActorRotation(FQuat::MakeFromEuler(CamData.Rotation));
 
-        // ì…ë ¥ ê²½ë¡œì™€ ë™ì¼í•œ ë°©ì‹ìœ¼ë¡œ ê°ë„/íšŒì „ ì ìš©
-        // ë§¤í•‘: Pitch = CamData.Rotation.Y, Yaw = CamData.Rotation.Z
+        // ÀÔ·Â °æ·Î¿Í µ¿ÀÏÇÑ ¹æ½ÄÀ¸·Î °¢µµ/È¸Àü Àû¿ë
+        // ¸ÅÇÎ: Pitch = CamData.Rotation.Y, Yaw = CamData.Rotation.Z
         MainCameraActor->SetAnglesImmediate(CamData.Rotation.Y, CamData.Rotation.Z);
 
-        // UIManagerì˜ ì¹´ë©”ë¼ íšŒì „ ìƒíƒœë„ ë™ê¸°í™”
+        // UIManagerÀÇ Ä«¸Ş¶ó È¸Àü »óÅÂµµ µ¿±âÈ­
         UIManager.UpdateMouseRotation(CamData.Rotation.Y, CamData.Rotation.Z);
 
-        // í”„ë¡œì ì…˜ íŒŒë¼ë¯¸í„°
+        // ÇÁ·ÎÁ§¼Ç ÆÄ¶ó¹ÌÅÍ
         Cam->SetFOV(CamData.FOV);
         Cam->SetClipPlanes(CamData.NearClip, CamData.FarClip);
 
-        // UI ìœ„ì ¯ì— í˜„ì¬ ì¹´ë©”ë¼ ìƒíƒœë¡œ ì¬ë™ê¸°í™” ìš”ì²­
+        // UI À§Á¬¿¡ ÇöÀç Ä«¸Ş¶ó »óÅÂ·Î Àçµ¿±âÈ­ ¿äÃ»
         UIManager.SyncCameraControlFromCamera();
     }
 
-    // 1) í˜„ì¬ ì›”ë“œì—ì„œ ì´ë¯¸ ì‚¬ìš© ì¤‘ì¸ UUID ìˆ˜ì§‘(ì—”ì§„ ì•¡í„° + ê¸°ì¦ˆëª¨)
+    // 1) ÇöÀç ¿ùµå¿¡¼­ ÀÌ¹Ì »ç¿ë ÁßÀÎ UUID ¼öÁı(¿£Áø ¾×ÅÍ + ±âÁî¸ğ)
     std::unordered_set<uint32> UsedUUIDs;
     auto AddUUID = [&](AActor* A) { if (A) UsedUUIDs.insert(A->UUID); };
     for (AActor* Eng : EngineActors)
     {
         AddUUID(Eng);
     }
-    AddUUID(GizmoActor); // GizmoëŠ” EngineActorsì— ì•ˆ ë“¤ì–´ê°ˆ ìˆ˜ ìˆìœ¼ë¯€ë¡œ ëª…ì‹œ ì¶”ê°€
+    AddUUID(GizmoActor); // Gizmo´Â EngineActors¿¡ ¾È µé¾î°¥ ¼ö ÀÖÀ¸¹Ç·Î ¸í½Ã Ãß°¡
 
     uint32 MaxAssignedUUID = 0;
 
     for (const FPrimitiveData& Primitive : Primitives)
     {
-        // ìŠ¤í° ì‹œ í•„ìš”í•œ ì´ˆê¸° íŠ¸ëœìŠ¤í¼ì€ ê·¸ëŒ€ë¡œ ë„˜ê¹€
+        // ½ºÆù ½Ã ÇÊ¿äÇÑ ÃÊ±â Æ®·£½ºÆûÀº ±×´ë·Î ³Ñ±è
         AStaticMeshActor* StaticMeshActor = SpawnActor<AStaticMeshActor>(
             FTransform(Primitive.Location,
                        SceneRotUtil::QuatFromEulerZYX_Deg(Primitive.Rotation),
                        Primitive.Scale));
 
-        // ìŠ¤í° ì‹œì ì— ìë™ ë°œê¸‰ëœ ê³ ìœ  UUID (ì¶©ëŒ ì‹œ í´ë°±ìœ¼ë¡œ ì‚¬ìš©)
+        // ½ºÆù ½ÃÁ¡¿¡ ÀÚµ¿ ¹ß±ŞµÈ °íÀ¯ UUID (Ãæµ¹ ½Ã Æú¹éÀ¸·Î »ç¿ë)
         uint32 Assigned = StaticMeshActor->UUID;
 
-        // ìš°ì„  ìŠ¤í°ëœ UUIDë¥¼ ì‚¬ìš© ì¤‘ìœ¼ë¡œ ë“±ë¡
+        // ¿ì¼± ½ºÆùµÈ UUID¸¦ »ç¿ë ÁßÀ¸·Î µî·Ï
         UsedUUIDs.insert(Assigned);
 
-        // 2) íŒŒì¼ì˜ UUIDë¥¼ ìš°ì„  ì ìš©í•˜ë˜, ì¶©ëŒì´ë©´ ìŠ¤í°ëœ UUID ìœ ì§€
+        // 2) ÆÄÀÏÀÇ UUID¸¦ ¿ì¼± Àû¿ëÇÏµÇ, Ãæµ¹ÀÌ¸é ½ºÆùµÈ UUID À¯Áö
         if (Primitive.UUID != 0)
         {
             if (UsedUUIDs.find(Primitive.UUID) == UsedUUIDs.end())
             {
-                // ìŠ¤í°ëœ ID ë“±ë¡ í•´ì œ í›„ êµì²´
+                // ½ºÆùµÈ ID µî·Ï ÇØÁ¦ ÈÄ ±³Ã¼
                 UsedUUIDs.erase(Assigned);
                 StaticMeshActor->UUID = Primitive.UUID;
                 Assigned = Primitive.UUID;
@@ -862,7 +863,7 @@ void UWorld::LoadScene(const FString& SceneName)
             }
             else
             {
-                // ì¶©ëŒ: íŒŒì¼ UUID ì‚¬ìš© ë¶ˆê°€ â†’ ê²½ê³  ë¡œê·¸ ë° ìŠ¤í°ëœ ê³ ìœ  UUID ìœ ì§€
+                // Ãæµ¹: ÆÄÀÏ UUID »ç¿ë ºÒ°¡ ¡æ °æ°í ·Î±× ¹× ½ºÆùµÈ °íÀ¯ UUID À¯Áö
                 UE_LOG("LoadScene: UUID collision detected (%u). Keeping generated %u for actor.",
                        Primitive.UUID, Assigned);
             }
@@ -901,7 +902,7 @@ void UWorld::LoadScene(const FString& SceneName)
 
  
 
-    // 3) ìµœì¢… ë³´ì •: ì „ì—­ ì¹´ìš´í„°ëŠ” ì ˆëŒ€ í•˜í–¥ ê¸ˆì§€ + í˜„ì¬ ì‚¬ìš©ëœ ìµœëŒ€ê°’ ì´í›„ë¡œ ì„¤ì •
+    // 3) ÃÖÁ¾ º¸Á¤: Àü¿ª Ä«¿îÅÍ´Â Àı´ë ÇÏÇâ ±İÁö + ÇöÀç »ç¿ëµÈ ÃÖ´ë°ª ÀÌÈÄ·Î ¼³Á¤
     const uint32 DuringLoadNext = UObject::PeekNextUUID();
     const uint32 SafeNext = std::max({DuringLoadNext, MaxAssignedUUID + 1, PreLoadNext});
     UObject::SetNextUUID(SafeNext);
@@ -925,7 +926,7 @@ void UWorld::SaveScene(const FString& SceneName)
             Data.Type = "StaticMeshComp";
             if (UStaticMeshComponent* SMC = MeshActor->GetStaticMeshComponent())
             {
-                SMC->Serialize(false, Data); // ì—¬ê¸°ì„œ RotUtil ì ìš©ë¨(ìƒìœ„ Serialize)
+                SMC->Serialize(false, Data); // ¿©±â¼­ RotUtil Àû¿ëµÊ(»óÀ§ Serialize)
             }
             Primitives.push_back(Data);
         }
@@ -937,11 +938,11 @@ void UWorld::SaveScene(const FString& SceneName)
 
             if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Actor->GetRootComponent()))
             {
-                Prim->Serialize(false, Data); // ì—¬ê¸°ì„œ RotUtil ì ìš©ë¨
+                Prim->Serialize(false, Data); // ¿©±â¼­ RotUtil Àû¿ëµÊ
             }
             else
             {
-                // ë£¨íŠ¸ê°€ Primitiveê°€ ì•„ë‹ ë•Œë„ ë™ì¼ ê·œì¹™ìœ¼ë¡œ ì €ì¥
+                // ·çÆ®°¡ Primitive°¡ ¾Æ´Ò ¶§µµ µ¿ÀÏ ±ÔÄ¢À¸·Î ÀúÀå
                 Data.Location = Actor->GetActorLocation();
                 Data.Rotation = SceneRotUtil::EulerZYX_Deg_FromQuat(Actor->GetActorRotation());
                 Data.Scale = Actor->GetActorScale();
@@ -952,7 +953,7 @@ void UWorld::SaveScene(const FString& SceneName)
         }
     }
 
-    // ì¹´ë©”ë¼ ë°ì´í„° ì±„ìš°ê¸°
+    // Ä«¸Ş¶ó µ¥ÀÌÅÍ Ã¤¿ì±â
     const FPerspectiveCameraData* CamPtr = nullptr;
     FPerspectiveCameraData CamData;
     if (MainCameraActor && MainCameraActor->GetCameraComponent())
@@ -961,7 +962,7 @@ void UWorld::SaveScene(const FString& SceneName)
 
         CamData.Location = MainCameraActor->GetActorLocation();
 
-        // ë‚´ë¶€ ëˆ„ì  ê°ë„ë¡œ ì €ì¥: Pitch=Y, Yaw=Z, Roll=0
+        // ³»ºÎ ´©Àû °¢µµ·Î ÀúÀå: Pitch=Y, Yaw=Z, Roll=0
         CamData.Rotation.X = 0.0f;
         CamData.Rotation.Y = MainCameraActor->GetCameraPitch();
         CamData.Rotation.Z = MainCameraActor->GetCameraYaw();
@@ -972,7 +973,7 @@ void UWorld::SaveScene(const FString& SceneName)
         CamPtr = &CamData;
     }
 
-    // Scene ë””ë ‰í„°ë¦¬ì— ì €ì¥
+    // Scene µğ·ºÅÍ¸®¿¡ ÀúÀå
     FSceneLoader::Save(Primitives, CamPtr, SceneName);
 }
 
@@ -982,7 +983,7 @@ void UWorld::SaveSceneV2(const FString& SceneName)
     SceneData.Version = 2;
     SceneData.NextUUID = UObject::PeekNextUUID();
 
-    // ì¹´ë©”ë¼ ë°ì´í„° ì±„ìš°ê¸°
+    // Ä«¸Ş¶ó µ¥ÀÌÅÍ Ã¤¿ì±â
     if (MainCameraActor && MainCameraActor->GetCameraComponent())
     {
         UCameraComponent* Cam = MainCameraActor->GetCameraComponent();
@@ -995,12 +996,12 @@ void UWorld::SaveSceneV2(const FString& SceneName)
         SceneData.Camera.FarClip = Cam->GetFarClip();
     }
 
-    // Actor ë° Component ê³„ì¸µ ìˆ˜ì§‘
+    // Actor ¹× Component °èÃş ¼öÁı
     for (AActor* Actor : Level->GetActors())
     {
         if (!Actor) continue;
 
-        // Actor ë°ì´í„°
+        // Actor µ¥ÀÌÅÍ
         FActorData ActorData;
         ActorData.UUID = Actor->UUID;
         ActorData.Name = Actor->GetName().ToString();
@@ -1011,7 +1012,7 @@ void UWorld::SaveSceneV2(const FString& SceneName)
 
         SceneData.Actors.push_back(ActorData);
 
-        // OwnedComponents ìˆœíšŒ (ëª¨ë“  ì»´í¬ë„ŒíŠ¸ í¬í•¨)
+        // OwnedComponents ¼øÈ¸ (¸ğµç ÄÄÆ÷³ÍÆ® Æ÷ÇÔ)
         for (UActorComponent* ActorComp : Actor->GetComponents())
         {
             if (!ActorComp) continue;
@@ -1021,10 +1022,10 @@ void UWorld::SaveSceneV2(const FString& SceneName)
             CompData.OwnerActorUUID = Actor->UUID;
             CompData.Type = ActorComp->GetClass()->Name;
 
-            // SceneComponentì¸ ê²½ìš° Transformê³¼ ê³„ì¸µ êµ¬ì¡° ì •ë³´ ì €ì¥
+            // SceneComponentÀÎ °æ¿ì Transform°ú °èÃş ±¸Á¶ Á¤º¸ ÀúÀå
             if (USceneComponent* Comp = Cast<USceneComponent>(ActorComp))
             {
-                // ë¶€ëª¨ ì»´í¬ë„ŒíŠ¸ UUID (RootComponentë©´ 0)
+                // ºÎ¸ğ ÄÄÆ÷³ÍÆ® UUID (RootComponent¸é 0)
                 if (Comp->GetAttachParent())
                     CompData.ParentComponentUUID = Comp->GetAttachParent()->UUID;
                 else
@@ -1035,7 +1036,7 @@ void UWorld::SaveSceneV2(const FString& SceneName)
                 CompData.RelativeRotation = Comp->GetRelativeRotation().ToEuler();
                 CompData.RelativeScale = Comp->GetRelativeScale();
 
-                // Typeë³„ ì†ì„±
+                // Typeº° ¼Ó¼º
                 if (UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(Comp))
                 {
                     if (StaticMeshComponent->GetStaticMesh())
@@ -1047,11 +1048,11 @@ void UWorld::SaveSceneV2(const FString& SceneName)
                     {
                         UE_LOG("SaveScene: StaticMeshComponent has no StaticMesh assigned");
                     }
-                    // TODO: Materials ìˆ˜ì§‘
+                    // TODO: Materials ¼öÁı
                 }
                 else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Comp))
                 {
-                    // DecalComponent ì†ì„± ì €ì¥
+                    // DecalComponent ¼Ó¼º ÀúÀå
                     if (DecalComp->GetDecalTexture())
                     {
                         CompData.DecalTexture = DecalComp->GetDecalTexture()->GetFilePath();
@@ -1064,7 +1065,7 @@ void UWorld::SaveSceneV2(const FString& SceneName)
                 }
                 else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Comp))
                 {
-                    // BillboardComponent ì†ì„± ì €ì¥
+                    // BillboardComponent ¼Ó¼º ÀúÀå
                     CompData.BillboardTexturePath = BillboardComp->GetTexturePath();
                     CompData.BillboardWidth = BillboardComp->GetBillboardWidth();
                     CompData.BillboardHeight = BillboardComp->GetBillboardHeight();
@@ -1078,17 +1079,17 @@ void UWorld::SaveSceneV2(const FString& SceneName)
             }
             else
             {
-                // ActorComponent (Transform ì—†ìŒ)
+                // ActorComponent (Transform ¾øÀ½)
                 CompData.ParentComponentUUID = 0;
 
-                // MovementComponent ì†ì„± ì €ì¥
+                // MovementComponent ¼Ó¼º ÀúÀå
                 if (UMovementComponent* MovementComp = Cast<UMovementComponent>(ActorComp))
                 {
                     CompData.Velocity = MovementComp->GetVelocity();
                     CompData.Acceleration = MovementComp->GetAcceleration();
                     CompData.bUpdateOnlyIfRendered = MovementComp->GetUpdateOnlyIfRendered();
 
-                    // RotatingMovementComponent ì¶”ê°€ ì†ì„± ì €ì¥
+                    // RotatingMovementComponent Ãß°¡ ¼Ó¼º ÀúÀå
                     if (URotatingMovementComponent* RotatingComp = Cast<URotatingMovementComponent>(MovementComp))
                     {
                         CompData.RotationRate = RotatingComp->GetRotationRate();
@@ -1102,7 +1103,7 @@ void UWorld::SaveSceneV2(const FString& SceneName)
         }
     }
 
-    // Scene ë””ë ‰í„°ë¦¬ì— V2 í¬ë§·ìœ¼ë¡œ ì €ì¥
+    // Scene µğ·ºÅÍ¸®¿¡ V2 Æ÷¸ËÀ¸·Î ÀúÀå
     FSceneLoader::SaveV2(SceneData, SceneName);
 }
 
@@ -1117,7 +1118,7 @@ void UWorld::LoadSceneV2(const FString& SceneName)
 
     const FString FilePath = path.make_preferred().string();
 
-    // NextUUID ì—…ë°ì´íŠ¸
+    // NextUUID ¾÷µ¥ÀÌÆ®
     uint32 LoadedNextUUID = 0;
     if (FSceneLoader::TryReadNextUUID(FilePath, LoadedNextUUID))
     {
@@ -1127,13 +1128,13 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         }
     }
 
-    // ê¸°ì¡´ ì”¬ ë¹„ìš°ê¸°
+    // ±âÁ¸ ¾À ºñ¿ì±â
     CreateNewScene();
 
-    // V2 ë°ì´í„° ë¡œë“œ
+    // V2 µ¥ÀÌÅÍ ·Îµå
     FSceneData SceneData = FSceneLoader::LoadV2(FilePath);
 
-    // ë§ˆìš°ìŠ¤ ë¸íƒ€ ì´ˆê¸°í™”
+    // ¸¶¿ì½º µ¨Å¸ ÃÊ±âÈ­
     const FVector2D CurrentMousePos = UInputManager::GetInstance().GetMousePosition();
     UInputManager::GetInstance().SetLastMousePosition(CurrentMousePos);
 
@@ -1144,27 +1145,27 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         MainCameraActor->SetCameraPitch(SceneData.Camera.Rotation.Y);
         MainCameraActor->SetCameraYaw(SceneData.Camera.Rotation.Z);
 
-        // ì…ë ¥ ê²½ë¡œì™€ ë™ì¼í•œ ë°©ì‹ìœ¼ë¡œ ê°ë„/íšŒì „ ì ìš©
-      // ë§¤í•‘: Pitch = CamData.Rotation.Y, Yaw = CamData.Rotation.Z
+        // ÀÔ·Â °æ·Î¿Í µ¿ÀÏÇÑ ¹æ½ÄÀ¸·Î °¢µµ/È¸Àü Àû¿ë
+      // ¸ÅÇÎ: Pitch = CamData.Rotation.Y, Yaw = CamData.Rotation.Z
         MainCameraActor->SetAnglesImmediate(SceneData.Camera.Rotation.Y, SceneData.Camera.Rotation.Z);
 
-        // UIManagerì˜ ì¹´ë©”ë¼ íšŒì „ ìƒíƒœë„ ë™ê¸°í™”
+        // UIManagerÀÇ Ä«¸Ş¶ó È¸Àü »óÅÂµµ µ¿±âÈ­
         UIManager.UpdateMouseRotation(SceneData.Camera.Rotation.Y, SceneData.Camera.Rotation.Z);
 
         Cam->SetFOV(SceneData.Camera.FOV);
         Cam->SetClipPlanes(SceneData.Camera.NearClip, SceneData.Camera.FarClip);
 
-        // UI ìœ„ì ¯ì— í˜„ì¬ ì¹´ë©”ë¼ ìƒíƒœë¡œ ì¬ë™ê¸°í™” ìš”ì²­
+        // UI À§Á¬¿¡ ÇöÀç Ä«¸Ş¶ó »óÅÂ·Î Àçµ¿±âÈ­ ¿äÃ»
         UIManager.SyncCameraControlFromCamera();
       
     }
 
-    // UUID â†’ Object ë§¤í•‘ í…Œì´ë¸”
+    // UUID ¡æ Object ¸ÅÇÎ Å×ÀÌºí
     TMap<uint32, AActor*> ActorMap;
     TMap<uint32, USceneComponent*> ComponentMap;
 
     // ========================================
-    // Pass 1: Actor ë° Component ìƒì„±
+    // Pass 1: Actor ¹× Component »ı¼º
     // ========================================
     for (const FActorData& ActorData : SceneData.Actors)
     {
@@ -1180,12 +1181,12 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         NewActor->SetName(ActorData.Name);
         NewActor->SetWorld(this);
 
-        // DecalActorì˜ ê²½ìš° ìƒì„±ìê°€ ë§Œë“  DecalComponentë¥¼ ì‚­ì œ
+        // DecalActorÀÇ °æ¿ì »ı¼ºÀÚ°¡ ¸¸µç DecalComponent¸¦ »èÁ¦
         if (ADecalActor* DecalActor = Cast<ADecalActor>(NewActor))
         {
             DecalActor->ClearDefaultComponents();
         }
-        // StaticMeshActorì˜ ê²½ìš° ìƒì„±ìê°€ ë§Œë“  ì»´í¬ë„ŒíŠ¸ë“¤ì„ ì‚­ì œ
+        // StaticMeshActorÀÇ °æ¿ì »ı¼ºÀÚ°¡ ¸¸µç ÄÄÆ÷³ÍÆ®µéÀ» »èÁ¦
         else if (AStaticMeshActor* StaticMeshActor = Cast<AStaticMeshActor>(NewActor))
         {
             StaticMeshActor->ClearDefaultComponents();
@@ -1194,7 +1195,7 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         ActorMap.Add(ActorData.UUID, NewActor);
     }
 
-    // Component ìƒì„±
+    // Component »ı¼º
     for (const FComponentData& CompData : SceneData.Components)
     {
         UObject* NewCompObject = NewObject(CompData.Type);
@@ -1215,25 +1216,25 @@ void UWorld::LoadSceneV2(const FString& SceneName)
 
         NewActorComp->UUID = CompData.UUID;
 
-        // SceneComponentì¸ ê²½ìš° Transform ì„¤ì •
+        // SceneComponentÀÎ °æ¿ì Transform ¼³Á¤
         if (USceneComponent* NewComp = Cast<USceneComponent>(NewActorComp))
         {
             NewComp->SetRelativeLocation(CompData.RelativeLocation);
             NewComp->SetRelativeRotation(FQuat::MakeFromEuler(CompData.RelativeRotation));
             NewComp->SetRelativeScale(CompData.RelativeScale);
 
-            // Typeë³„ ì†ì„± ë³µì›
+            // Typeº° ¼Ó¼º º¹¿ø
             if (UStaticMeshComponent* SMC = Cast<UStaticMeshComponent>(NewComp))
             {
                 if (!CompData.StaticMesh.empty())
                 {
                     SMC->SetStaticMesh(CompData.StaticMesh);
                 }
-                // TODO: Materials ë³µì›
+                // TODO: Materials º¹¿ø
             }
             else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(NewComp))
             {
-                // DecalComponent ì†ì„± ë³µì›
+                // DecalComponent ¼Ó¼º º¹¿ø
                 if (!CompData.DecalTexture.empty())
                 {
                     DecalComp->SetDecalTexture(CompData.DecalTexture);
@@ -1246,7 +1247,7 @@ void UWorld::LoadSceneV2(const FString& SceneName)
             }
             else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(NewComp))
             {
-                // BillboardComponent ì†ì„± ë³µì›
+                // BillboardComponent ¼Ó¼º º¹¿ø
                 if (!CompData.BillboardTexturePath.empty())
                 {
                     BillboardComp->SetTexture(CompData.BillboardTexturePath);
@@ -1257,7 +1258,7 @@ void UWorld::LoadSceneV2(const FString& SceneName)
                 BillboardComp->SetScreenSize(CompData.ScreenSize);
             }
 
-            // Owner Actor ì„¤ì •
+            // Owner Actor ¼³Á¤
             if (AActor** OwnerActor = ActorMap.Find(CompData.OwnerActorUUID))
             {
                 NewComp->SetOwner(*OwnerActor);
@@ -1265,17 +1266,17 @@ void UWorld::LoadSceneV2(const FString& SceneName)
 
             ComponentMap.Add(CompData.UUID, NewComp);
         }
-        // ActorComponent (Transform ì—†ìŒ)
+        // ActorComponent (Transform ¾øÀ½)
         else
         {
-            // MovementComponent ì†ì„± ë³µì›
+            // MovementComponent ¼Ó¼º º¹¿ø
             if (UMovementComponent* MovementComp = Cast<UMovementComponent>(NewActorComp))
             {
                 MovementComp->SetVelocity(CompData.Velocity);
                 MovementComp->SetAcceleration(CompData.Acceleration);
                 MovementComp->SetUpdateOnlyIfRendered(CompData.bUpdateOnlyIfRendered);
 
-                // RotatingMovementComponent ì¶”ê°€ ì†ì„± ë³µì›
+                // RotatingMovementComponent Ãß°¡ ¼Ó¼º º¹¿ø
                 if (URotatingMovementComponent* RotatingComp = Cast<URotatingMovementComponent>(MovementComp))
                 {
                     RotatingComp->SetRotationRate(CompData.RotationRate);
@@ -1284,18 +1285,18 @@ void UWorld::LoadSceneV2(const FString& SceneName)
                 }
             }
 
-            // Owner Actor ì„¤ì •
+            // Owner Actor ¼³Á¤
             if (AActor** OwnerActor = ActorMap.Find(CompData.OwnerActorUUID))
             {
                 NewActorComp->SetOwner(*OwnerActor);
-                // ActorComponentë¥¼ Actorì˜ OwnedComponentsì— ì§ì ‘ ì¶”ê°€
+                // ActorComponent¸¦ ActorÀÇ OwnedComponents¿¡ Á÷Á¢ Ãß°¡
                 (*OwnerActor)->OwnedComponents.Add(NewActorComp);
             }
         }
     }
 
     // ========================================
-    // Pass 2: Actor-Component ì—°ê²° ë° ê³„ì¸µ êµ¬ì¡° ì„¤ì •
+    // Pass 2: Actor-Component ¿¬°á ¹× °èÃş ±¸Á¶ ¼³Á¤
     // ========================================
     for (const FActorData& ActorData : SceneData.Actors)
     {
@@ -1304,14 +1305,14 @@ void UWorld::LoadSceneV2(const FString& SceneName)
 
         AActor* Actor = *ActorPtr;
 
-        // RootComponent ì„¤ì •
+        // RootComponent ¼³Á¤
         if (USceneComponent** RootCompPtr = ComponentMap.Find(ActorData.RootComponentUUID))
         {
             Actor->RootComponent = *RootCompPtr;
         }
     }
 
-    // Component ë¶€ëª¨-ìì‹ ê´€ê³„ ì„¤ì •
+    // Component ºÎ¸ğ-ÀÚ½Ä °ü°è ¼³Á¤
     for (const FComponentData& CompData : SceneData.Components)
     {
         USceneComponent** CompPtr = ComponentMap.Find(CompData.UUID);
@@ -1319,7 +1320,7 @@ void UWorld::LoadSceneV2(const FString& SceneName)
 
         USceneComponent* Comp = *CompPtr;
 
-        // ë¶€ëª¨ ì»´í¬ë„ŒíŠ¸ ì—°ê²° (ParentUUIDê°€ 0ì´ ì•„ë‹ˆë©´)
+        // ºÎ¸ğ ÄÄÆ÷³ÍÆ® ¿¬°á (ParentUUID°¡ 0ÀÌ ¾Æ´Ï¸é)
         if (CompData.ParentComponentUUID != 0)
         {
             if (USceneComponent** ParentPtr = ComponentMap.Find(CompData.ParentComponentUUID))
@@ -1328,25 +1329,25 @@ void UWorld::LoadSceneV2(const FString& SceneName)
             }
         }
 
-        // Actorì˜ OwnedComponentsì— ì¶”ê°€
+        // ActorÀÇ OwnedComponents¿¡ Ãß°¡
         if (AActor** OwnerActorPtr = ActorMap.Find(CompData.OwnerActorUUID))
         {
             (*OwnerActorPtr)->OwnedComponents.Add(Comp);
         }
     }
 
-    // Actorë¥¼ Levelì— ì¶”ê°€
+    // Actor¸¦ Level¿¡ Ãß°¡
     for (auto& Pair : ActorMap)
     {
         AActor* Actor = Pair.second;
         Level->AddActor(Actor);
 
-        // StaticMeshActor ì „ìš© í¬ì¸í„° ì¬ì„¤ì •
+        // StaticMeshActor Àü¿ë Æ÷ÀÎÅÍ Àç¼³Á¤
         if (AStaticMeshActor* StaticMeshActor = Cast<AStaticMeshActor>(Actor))
         {
             StaticMeshActor->SetStaticMeshComponent( Cast<UStaticMeshComponent>(StaticMeshActor->RootComponent));
 
-            // CollisionComponent ì°¾ê¸°
+            // CollisionComponent Ã£±â
             for (UActorComponent* Comp : StaticMeshActor->OwnedComponents)
             {
                 if (UAABoundingBoxComponent* BBoxComp = Cast<UAABoundingBoxComponent>(Comp))
@@ -1357,14 +1358,14 @@ void UWorld::LoadSceneV2(const FString& SceneName)
                 }
             }
         }
-        // DecalActor ì „ìš© í¬ì¸í„° ì¬ì„¤ì •
+        // DecalActor Àü¿ë Æ÷ÀÎÅÍ Àç¼³Á¤
         else if (ADecalActor* DecalActor = Cast<ADecalActor>(Actor))
         {
-            // RootComponentë¥¼ DecalComponentë¡œ ì¬ì„¤ì •
+            // RootComponent¸¦ DecalComponent·Î Àç¼³Á¤
             DecalActor->SetDecalComponent(Cast<UDecalComponent>(DecalActor->RootComponent));
         }
 
-        // MovementComponentì˜ UpdatedComponentë¥¼ RootComponentë¡œ ì„¤ì •
+        // MovementComponentÀÇ UpdatedComponent¸¦ RootComponent·Î ¼³Á¤
         for (UActorComponent* Comp : Actor->OwnedComponents)
         {
             if (UMovementComponent* MovementComp = Cast<UMovementComponent>(Comp))
@@ -1374,7 +1375,7 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         }
     }
 
-    // NextUUID ì—…ë°ì´íŠ¸ (ë¡œë“œëœ ëª¨ë“  UUID + 1)
+    // NextUUID ¾÷µ¥ÀÌÆ® (·ÎµåµÈ ¸ğµç UUID + 1)
     uint32 MaxUUID = SceneData.NextUUID;
     if (MaxUUID > UObject::PeekNextUUID())
     {
@@ -1397,7 +1398,7 @@ UWorld* UWorld::DuplicateWorldForPIE(UWorld* EditorWorld)
         return nullptr;
     }
 
-    // ìƒˆë¡œìš´ PIE ì›”ë“œ ìƒì„±
+    // »õ·Î¿î PIE ¿ùµå »ı¼º
     UWorld* PIEWorld = NewObject<UWorld>();
     if (!PIEWorld)
     {
@@ -1406,25 +1407,25 @@ UWorld* UWorld::DuplicateWorldForPIE(UWorld* EditorWorld)
     PIEWorld->Renderer = EditorWorld->Renderer;
     PIEWorld->MainViewport = EditorWorld->MainViewport;
     PIEWorld->MultiViewport = EditorWorld->MultiViewport;
-    // WorldTypeì„ PIEë¡œ ì„¤ì •
+    // WorldTypeÀ» PIE·Î ¼³Á¤
     PIEWorld->WorldType=(EWorldType::PIE);
 
-    //// Renderer ê³µìœ  (ì–•ì€ ë³µì‚¬)
+    //// Renderer °øÀ¯ (¾èÀº º¹»ç)
     //PIEWorld->Renderer = EditorWorld->Renderer;
 
-    // MainCameraActor ê³µìœ  (PIEëŠ” ì¼ë‹¨ Editor ì¹´ë©”ë¼ ì‚¬ìš©)
+    // MainCameraActor °øÀ¯ (PIE´Â ÀÏ´Ü Editor Ä«¸Ş¶ó »ç¿ë)
     PIEWorld->MainCameraActor = EditorWorld->MainCameraActor;
 
-    // GizmoActorëŠ” PIEì—ì„œ ì‚¬ìš©í•˜ì§€ ì•ŠìŒ
+    // GizmoActor´Â PIE¿¡¼­ »ç¿ëÇÏÁö ¾ÊÀ½
     PIEWorld->GizmoActor = nullptr;
 
-    // GridActor ê³µìœ  (ì„ íƒì )
+    // GridActor °øÀ¯ (¼±ÅÃÀû)
     PIEWorld->GridActor = nullptr;
 
-    // BVH ì´ˆê¸°í™” (PIE ì›”ë“œìš©ìœ¼ë¡œ ìƒˆë¡œ ìƒì„±)
+    // BVH ÃÊ±âÈ­ (PIE ¿ùµå¿ëÀ¸·Î »õ·Î »ı¼º)
     PIEWorld->BVH = new FBVH();
 
-    // Level ë³µì œ
+    // Level º¹Á¦
     if (EditorWorld->GetLevel())
     {
         ULevel* EditorLevel = EditorWorld->GetLevel();
@@ -1432,7 +1433,7 @@ UWorld* UWorld::DuplicateWorldForPIE(UWorld* EditorWorld)
 
         if (PIELevel)
         {
-            // Levelì˜ Actorsë¥¼ ë³µì œ
+            // LevelÀÇ Actors¸¦ º¹Á¦
             for (AActor* EditorActor : EditorLevel->GetActors())
             {
                 if (EditorActor)
@@ -1468,13 +1469,13 @@ UWorld* UWorld::DuplicateWorldForPIE(UWorld* EditorWorld)
 
 void UWorld::InitializeActorsForPlay()
 {
-    // PIE ì›”ë“œì˜ BVH ë¹Œë“œ
+    // PIE ¿ùµåÀÇ BVH ºôµå
     if (BVH && Level)
     {
         BVH->Build(Level->GetActors());
     }
 
-    // ëª¨ë“  ì•¡í„°ì˜ BeginPlay í˜¸ì¶œ
+    // ¸ğµç ¾×ÅÍÀÇ BeginPlay È£Ãâ
     if (Level)
     {
         for (AActor* Actor : Level->GetActors())
@@ -1502,8 +1503,8 @@ void UWorld::CleanupWorld()
 }
 
 /**
- * @brief ì´ë¯¸ ìƒì„±í•œ Actorë¥¼ spawní•˜ê¸° ìœ„í•œ shortcut í•¨ìˆ˜
- * @param InActor Worldì— ìƒì„±í•  Actor
+ * @brief ÀÌ¹Ì »ı¼ºÇÑ Actor¸¦ spawnÇÏ±â À§ÇÑ shortcut ÇÔ¼ö
+ * @param InActor World¿¡ »ı¼ºÇÒ Actor
  */
 void UWorld::SpawnActor(AActor* InActor)
 {
@@ -1520,7 +1521,7 @@ void UWorld::SpawnActor(AActor* InActor)
 
     Level->GetActors().Add(InActor);
 
-    // BVH ë”í‹° í”Œë˜ê·¸ ì„¤ì •
+    // BVH ´õÆ¼ ÇÃ·¡±× ¼³Á¤
     MarkBVHDirty();
 }
 
@@ -1534,7 +1535,7 @@ void UWorld::MarkBVHDirty()
 
 void UWorld::UpdateBVHIfNeeded()
 {
-    // BVHê°€ ì—†ìœ¼ë©´ ìƒì„±
+    // BVH°¡ ¾øÀ¸¸é »ı¼º
     if (!BVH)
     {
         BVH = new FBVH();
@@ -1547,13 +1548,13 @@ void UWorld::UpdateBVHIfNeeded()
 
     bool bShouldRebuild = false;
 
-    // 1. ë”í‹° í”Œë˜ê·¸ ì²´í¬
+    // 1. ´õÆ¼ ÇÃ·¡±× Ã¼Å©
     if (BVH->IsDirty())
     {
         bShouldRebuild = true;
     }
 
-    // 2. ì£¼ê¸°ì  ì¬ë¹Œë“œ ì²´í¬ (BVHRebuildInterval > 0ì¼ ë•Œë§Œ)
+    // 2. ÁÖ±âÀû Àçºôµå Ã¼Å© (BVHRebuildInterval > 0ÀÏ ¶§¸¸)
     if (BVHRebuildInterval > 0)
     {
         BVHFrameCounter++;
@@ -1564,9 +1565,10 @@ void UWorld::UpdateBVHIfNeeded()
         }
     }
 
-    // ì¬ë¹Œë“œ ìˆ˜í–‰
+    // Àçºôµå ¼öÇà
     if (bShouldRebuild)
     {
-        BVH->Build(Level->GetActors()); // Rebuild ëŒ€ì‹  Build ì‚¬ìš© (ë”í‹° í”Œë˜ê·¸ ì²´í¬ ì—†ì´ ë¬´ì¡°ê±´ ë¹Œë“œ)
+        BVH->Build(Level->GetActors()); // Rebuild ´ë½Å Build »ç¿ë (´õÆ¼ ÇÃ·¡±× Ã¼Å© ¾øÀÌ ¹«Á¶°Ç ºôµå)
     }
 }
+

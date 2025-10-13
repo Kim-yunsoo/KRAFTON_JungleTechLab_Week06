@@ -106,5 +106,8 @@ private:
 
     // Visible Light
     TArray<FLightInfo> WorldLights;
+
+    // Post-process FXAA shader
+    UShader* FXAAShader = nullptr;
 };
 

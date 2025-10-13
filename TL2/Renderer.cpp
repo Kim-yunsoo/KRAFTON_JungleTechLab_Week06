@@ -8,6 +8,7 @@
 #include "StaticMeshComponent.h"
 #include "RenderingStats.h"
 #include "UI/StatsOverlayD2D.h"
+#include "D3D11RHI.h"
 
 
 URenderer::URenderer(URHIDevice* InDevice) : RHIDevice(InDevice)
@@ -367,7 +368,35 @@ void URenderer::EndFrame()
         AvgStats.ShaderChanges
     );
     
-    RHIDevice->Present();
+    // Post-process: FXAA fullscreen pass
+    if (!FXAAShader)
+    {
+        FXAAShader = UResourceManager::GetInstance().Load<UShader>("FXAA.hlsl");
+    }
+
+    // Bind backbuffer as target (no depth) for FXAA output
+    static_cast<D3D11RHI*>(RHIDevice)->OMSetBackBufferNoDepth();
+
+    // Set FXAA shader (uses SV_VertexID, no input layout)
+    RHIDevice->GetDeviceContext()->VSSetShader(FXAAShader->GetVertexShader(), nullptr, 0);
+    RHIDevice->GetDeviceContext()->PSSetShader(FXAAShader->GetPixelShader(), nullptr, 0);
+    RHIDevice->GetDeviceContext()->IASetInputLayout(FXAAShader->GetInputLayout());
+    RHIDevice->IASetPrimitiveTopology();
+
+    // Bind source color as t0
+    ID3D11ShaderResourceView* srcSRV = static_cast<D3D11RHI*>(RHIDevice)->GetFXAASRV();
+    RHIDevice->PSSetDefaultSampler(0);
+    RHIDevice->GetDeviceContext()->PSSetShaderResources(0, 1, &srcSRV);
+
+    // Draw fullscreen triangle
+    RHIDevice->GetDeviceContext()->Draw(3, 0);
+
+    // Unbind SRV to avoid warnings on next frame when rebinding as RTV
+    ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+    RHIDevice->GetDeviceContext()->PSSetShaderResources(0, 1, nullSRV);
+
+    // Present is moved out to World::Render after UI pass,
+    // so that UI/overlay are not affected by FXAA.
 }
 
 void URenderer::OMSetDepthStencilState(EComparisonFunc Func)

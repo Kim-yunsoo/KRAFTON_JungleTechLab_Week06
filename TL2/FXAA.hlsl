@@ -46,10 +46,24 @@ VS_OUT VS_FullScreen(uint id: SV_VertexID)
     return output; 
 }
 
+// Step 2) Luma computation helper
+float ComputeLuma(float3 rgb)
+{
+#if FXAA_GREEN_AS_LUMA
+    return rgb.g;
+#else
+    // Rec. 601 luma
+    return dot(rgb, float3(0.299, 0.587, 0.114));
+#endif
+}
+
 float4 PS_FXAA(VS_OUT input) : SV_Target
 {
-    return float4(ColorLdr.Sample(LinearClamp, input.uv).rgb, 1.0f);
-
+    float3 color = ColorLdr.Sample(LinearClamp, input.uv).rgb;
+    float luma = ComputeLuma(color);
+    // For now, return original color while we build subsequent steps
+    // (edge detection & filtering will follow next steps)
+    return float4(color, 1.0f);
 }
 
 // Entry point aliases for engine's shader loader
