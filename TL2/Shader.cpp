@@ -16,7 +16,8 @@ void UShader::Load(const FString& InShaderPath, ID3D11Device* InDevice)
 
     HRESULT hr;
     ID3DBlob* errorBlob = nullptr;
-    hr = D3DCompileFromFile(WFilePath.c_str(), nullptr, nullptr, "mainVS", "vs_5_0", 0, 0, &VSBlob, &errorBlob);
+    // Enable standard include handling so that #include (e.g., Light.hlsli) works at runtime
+    hr = D3DCompileFromFile(WFilePath.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "mainVS", "vs_5_0", 0, 0, &VSBlob, &errorBlob);
     if (FAILED(hr))
     {
         char* msg = (char*)errorBlob->GetBufferPointer();
@@ -27,7 +28,7 @@ void UShader::Load(const FString& InShaderPath, ID3D11Device* InDevice)
 
     hr = InDevice->CreateVertexShader(VSBlob->GetBufferPointer(), VSBlob->GetBufferSize(), nullptr, &VertexShader);
 
-    hr = D3DCompileFromFile(WFilePath.c_str(), nullptr, nullptr, "mainPS", "ps_5_0", 0, 0, &PSBlob, nullptr);
+    hr = D3DCompileFromFile(WFilePath.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "mainPS", "ps_5_0", 0, 0, &PSBlob, nullptr);
 
     hr = InDevice->CreatePixelShader(PSBlob->GetBufferPointer(), PSBlob->GetBufferSize(), nullptr, &PixelShader);
 

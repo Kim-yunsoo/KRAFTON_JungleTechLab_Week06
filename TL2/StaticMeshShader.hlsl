@@ -1,3 +1,5 @@
+#include "Light.hlsli"
+
 cbuffer ModelBuffer : register(b0)
 {
     row_major float4x4 WorldMatrix;

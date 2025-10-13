@@ -461,6 +461,8 @@
     <ClCompile Include="OrientedBox.cpp" />
     <ClCompile Include="Name.cpp" />
     <ClCompile Include="UI\Widget\ActorSpawnWidget.cpp" />
+    <ClCompile Include="FireBallComponent.cpp" />
+    <ClCompile Include="FireBallActor.cpp" />
   </ItemGroup>
   <!-- ==================== 헤더 파일 (.h) ==================== -->
   <ItemGroup>
@@ -840,6 +842,8 @@
     </ClInclude>
     <ClInclude Include="OrientedBox.h" />
     <ClInclude Include="UI\Widget\ActorSpawnWidget.h" />
+    <ClInclude Include="FireBallComponent.h" />
+    <ClInclude Include="FireBallActor.h" />
   </ItemGroup>
   <!-- ==================== 셰이더 파일 (.hlsl) ==================== -->
   <ItemGroup>

@@ -1,3 +1,6 @@
+#ifndef _LIGHT_HLSLI_
+#define _LIGHT_HLSLI_
+
 #define POINT_LIGHT 0
 #define SPOT_LIGHT 1
 #define DIRECTIONAL_LIGHT 2
@@ -38,3 +41,5 @@ float4 Calculate_PointLight(FLightInfo LightInfo)
     // (diffuse + specular) * Color * 감쇠
     return float4(1, 1, 1, 1);
 }
+
+#endif // _LIGHT_HLSLI_
