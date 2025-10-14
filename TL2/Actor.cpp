@@ -233,7 +233,7 @@ USceneComponent* AActor::CreateAndAttachComponent(USceneComponent* ParentCompone
     return NewComponent;
 }
 
-// Transform이 없는 ActorComponent를 생성하고 액터에 추가합니다
+// Transform이 없는 ActorComponent를 생성하고 액터에 추가
 UActorComponent* AActor::CreateActorComponent(UClass* ComponentClass)
 {
     if (!ComponentClass)

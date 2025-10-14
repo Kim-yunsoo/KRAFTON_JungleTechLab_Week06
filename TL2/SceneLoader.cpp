@@ -331,7 +331,8 @@ void FSceneLoader::SaveV2(const FSceneData& SceneData, const FString& SceneName)
             oss << "      \"ScreenSize\" : " << Comp.ScreenSize;
         }
         else if (Comp.Type.find("MovementComponent") != std::string::npos ||
-                 Comp.Type.find("RotatingMovementComponent") != std::string::npos)
+                 Comp.Type.find("RotatingMovementComponent") != std::string::npos ||
+                 Comp.Type.find("ProjectileMovementComponent") != std::string::npos)
         {
             // MovementComponent 공통 속성
             oss << ",\n";
@@ -350,6 +351,25 @@ void FSceneLoader::SaveV2(const FSceneData& SceneData, const FString& SceneName)
                 writeVec3("PivotTranslation", Comp.PivotTranslation, 6);
                 oss << ",\n";
                 oss << "      \"bRotationInLocalSpace\" : " << (Comp.bRotationInLocalSpace ? "true" : "false");
+            }
+            // ProjectileMovementComponent 전용 속성
+            else if (Comp.Type.find("ProjectileMovementComponent") != std::string::npos)
+            {
+                oss << ",\n";
+                writeVec3("Gravity", Comp.Gravity, 6);
+                oss << ",\n";
+                oss << "      \"InitialSpeed\" : " << Comp.InitialSpeed << ",\n";
+                oss << "      \"MaxSpeed\" : " << Comp.MaxSpeed << ",\n";
+                oss << "      \"Bounciness\" : " << Comp.Bounciness << ",\n";
+                oss << "      \"Friction\" : " << Comp.Friction << ",\n";
+                oss << "      \"bShouldBounce\" : " << (Comp.bShouldBounce ? "true" : "false") << ",\n";
+                oss << "      \"MaxBounces\" : " << Comp.MaxBounces << ",\n";
+                oss << "      \"HomingAccelerationMagnitude\" : " << Comp.HomingAccelerationMagnitude << ",\n";
+                oss << "      \"bIsHomingProjectile\" : " << (Comp.bIsHomingProjectile ? "true" : "false") << ",\n";
+                oss << "      \"bRotationFollowsVelocity\" : " << (Comp.bRotationFollowsVelocity ? "true" : "false") << ",\n";
+                oss << "      \"ProjectileLifespan\" : " << Comp.ProjectileLifespan << ",\n";
+                oss << "      \"bAutoDestroyWhenLifespanExceeded\" : " << (Comp.bAutoDestroyWhenLifespanExceeded ? "true" : "false") << ",\n";
+                oss << "      \"bIsActive\" : " << (Comp.bIsActive ? "true" : "false");
             }
         }
 
@@ -604,6 +624,53 @@ FSceneData FSceneLoader::ParseV2(const JSON& Json)
 
             if (CompJson.hasKey("bRotationInLocalSpace"))
                 Comp.bRotationInLocalSpace = CompJson.at("bRotationInLocalSpace").ToBool();
+
+            // ProjectileMovementComponent 전용 속성
+            if (CompJson.hasKey("Gravity"))
+            {
+                auto gravity = CompJson.at("Gravity");
+                Comp.Gravity = FVector(
+                    (float)gravity[0].ToFloat(),
+                    (float)gravity[1].ToFloat(),
+                    (float)gravity[2].ToFloat()
+                );
+            }
+
+            if (CompJson.hasKey("InitialSpeed"))
+                Comp.InitialSpeed = (float)CompJson.at("InitialSpeed").ToFloat();
+
+            if (CompJson.hasKey("MaxSpeed"))
+                Comp.MaxSpeed = (float)CompJson.at("MaxSpeed").ToFloat();
+
+            if (CompJson.hasKey("Bounciness"))
+                Comp.Bounciness = (float)CompJson.at("Bounciness").ToFloat();
+
+            if (CompJson.hasKey("Friction"))
+                Comp.Friction = (float)CompJson.at("Friction").ToFloat();
+
+            if (CompJson.hasKey("bShouldBounce"))
+                Comp.bShouldBounce = CompJson.at("bShouldBounce").ToBool();
+
+            if (CompJson.hasKey("MaxBounces"))
+                Comp.MaxBounces = static_cast<int32>(CompJson.at("MaxBounces").ToInt());
+
+            if (CompJson.hasKey("HomingAccelerationMagnitude"))
+                Comp.HomingAccelerationMagnitude = (float)CompJson.at("HomingAccelerationMagnitude").ToFloat();
+
+            if (CompJson.hasKey("bIsHomingProjectile"))
+                Comp.bIsHomingProjectile = CompJson.at("bIsHomingProjectile").ToBool();
+
+            if (CompJson.hasKey("bRotationFollowsVelocity"))
+                Comp.bRotationFollowsVelocity = CompJson.at("bRotationFollowsVelocity").ToBool();
+
+            if (CompJson.hasKey("ProjectileLifespan"))
+                Comp.ProjectileLifespan = (float)CompJson.at("ProjectileLifespan").ToFloat();
+
+            if (CompJson.hasKey("bAutoDestroyWhenLifespanExceeded"))
+                Comp.bAutoDestroyWhenLifespanExceeded = CompJson.at("bAutoDestroyWhenLifespanExceeded").ToBool();
+
+            if (CompJson.hasKey("bIsActive"))
+                Comp.bIsActive = CompJson.at("bIsActive").ToBool();
 
             Data.Components.push_back(Comp);
         }

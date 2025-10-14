@@ -24,6 +24,7 @@
 #include "RenderingStats.h"
 #include "MovementComponent.h"
 #include "RotatingMovementComponent.h"
+#include "ProjectileMovementComponent.h"
 
 extern float CLIENTWIDTH;
 extern float CLIENTHEIGHT;
@@ -1055,6 +1056,23 @@ void UWorld::SaveSceneV2(const FString& SceneName)
                         CompData.PivotTranslation = RotatingComp->GetPivotTranslation();
                         CompData.bRotationInLocalSpace = RotatingComp->IsRotationInLocalSpace();
                     }
+                    // ProjectileMovementComponent 추가 속성 저장
+                    else if (UProjectileMovementComponent* ProjectileComp = Cast<UProjectileMovementComponent>(MovementComp))
+                    {
+                        CompData.Gravity = ProjectileComp->GetGravity();
+                        CompData.InitialSpeed = ProjectileComp->GetInitialSpeed();
+                        CompData.MaxSpeed = ProjectileComp->GetMaxSpeed();
+                        CompData.Bounciness = ProjectileComp->GetBounciness();
+                        CompData.Friction = ProjectileComp->GetFriction();
+                        CompData.bShouldBounce = ProjectileComp->ShouldBounce();
+                        CompData.MaxBounces = ProjectileComp->GetMaxBounces();
+                        CompData.HomingAccelerationMagnitude = ProjectileComp->GetHomingAccelerationMagnitude();
+                        CompData.bIsHomingProjectile = ProjectileComp->IsHomingProjectile();
+                        CompData.bRotationFollowsVelocity = ProjectileComp->GetRotationFollowsVelocity();
+                        CompData.ProjectileLifespan = ProjectileComp->GetProjectileLifespan();
+                        CompData.bAutoDestroyWhenLifespanExceeded = ProjectileComp->GetAutoDestroyWhenLifespanExceeded();
+                        CompData.bIsActive = ProjectileComp->IsActive();
+                    }
                 }
             }
 
@@ -1241,6 +1259,23 @@ void UWorld::LoadSceneV2(const FString& SceneName)
                     RotatingComp->SetRotationRate(CompData.RotationRate);
                     RotatingComp->SetPivotTranslation(CompData.PivotTranslation);
                     RotatingComp->SetRotationInLocalSpace(CompData.bRotationInLocalSpace);
+                }
+                // ProjectileMovementComponent 추가 속성 복원
+                else if (UProjectileMovementComponent* ProjectileComp = Cast<UProjectileMovementComponent>(MovementComp))
+                {
+                    ProjectileComp->SetGravity(CompData.Gravity);
+                    ProjectileComp->SetInitialSpeed(CompData.InitialSpeed);
+                    ProjectileComp->SetMaxSpeed(CompData.MaxSpeed);
+                    ProjectileComp->SetBounciness(CompData.Bounciness);
+                    ProjectileComp->SetFriction(CompData.Friction);
+                    ProjectileComp->SetShouldBounce(CompData.bShouldBounce);
+                    ProjectileComp->SetMaxBounces(CompData.MaxBounces);
+                    ProjectileComp->SetHomingAccelerationMagnitude(CompData.HomingAccelerationMagnitude);
+                    ProjectileComp->SetIsHomingProjectile(CompData.bIsHomingProjectile);
+                    ProjectileComp->SetRotationFollowsVelocity(CompData.bRotationFollowsVelocity);
+                    ProjectileComp->SetProjectileLifespan(CompData.ProjectileLifespan);
+                    ProjectileComp->SetAutoDestroyWhenLifespanExceeded(CompData.bAutoDestroyWhenLifespanExceeded);
+                    ProjectileComp->SetActive(CompData.bIsActive);
                 }
             }
 
