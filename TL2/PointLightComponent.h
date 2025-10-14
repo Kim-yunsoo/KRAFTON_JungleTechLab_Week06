@@ -8,7 +8,9 @@ public:
 	UPointLightComponent();
 	
 	UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
-
+	
+	float GetFalloff() { return LightFalloffExponent; } 
+	void SetFalloff(float InFalloff) { LightFalloffExponent = InFalloff; }
 protected:
 	~UPointLightComponent();
 

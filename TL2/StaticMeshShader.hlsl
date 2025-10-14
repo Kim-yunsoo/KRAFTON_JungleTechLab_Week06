@@ -149,6 +149,9 @@ float4 mainPS(PS_INPUT input) : SV_TARGET
     float3 worldPos = input.worldPos;
     float3 lighting = float3(0.0f, 0.0f, 0.0f);
     
+    float3 ambientColor = finalColor * 0.4f ;
+    lighting = ambientColor;
+    
     [unroll]
     for (int i = 0; i < MAX_LIGHTS; ++i)
     {

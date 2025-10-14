@@ -26,6 +26,7 @@
 #include "RotatingMovementComponent.h"
 #include "ProjectileMovementComponent.h"
 #include "LightComponent.h"
+#include "PointLightComponent.h"
 
 extern float CLIENTWIDTH;
 extern float CLIENTHEIGHT;
@@ -318,17 +319,17 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
                 USceneComponent* SceneComp = Cast<USceneComponent>(Comp);
                 if (SceneComp == nullptr) continue;
 
-                if (ULightComponent* LightComp = Cast<ULightComponent>(SceneComp))
+                if (UPointLightComponent* PointLightComp = Cast<UPointLightComponent>(SceneComp))
                 {
                     FLightInfo LightInfo;
-                    LightInfo.Type = ELighType::Spot;
+                    LightInfo.Type = ELighType::Point;
 
-                    LightInfo.LightPos = SceneComp->GetWorldLocation();
-                    LightInfo.Radius = 10.0f;
-                    LightInfo.RadiusFallOff = 1.0f;
-                    LightInfo.Color = FVector4(1, 0, 0, 1);
-                    LightInfo.Intensity = 1.0f;
-                    //TODO: Light Dir
+                    LightInfo.LightPos = PointLightComp->GetWorldLocation();
+                    LightInfo.Radius = PointLightComp->GetAttenuationRadius();
+                    LightInfo.RadiusFallOff = PointLightComp->GetFalloff();
+                    LightInfo.Color = PointLightComp->GetLightColor();
+                    LightInfo.Intensity = PointLightComp->GetIntensity();
+                    
                     if (VisibleFrameLights.size() < 8)
                     {
                         VisibleFrameLights.Add(LightInfo);

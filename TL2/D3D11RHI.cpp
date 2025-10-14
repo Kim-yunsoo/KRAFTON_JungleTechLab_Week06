@@ -979,13 +979,14 @@ void D3D11RHI::OnResize(UINT NewWidth, UINT NewHeight)
 
     // Update FXAA constants to match new resolution
     RefreshFXAAConstantsFromSwapchain();
+
 }
 void D3D11RHI::CreateBackBufferAndDepthStencil(UINT width, UINT height)
 {
     // 기존 바인딩 해제 후 뷰 해제
     if (RenderTargetView) { DeviceContext->OMSetRenderTargets(0, nullptr, nullptr); RenderTargetView->Release(); RenderTargetView = nullptr; }
     if (DepthStencilView) { DepthStencilView->Release(); DepthStencilView = nullptr; }
-
+    \
     // 1) 백버퍼에서 RTV 생성
     ID3D11Texture2D* backBuffer = nullptr;
     HRESULT hr = SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);

@@ -9,6 +9,14 @@ public:
 
     UObject* Duplication(FObjectDuplicationParameters Parameters);
 
+    FLinearColor GetLightColor() { return LightColor; }
+    float GetAttenuationRadius() { return AttenuationRadius; }
+    float GetIntensity() { return Intensity; }
+
+    void SetLightColor(FLinearColor Color) { LightColor = Color; }
+    void SetAttenuationRadius(float Att) { AttenuationRadius = Att; }
+    void SetIntensity(float InIntensity) {Intensity = InIntensity; }
+
 protected:
     ~ULightComponent();
 

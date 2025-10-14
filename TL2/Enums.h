@@ -418,7 +418,7 @@ struct FLinearColor
         R = Color.X;
         G = Color.Y;
         B = Color.Z;
-        A = Color.Z;
+        A = Color.W; 
     }
 
     union
@@ -460,10 +460,12 @@ struct FXAAInfo
     float InvResolution[2];
     float FXAASpanMax;
     float FXAAReduceMul;
+
     // --- 16 byte boundary ---
     float FXAAReduceMin;
     int   Enabled;
     float Padding[2];
+     
 };
 
 static_assert(sizeof(FXAAInfo) % 16 == 0, "FXAAInfo must be 16-byte aligned");
