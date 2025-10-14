@@ -1612,8 +1612,7 @@ void UWorld::UpdateBVHIfNeeded()
 }
 
 void UWorld::PostProcessing()
-{ 
-
+{  
     if (!MultiViewport) return;
 
     auto* Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
@@ -1621,7 +1620,7 @@ void UWorld::PostProcessing()
     auto ApplyOne = [&](FViewport* vp) {
         if (!vp) return;
 
-        // (A) 이 뷰 사각형만 쓰도록 RS Viewport/Scissor 고정
+        // 이 뷰 사각형만 쓰도록 RS Viewport 고정
         D3D11_VIEWPORT v{};
         v.TopLeftX = (float)vp->GetStartX();
         v.TopLeftY = (float)vp->GetStartY();
@@ -1629,18 +1628,9 @@ void UWorld::PostProcessing()
         v.Height = (float)vp->GetSizeY();
         v.MinDepth = 0.0f; v.MaxDepth = 1.0f;
         Renderer->GetRHIDevice()->GetDeviceContext()->RSSetViewports(1, &v);
-
-        D3D11_RECT sc = {
-            (LONG)vp->GetStartX(), (LONG)vp->GetStartY(),
-            (LONG)(vp->GetStartX() + vp->GetSizeX()),
-            (LONG)(vp->GetStartY() + vp->GetSizeY())
-        };
-
-        Renderer->GetRHIDevice()->GetDeviceContext()->RSSetScissorRects(1, &sc);
-
-        // (B) FXAA 출력 타겟: 백버퍼 RTV (깊이X) 바인딩  ← 이것이 빠지면 화면에 안 찍힘
-        Device->OMSetBackBufferNoDepth();                                  // 렌더러 경로가 하던 것과 동일
-        // (C) 뷰포트 CB 업데이트 및 드로우
+           
+        // Postprocessing 이후에 backbuffer에 그리기 위한 RTV 세팅
+        Device->OMSetBackBufferNoDepth();      
         ApplyFXAA(vp);
         };
 
@@ -1653,38 +1643,7 @@ void UWorld::PostProcessing()
     }
     else 
     {
-            ApplyOne(MultiViewport->GetMainViewport()->GetViewport());
-
-    }
-   /* if (MultiViewport)
-    {
-        if (MultiViewport->GetCurrentLayoutMode() == EViewportLayoutMode::FourSplit)
-        {
-            SViewportWindow** Viewports = MultiViewport->GetViewports();
-            for (int i = 0; i < 4; ++i)
-            {
-                if (Viewports[i])
-                {
-                    FViewport* vp = Viewports[i]->GetViewport();
-                    if (vp)
-                    {
-                        ApplyFXAA(vp);
-                    }
-                }
-            }
-        }
-        else
-        {
-            SViewportWindow* mainVP = MultiViewport->GetMainViewport();
-            if (mainVP)
-            {
-                FViewport* vp = mainVP->GetViewport();
-                if (vp)
-                {
-                    ApplyFXAA(vp);
-                }
-            }
-        }
-    }*/
+         ApplyOne(MultiViewport->GetMainViewport()->GetViewport()); 
+    } 
 
 }

@@ -66,7 +66,8 @@ float4 PS_FXAA(VS_OUT input) : SV_Target
     float2 viewportLocalPos = input.pos.xy - ViewportRect.xy; // 0,0 ~ v
     float2 viewportUV = viewportLocalPos / max(ViewportRect.zw, float2(1e-6, 1e-6)); // viewport에 맞는 UV zw는 width height
     float2 tex = (ViewportRect.xy + viewportLocalPos) * InvResolution;
-
+     
+    
     // Bypass if disabled
     if (!Enabled)
     {
