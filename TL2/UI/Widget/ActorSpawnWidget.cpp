@@ -7,6 +7,8 @@
 #include "../../StaticMeshActor.h"
 #include "../../DecalActor.h"
 #include "../../DecalComponent.h"
+#include "../../ExponentialHeightFogActor.h"
+#include "../../HeightFogComponent.h"
 #include "../../Vector.h"
 #include <algorithm>
 #include <cstdlib>
@@ -81,6 +83,7 @@ const char* UActorSpawnWidget::GetActorTypeName(int32 TypeIndex) const
 	case EActorType::Empty: return "Actor (Empty)";
 	case EActorType::StaticMesh: return "StaticMeshActor";
 	case EActorType::Decal: return "DecalActor";
+	case EActorType::ExponentialHeightFog: return "ExponentialHeightFogActor";
 	default: return "Unknown";
 	}
 }
@@ -147,7 +150,7 @@ void UActorSpawnWidget::RenderWidget()
 	ImGui::Text("Actor Type:");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(220);
-	const char* ActorTypeItems[] = { "Actor (Empty)", "StaticMeshActor", "DecalActor", "PerspectiveDecalActor"};
+	const char* ActorTypeItems[] = { "Actor (Empty)", "StaticMeshActor", "DecalActor", "PerspectiveDecalActor", "ExponentialHeightFogActor" };
 	ImGui::Combo("##ActorType", &SelectedActorType, ActorTypeItems, IM_ARRAYSIZE(ActorTypeItems));
 
 	ImGui::Spacing();
@@ -372,6 +375,9 @@ void UActorSpawnWidget::SpawnActors() const
 		case EActorType::PerspectiveDecal:
 			SpawnDecalActor(World, false);
 			break;
+		case EActorType::ExponentialHeightFog:
+			SpawnExponentialHeightFogActor(World);
+			break;
 		}
 	}
 }
@@ -474,4 +480,67 @@ void UActorSpawnWidget::SpawnDecalActor(UWorld* World, bool bIsOrtho) const
 		UE_LOG("ActorSpawn: Created DecalActor '%s' at (%.2f, %.2f, %.2f)  FadeIn=%.2f Delay=%.2f FadeOut=%.2f",
 			ActorName.c_str(), SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z, FadeInDuration, FadeStartDelay, FadeOutDuration);
 	}
+}
+
+void UActorSpawnWidget::SpawnExponentialHeightFogActor(UWorld* World) const
+{
+	// ============================================================
+	// 1. Transform 설정
+	// ============================================================
+
+	// Fog는 씬 전체에 영향을 주므로 위치가 중요
+	// 일반적으로 지면 레벨(Z=0) 또는 약간 위에 배치
+	FVector SpawnLocation = GenerateRandomLocation();
+
+	// Fog는 회전이 의미 없으므로 항상 Identity
+	FQuat SpawnRotation = FQuat::Identity();
+
+	// Fog는 스케일이 의미 없으므로 항상 (1,1,1)
+	FVector SpawnScaleVec = FVector::One();
+
+	FTransform SpawnTransform(SpawnLocation, SpawnRotation, SpawnScaleVec);
+
+	// ============================================================
+	// 2. Actor Spawn
+	// ============================================================
+	AExponentialHeightFogActor* NewActor = World->SpawnActor<AExponentialHeightFogActor>(SpawnTransform);
+	if (!NewActor)
+	{
+		UE_LOG("ActorSpawn: Failed to create ExponentialHeightFogActor");
+		return;
+	}
+
+	// ============================================================
+	// 3. HeightFogComponent 설정
+	// ============================================================
+	UHeightFogComponent* FogComp = NewActor->GetHeightFogComponent();
+	if (FogComp)
+	{
+		// 기본 Fog 파라미터 설정 (UE 기본값 참고)
+		FogComp->SetFogDensity(0.02f);               // 적당한 밀도
+		FogComp->SetFogHeightFalloff(0.2f);          // 높이에 따른 감소율
+		FogComp->SetStartDistance(0.0f);             // 카메라 바로 앞부터 시작
+		FogComp->SetFogCutoffDistance(5000.0f);      // 5000 유닛까지
+		FogComp->SetFogMaxOpacity(1.0f);             // 최대 불투명도
+
+		// 하늘색 안개 (기본값)
+		FogComp->SetFogInscatteringColor(FVector4(0.447f, 0.639f, 1.0f, 1.0f));
+
+		// 활성화
+		FogComp->SetEnabled(true);
+
+		UE_LOG("ActorSpawn: HeightFogComponent configured - Density=%.3f, HeightFalloff=%.3f, CutoffDistance=%.1f",
+			FogComp->GetFogDensity(),
+			FogComp->GetFogHeightFalloff(),
+			FogComp->GetFogCutoffDistance());
+	}
+
+	// ============================================================
+	// 4. Actor 이름 설정
+	// ============================================================
+	FString ActorName = World->GenerateUniqueActorName("ExponentialHeightFog");
+	NewActor->SetName(ActorName);
+
+	UE_LOG("ActorSpawn: Created ExponentialHeightFogActor '%s' at (%.2f, %.2f, %.2f)",
+		ActorName.c_str(), SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z);
 }
