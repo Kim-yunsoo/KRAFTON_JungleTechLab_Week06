@@ -301,6 +301,47 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
     int FrustumCullCount = 0;
     int32 TotalDecalCount = 0;
 
+    // ====================================================================
+    // Pass 0: Visible Lights 를 Pruning하는 과정
+    // ====================================================================
+    {
+        TArray<FLightInfo> VisibleFrameLights;
+
+        const TArray<AActor*>& Actors = Level ? Level->GetActors() : TArray<AActor*>();
+
+        for (AActor* Actor : Actors)
+        {
+            if (!Actor || Actor->GetActorHiddenInGame()) continue;
+
+            for (UActorComponent* Comp : Actor->GetComponents())
+            {
+                USceneComponent* SceneComp = Cast<USceneComponent>(Comp);
+                if (SceneComp == nullptr) continue;
+
+                if (ULightComponent* LightComp = Cast<ULightComponent>(SceneComp))
+                {
+                    FLightInfo LightInfo;
+                    LightInfo.Type = ELighType::Spot;
+
+                    LightInfo.LightPos = SceneComp->GetWorldLocation();
+                    LightInfo.Radius = 10.0f;
+                    LightInfo.RadiusFallOff = 1.0f;
+                    LightInfo.Color = FVector4(1, 0, 0, 1);
+                    LightInfo.Intensity = 1.0f;
+                    //TODO: Light Dir
+                    if (VisibleFrameLights.size() < 8)
+                    {
+                        VisibleFrameLights.Add(LightInfo);
+                    }
+                }
+            }
+        }
+
+        Renderer->SetWorldLights(VisibleFrameLights);
+        Renderer->UpdateLightBuffer();
+    }
+
+
     const TArray<AActor*>& LevelActors = Level ? Level->GetActors() : TArray<AActor*>();
 
     // ====================================================================
