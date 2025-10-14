@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 
 #include "BillboardComponent.h"
 #include "TextRenderComponent.h"
@@ -26,15 +26,15 @@ URenderer::~URenderer()
 
 void URenderer::BeginFrame()
 {
-    // ·»´õ¸µ Åë°è ¼öÁı ½ÃÀÛ
+    // ë Œë”ë§ í†µê³„ ìˆ˜ì§‘ ì‹œì‘
     URenderingStatsCollector::GetInstance().BeginFrame();
     
-    // »óÅÂ ÃßÀû ¸®¼Â
+    // ìƒíƒœ ì¶”ì  ë¦¬ì…‹
     ResetRenderStateTracking();
     
-    // ¹é¹öÆÛ/±íÀÌ¹öÆÛ¸¦ Å¬¸®¾î
-    RHIDevice->ClearBackBuffer();  // ¹è°æ»ö
-    RHIDevice->ClearDepthBuffer(1.0f, 0);                 // ±íÀÌ°ª ÃÊ±âÈ­
+    // ë°±ë²„í¼/ê¹Šì´ë²„í¼ë¥¼ í´ë¦¬ì–´
+    RHIDevice->ClearBackBuffer();  // ë°°ê²½ìƒ‰
+    RHIDevice->ClearDepthBuffer(1.0f, 0);                 // ê¹Šì´ê°’ ì´ˆê¸°í™”
     RHIDevice->CreateBlendState();
     RHIDevice->IASetPrimitiveTopology();
     // RS
@@ -54,7 +54,7 @@ void URenderer::PrepareShader(FShader& InShader)
 
 void URenderer::PrepareShader(UShader* InShader)
 {
-    // ¼ÎÀÌ´õ º¯°æ ÃßÀû
+    // ì…°ì´ë” ë³€ê²½ ì¶”ì 
     if (LastShader != InShader)
     {
         URenderingStatsCollector::GetInstance().IncrementShaderChanges();
@@ -147,7 +147,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITI
 {
     URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
     
-    // µğ¹ö±×: StaticMesh ·»´õ¸µ Åë°è
+    // ë””ë²„ê·¸: StaticMesh ë Œë”ë§ í†µê³„
     
     UINT stride = 0;
     switch (InMesh->GetVertexType())
@@ -194,7 +194,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITI
             const FObjMaterialInfo& MaterialInfo = Material->GetMaterialInfo();
             bool bHasTexture = !(MaterialInfo.DiffuseTextureFileName == FName::None());
             
-            // Àç·á º¯°æ ÃßÀû
+            // ì¬ë£Œ ë³€ê²½ ì¶”ì 
             if (LastMaterial != Material)
             {
                 StatsCollector.IncrementMaterialChanges();
@@ -206,7 +206,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITI
             {
                 TextureData = UResourceManager::GetInstance().CreateOrGetTextureData(MaterialInfo.DiffuseTextureFileName);
                 
-                // ÅØ½ºÃ³ º¯°æ ÃßÀû (ÀÓ½Ã·Î FTextureData*¸¦ UTexture*·Î Ä·½ºÆ®)
+                // í…ìŠ¤ì²˜ ë³€ê²½ ì¶”ì  (ì„ì‹œë¡œ FTextureData*ë¥¼ UTexture*ë¡œ ìº ìŠ¤íŠ¸)
                 UTexture* CurrentTexture = reinterpret_cast<UTexture*>(TextureData);
                 if (LastTexture != CurrentTexture)
                 {
@@ -217,9 +217,9 @@ void URenderer::DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITI
                 RHIDevice->GetDeviceContext()->PSSetShaderResources(0, 1, &(TextureData->TextureSRV));
             }
             
-            RHIDevice->UpdatePixelConstantBuffers(MaterialInfo, true, bHasTexture); // PSSetµµ ÇØÁÜ
+            RHIDevice->UpdatePixelConstantBuffers(MaterialInfo, true, bHasTexture); // PSSetë„ í•´ì¤Œ
             
-            // DrawCall ¼ö½ÇÇà ¹× Åë°è Ãß°¡
+            // DrawCall ìˆ˜ì‹¤í–‰ ë° í†µê³„ ì¶”ê°€
             RHIDevice->GetDeviceContext()->DrawIndexed(MeshGroupInfos[i].IndexCount, MeshGroupInfos[i].StartIndex, 0);
             StatsCollector.IncrementDrawCalls();
         }
@@ -227,7 +227,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITI
     else
     {
         FObjMaterialInfo ObjMaterialInfo;
-        RHIDevice->UpdatePixelConstantBuffers(ObjMaterialInfo, false, false); // PSSetµµ ÇØÁÜ
+        RHIDevice->UpdatePixelConstantBuffers(ObjMaterialInfo, false, false); // PSSetë„ í•´ì¤Œ
         RHIDevice->GetDeviceContext()->DrawIndexed(IndexCount, 0, 0);
         StatsCollector.IncrementDrawCalls();
     }
@@ -237,13 +237,13 @@ void URenderer::DrawIndexedPrimitiveComponent(UTextRenderComponent* Comp, D3D11_
 {
     URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
     
-    // µğ¹ö±×: TextRenderComponent ·»´õ¸µ Åë°è
+    // ë””ë²„ê·¸: TextRenderComponent ë Œë”ë§ í†µê³„
     
     UINT Stride = sizeof(FBillboardVertexInfo_GPU);
     ID3D11Buffer* VertexBuff = Comp->GetStaticMesh()->GetVertexBuffer();
     ID3D11Buffer* IndexBuff = Comp->GetStaticMesh()->GetIndexBuffer();
 
-    // ¸ÅÅ×¸®¾ó º¯°æ ÃßÀû
+    // ë§¤í…Œë¦¬ì–¼ ë³€ê²½ ì¶”ì 
     UMaterial* CompMaterial = Comp->GetMaterial();
     if (LastMaterial != CompMaterial)
     {
@@ -252,7 +252,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UTextRenderComponent* Comp, D3D11_
     }
     
     UShader* CompShader = CompMaterial->GetShader();
-    // ¼ÎÀÌ´õ º¯°æ ÃßÀû
+    // ì…°ì´ë” ë³€ê²½ ì¶”ì 
     if (LastShader != CompShader)
     {
         StatsCollector.IncrementShaderChanges();
@@ -270,7 +270,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UTextRenderComponent* Comp, D3D11_
         IndexBuff, DXGI_FORMAT_R32_UINT, 0
     );
 
-    // ÅØ½ºÃ³ º¯°æ ÃßÀû (ÅØ½ºÃ³ ºñ±³)
+    // í…ìŠ¤ì²˜ ë³€ê²½ ì¶”ì  (í…ìŠ¤ì²˜ ë¹„êµ)
     UTexture* CompTexture = CompMaterial->GetTexture();
     if (LastTexture != CompTexture)
     {
@@ -291,13 +291,13 @@ void URenderer::DrawIndexedPrimitiveComponent(UBillboardComponent* Comp, D3D11_P
 {
     URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
     
-    // µğ¹ö±×: TextRenderComponent ·»´õ¸µ Åë°è
+    // ë””ë²„ê·¸: TextRenderComponent ë Œë”ë§ í†µê³„
     
     UINT Stride = sizeof(FBillboardVertexInfo_GPU);
     ID3D11Buffer* VertexBuff = Comp->GetStaticMesh()->GetVertexBuffer();
     ID3D11Buffer* IndexBuff = Comp->GetStaticMesh()->GetIndexBuffer();
 
-    // ¸ÅÅ×¸®¾ó º¯°æ ÃßÀû
+    // ë§¤í…Œë¦¬ì–¼ ë³€ê²½ ì¶”ì 
     UMaterial* CompMaterial = Comp->GetMaterial();
     if (LastMaterial != CompMaterial)
     {
@@ -306,7 +306,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UBillboardComponent* Comp, D3D11_P
     }
     
     UShader* CompShader = CompMaterial->GetShader();
-    // ¼ÎÀÌ´õ º¯°æ ÃßÀû
+    // ì…°ì´ë” ë³€ê²½ ì¶”ì 
     if (LastShader != CompShader)
     {
         StatsCollector.IncrementShaderChanges();
@@ -324,7 +324,7 @@ void URenderer::DrawIndexedPrimitiveComponent(UBillboardComponent* Comp, D3D11_P
         IndexBuff, DXGI_FORMAT_R32_UINT, 0
     );
 
-    // ÅØ½ºÃ³ º¯°æ ÃßÀû (ÅØ½ºÃ³ ºñ±³)
+    // í…ìŠ¤ì²˜ ë³€ê²½ ì¶”ì  (í…ìŠ¤ì²˜ ë¹„êµ)
     UTexture* CompTexture = CompMaterial->GetTexture();
     if (LastTexture != CompTexture)
     {
@@ -351,54 +351,55 @@ void URenderer::SetViewModeType(EViewModeIndex ViewModeIndex)
 
 void URenderer::EndFrame()
 {
-    // ·»´õ¸µ Åë°è ¼öÁı Á¾·á
+    // ë Œë”ë§ í†µê³„ ìˆ˜ì§‘ ì¢…ë£Œ
     URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();
     StatsCollector.EndFrame();
     
-    // ÇöÀç ÇÁ·¹ÀÓ Åë°è¸¦ ¾÷µ¥ÀÌÆ®
+    // í˜„ì¬ í”„ë ˆì„ í†µê³„ë¥¼ ì—…ë°ì´íŠ¸
     const FRenderingStats& CurrentStats = StatsCollector.GetCurrentFrameStats();
     StatsCollector.UpdateFrameStats(CurrentStats);
     
-    // Æò±Õ Åë°è¸¦ ¾ò¾î¼­ ¿À¹ö·¹ÀÌ¿¡ ¾÷µ¥ÀÌÆ®
+    // í‰ê·  í†µê³„ë¥¼ ì–»ì–´ì„œ ì˜¤ë²„ë ˆì´ì— ì—…ë°ì´íŠ¸
     const FRenderingStats& AvgStats = StatsCollector.GetAverageStats();
     UStatsOverlayD2D::Get().UpdateRenderingStats(
         AvgStats.TotalDrawCalls,
         AvgStats.MaterialChanges,
         AvgStats.TextureChanges,
         AvgStats.ShaderChanges
-    );
-    
-    // Post-process: FXAA fullscreen pass
-    if (!FXAAShader)
-    {
-        FXAAShader = UResourceManager::GetInstance().Load<UShader>("FXAA.hlsl");
-    }
+    ); 
+    //// Post-process: FXAA fullscreen pass
+    //if (!FXAAShader)
+    //{
+    //    FXAAShader = UResourceManager::GetInstance().Load<UShader>("FXAA.hlsl");
+    //}
 
-    // Update viewport CB (b6) and bind backbuffer for FXAA
-    static_cast<D3D11RHI*>(RHIDevice)->UpdateViewportCBFromCurrent();
-    // Bind backbuffer as target (no depth) for FXAA output
-    static_cast<D3D11RHI*>(RHIDevice)->OMSetBackBufferNoDepth();
+    //// Update viewport CB (b6) and bind backbuffer for FXAA
+    //static_cast<D3D11RHI*>(RHIDevice)->UpdateViewportCBFromCurrent();
+    //// Bind backbuffer as target (no depth) for FXAA output
+    //static_cast<D3D11RHI*>(RHIDevice)->OMSetBackBufferNoDepth();
 
-    // Set FXAA shader (uses SV_VertexID, no input layout)
-    RHIDevice->GetDeviceContext()->VSSetShader(FXAAShader->GetVertexShader(), nullptr, 0);
-    RHIDevice->GetDeviceContext()->PSSetShader(FXAAShader->GetPixelShader(), nullptr, 0);
-    RHIDevice->GetDeviceContext()->IASetInputLayout(FXAAShader->GetInputLayout());
-    RHIDevice->IASetPrimitiveTopology();
+    //// Set FXAA shader (uses SV_VertexID, no input layout)
+    //RHIDevice->GetDeviceContext()->VSSetShader(FXAAShader->GetVertexShader(), nullptr, 0);
+    //RHIDevice->GetDeviceContext()->PSSetShader(FXAAShader->GetPixelShader(), nullptr, 0);
+    //RHIDevice->GetDeviceContext()->IASetInputLayout(FXAAShader->GetInputLayout());
+    //RHIDevice->IASetPrimitiveTopology();
+    //// Ensure no blending for fullscreen resolve
+    //RHIDevice->OMSetBlendState(false);
 
-    // Bind source color as t0
-    ID3D11ShaderResourceView* srcSRV = static_cast<D3D11RHI*>(RHIDevice)->GetFXAASRV();
-    RHIDevice->PSSetDefaultSampler(0);
-    RHIDevice->GetDeviceContext()->PSSetShaderResources(0, 1, &srcSRV);
+    //// Bind source color as t0
+    //ID3D11ShaderResourceView* srcSRV = static_cast<D3D11RHI*>(RHIDevice)->GetFXAASRV();
+    //RHIDevice->PSSetDefaultSampler(0);
+    //RHIDevice->GetDeviceContext()->PSSetShaderResources(0, 1, &srcSRV);
 
-    // Draw fullscreen triangle
-    RHIDevice->GetDeviceContext()->Draw(3, 0);
+    //// Draw fullscreen triangle
+    //RHIDevice->GetDeviceContext()->Draw(3, 0);
 
-    // Unbind SRV to avoid warnings on next frame when rebinding as RTV
-    ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
-    RHIDevice->GetDeviceContext()->PSSetShaderResources(0, 1, nullSRV);
+    //// Unbind SRV to avoid warnings on next frame when rebinding as RTV
+    //ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+    //RHIDevice->GetDeviceContext()->PSSetShaderResources(0, 1, nullSRV);
 
-    // Present is moved out to World::Render after UI pass,
-    // so that UI/overlay are not affected by FXAA.
+    //// Present is moved out to World::Render after UI pass,
+    //// so that UI/overlay are not affected by FXAA.
 }
 
 void URenderer::OMSetDepthStencilState(EComparisonFunc Func)
@@ -425,6 +426,72 @@ void URenderer::UpdateLightBuffer()
 void URenderer::UpdateLightBuffer(const TArray<FLightInfo>& InLights)
 {
     RHIDevice->UpdateLightConstantBuffers(InLights);
+}
+
+void URenderer::SetFXAAEnabled(bool bEnabled)
+{ 
+    bFXAAEnabled = bEnabled;
+    static_cast<D3D11RHI*>(RHIDevice)->SetFXAAEnabledFlag(bEnabled); 
+}
+
+void URenderer::SetFXAAParams(float SpanMax, float ReduceMul, float ReduceMin)
+{
+    D3D11RHI* RHI = static_cast<D3D11RHI*>(RHIDevice);
+    if (!RHI) return;
+
+    IDXGISwapChain* SwapChain = RHI->GetSwapChain();
+    if (!SwapChain) return;
+
+    DXGI_SWAP_CHAIN_DESC swapDesc;
+    SwapChain->GetDesc(&swapDesc);
+
+    FXAAInfo info{};
+    info.InvResolution[0] = 1.0f / static_cast<float>(swapDesc.BufferDesc.Width);
+    info.InvResolution[1] = 1.0f / static_cast<float>(swapDesc.BufferDesc.Height);
+    info.Enabled = bFXAAEnabled;
+
+    if (bFXAAEnabled)
+    {
+        info.FXAASpanMax = SpanMax;
+        info.FXAAReduceMul = ReduceMul;
+        info.FXAAReduceMin = ReduceMin;
+    }
+
+    RHI->UpdateFXAAConstantBuffers(info);
+}
+
+void URenderer::PostProcessing()
+{ 
+    /// Post-process: FXAA  
+    if (!FXAAShader)
+    {
+        FXAAShader = UResourceManager::GetInstance().Load<UShader>("FXAA.hlsl");
+    }
+
+    // Update viewport CB (b6) and bind backbuffer for FXAA
+    static_cast<D3D11RHI*>(RHIDevice)->UpdateViewportCBFromCurrent();
+    // Bind backbuffer as target (no depth) for FXAA output
+    static_cast<D3D11RHI*>(RHIDevice)->OMSetBackBufferNoDepth();
+
+    // Set FXAA shader (uses SV_VertexID, no input layout)
+    RHIDevice->GetDeviceContext()->VSSetShader(FXAAShader->GetVertexShader(), nullptr, 0);
+    RHIDevice->GetDeviceContext()->PSSetShader(FXAAShader->GetPixelShader(), nullptr, 0);
+    RHIDevice->GetDeviceContext()->IASetInputLayout(FXAAShader->GetInputLayout());
+    RHIDevice->IASetPrimitiveTopology();
+    // Ensure no blending for fullscreen resolve
+    RHIDevice->OMSetBlendState(false);
+
+    // Bind source color as t0
+    ID3D11ShaderResourceView* srcSRV = static_cast<D3D11RHI*>(RHIDevice)->GetFXAASRV();
+    RHIDevice->PSSetDefaultSampler(0);
+    RHIDevice->GetDeviceContext()->PSSetShaderResources(0, 1, &srcSRV);
+
+    // Draw fullscreen triangle
+    RHIDevice->GetDeviceContext()->Draw(3, 0);
+
+    // Unbind SRV to avoid warnings on next frame when rebinding as RTV
+    ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+    RHIDevice->GetDeviceContext()->PSSetShaderResources(0, 1, nullSRV);
 }
 
 void URenderer::InitializeLineBatch()
@@ -543,7 +610,7 @@ void URenderer::EndLineBatch(const FMatrix& ModelMatrix, const FMatrix& ViewMatr
         RHIDevice->GetDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
         RHIDevice->GetDeviceContext()->DrawIndexed(DynamicLineMesh->GetCurrentIndexCount(), 0, 0);
         
-        // ¶óÀÎ ·»´õ¸µ¿¡ ´ëÇÑ DrawCall Åë°è Ãß°¡
+        // ë¼ì¸ ë Œë”ë§ì— ëŒ€í•œ DrawCall í†µê³„ ì¶”ê°€
         URenderingStatsCollector::GetInstance().IncrementDrawCalls();
     }
     

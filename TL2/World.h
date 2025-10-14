@@ -141,6 +141,8 @@ public:
 	void CleanupWorld();
 
 	bool IsPIEWorld() const { return WorldType == EWorldType::PIE; }
+	 
+
 private:
 	// 싱글톤 매니저 참조
 	UResourceManager& ResourceManager;

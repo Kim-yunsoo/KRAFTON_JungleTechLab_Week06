@@ -40,9 +40,7 @@ public:
     static HRESULT CreateIndexBuffer(ID3D11Device* device, const FMeshData* meshData, ID3D11Buffer** outBuffer);
 
     static HRESULT CreateIndexBuffer(ID3D11Device* device, const FStaticMesh* mesh, ID3D11Buffer** outBuffer);
-
-
-
+     
     void UpdateConstantBuffers(const FMatrix& ModelMatrix, const FMatrix& ViewMatrix, const FMatrix& ProjMatrix) override;
     void UpdateViewConstantBuffers( const FMatrix& ViewMatrix, const FMatrix& ProjMatrix) ;
     void UpdateModelConstantBuffers(const FMatrix& ModelMatrix) ;
@@ -81,6 +79,9 @@ public:
 
     void ResizeSwapChain(UINT width, UINT height);
 
+    void SetFXAAEnabledFlag(bool bEnabled) { bFXAAEnabledFlag = bEnabled; }
+    // Allow overriding FXAA params from UI
+    void SetFXAAParams(float SubPix, float EdgeThreshold, float EdgeThresholdMin);
 private:
     // Compute and upload default FXAA constants from current swapchain size
     void RefreshFXAAConstantsFromSwapchain();
@@ -179,6 +180,12 @@ private:
 
     ID3D11SamplerState* DefaultSamplerState = nullptr;
 
+    bool bFXAAEnabledFlag = true;
+    // User override for FXAA parameters (optional)
+    bool bFXAAUserParams = false;
+    float FXAA_SubPix_User = 0.75f;
+    float FXAA_EdgeThreshold_User = 0.125f;
+    float FXAA_EdgeThresholdMin_User = 0.0312f;
     
 };
 

@@ -1,28 +1,20 @@
-// FXAA parameters and integration flags
-// Default to PC quality preset; adjust if targeting consoles.
-#ifndef FXAA_QUALITY__PRESET
-#define FXAA_QUALITY__PRESET 12  // 10~12 are common on PC (higher = better)
-#endif
+// ============================================================================
+// Unreal-like FXAA (HLSL version, using your FXAAParams buffer)
+// Based on NVIDIA FXAA 3.11 logic
+// CORRECTED VERSION (keeps your engine's fullscreen tri + ViewportRect)
+// ============================================================================
 
-#ifndef FXAA_CONSOLE__
-#define FXAA_CONSOLE__ 0
-#endif
-
-// If you want to derive luma from green channel or alpha, set here later.
-#ifndef FXAA_GREEN_AS_LUMA
-#define FXAA_GREEN_AS_LUMA 0
-#endif
-
-cbuffer FXAAConstantBuffer : register(b0)
+// PS b0 : 새 파라미터 패킹
+cbuffer FXAAParams : register(b0)
 {
-    float2 rcpFrame;                 // 1/width, 1/height
-    float  FXAASubPix;               // e.g., 0.75
-    float  FXAA_Edge_Threshhold;     // e.g., 0.125
-    float  FXAA_Edge_Threshhold_Min; // e.g., 0.0312
+    float2 InvResolution;   // 1.0 / resolution
+    float FXAASpanMax;      // Max search span
+    float FXAAReduceMul;    // Reduce multiplier
+    // --- 16 byte boundary ---
+    float FXAAReduceMin;    // Min reduce value
+    int   Enabled;          // FXAA toggle
+    float2 Padding;         // Padding
 };
-
-Texture2D ColorLdr : register(t0);
-SamplerState LinearClamp : register(s0);
 
 // Optional viewport input: x=StartX, y=StartY, z=SizeX, w=SizeY (pixels)
 cbuffer FXAAViewportCB : register(b6)
@@ -30,59 +22,132 @@ cbuffer FXAAViewportCB : register(b6)
     float4 ViewportRect;
 }
 
+// Match resource naming (t0/s0)
+Texture2D SceneColor : register(t0);
+SamplerState SceneSampler : register(s0);
+
 struct VS_OUT
 {
     float4 pos : SV_Position;
     float2 uv : TEXCOORD0;
 };
 
-VS_OUT VS_FullScreen(uint id: SV_VertexID)
+// Fullscreen triangle (empty input layout)
+VS_OUT VS_FullScreen(uint id : SV_VertexID)
 {
-    // Fullscreen triangle using SV_VertexID (no vertex buffer needed)
-    float2 verts[3] = {
+    float2 verts[3] =
+    {
         float2(-1.0, -1.0),
-        float2(-1.0,  3.0),
-        float2( 3.0, -1.0)
+        float2(-1.0, 3.0),
+        float2(3.0, -1.0)
     };
 
-    float2 pos = verts[id];
-    VS_OUT output;
-    output.pos = float4(pos, 0.0f, 1.0f);
-    output.uv = 0.5f * float2(pos.x, -pos.y) + 0.5f; 
-    return output; 
+    float2 p = verts[id];
+    VS_OUT o;
+    o.pos = float4(p, 0.0f, 1.0f);
+    o.uv = 0.5f * float2(p.x, -p.y) + 0.5f;
+    return o;
 }
 
-// Step 2) Luma computation helper
-float ComputeLuma(float3 rgb)
+//------------------------------------------------------------------------------
+// Utility: luminance calculation (gamma-space Y' approximation)
+//------------------------------------------------------------------------------
+float Luma(float3 color)
 {
-#if FXAA_GREEN_AS_LUMA
-    return rgb.g;
-#else
-    // Rec. 601 luma
-    return dot(rgb, float3(0.299, 0.587, 0.114));
-#endif
+    return dot(color, float3(0.299f, 0.587f, 0.114f));
 }
 
+//------------------------------------------------------------------------------
+// Pixel Shader: Corrected Unreal-style FXAA (with viewport support)
+//------------------------------------------------------------------------------
 float4 PS_FXAA(VS_OUT input) : SV_Target
 {
-    // Remap UV to the viewport sub-rect actually rendered into the source texture
-    float2 vpStart = ViewportRect.xy * rcpFrame;
-    float2 vpSize  = ViewportRect.zw * rcpFrame;
-    float2 uv = vpStart + input.uv * vpSize;
+    // Viewport-aware UV (frame pixel -> normalized)
+    float2 viewportLocalPos = input.pos.xy - ViewportRect.xy; // in pixels
+    float2 viewportUV = viewportLocalPos / max(ViewportRect.zw, float2(1e-6, 1e-6));
+    float2 tex = (ViewportRect.xy + viewportUV * ViewportRect.zw) * InvResolution;
 
-    float3 color = ColorLdr.Sample(LinearClamp, uv).rgb;
-    float luma = ComputeLuma(color);
-    // For now, return original color while we build subsequent steps
-    // (edge detection & filtering will follow next steps)
-    return float4(color, 1.0f);
+    // Bypass if disabled
+    if (!Enabled)
+    {
+        return float4(SceneColor.Sample(SceneSampler, tex).rgb, 1.0f);
+    }
+
+
+    // Fetch 5 samples (center + 4 diagonals)
+    float2 inv = InvResolution;
+
+    float3 rgbNW = SceneColor.Sample(SceneSampler, tex + float2(-inv.x, -inv.y)).rgb;
+    float3 rgbNE = SceneColor.Sample(SceneSampler, tex + float2(inv.x, -inv.y)).rgb;
+    float3 rgbSW = SceneColor.Sample(SceneSampler, tex + float2(-inv.x, inv.y)).rgb;
+    float3 rgbSE = SceneColor.Sample(SceneSampler, tex + float2(inv.x, inv.y)).rgb;
+    float3 rgbM = SceneColor.Sample(SceneSampler, tex).rgb;
+
+    // Convert to luminance
+    float lumaNW = Luma(rgbNW);
+    float lumaNE = Luma(rgbNE);
+    float lumaSW = Luma(rgbSW);
+    float lumaSE = Luma(rgbSE);
+    float lumaM = Luma(rgbM);
+
+    // Neighborhood stats
+    float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
+    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
+    float lumaRange = lumaMax - lumaMin;
+
+    // Early-exit for low contrast (Unreal-style)
+    float threshold = max(0.0625, lumaMax * 0.125);
+    if (lumaRange < threshold)
+    {
+        return float4(rgbM, 1.0f);
+    }
+
+    // Edge direction (diagonal emphasis)
+    float2 dir;
+    dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
+    dir.y = ((lumaNW + lumaSW) - (lumaNE + lumaSE));
+
+    // Direction reduction by local contrast
+    float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * (0.25f * FXAAReduceMul), FXAAReduceMin);
+
+    // Normalize using smaller axis to reduce orientation bias
+    float rcpDirMin = 1.0f / (min(abs(dir.x), abs(dir.y)) + dirReduce);
+
+    // Scale & clamp in pixel domain, then convert to UV
+    float2 dirScaled = dir * rcpDirMin;
+    dirScaled = clamp(dirScaled, float2(-FXAASpanMax, -FXAASpanMax), float2(FXAASpanMax, FXAASpanMax));
+    dir = dirScaled * InvResolution;
+
+    // Sample along the corrected edge direction
+    float3 rgbA = 0.5f * (
+        SceneColor.Sample(SceneSampler, tex + dir * (1.0 / 3.0 - 0.5)).rgb +
+        SceneColor.Sample(SceneSampler, tex + dir * (2.0 / 3.0 - 0.5)).rgb
+    );
+
+    float3 rgbB = rgbA * 0.5f + 0.25f * (
+        SceneColor.Sample(SceneSampler, tex + dir * -0.5).rgb +
+        SceneColor.Sample(SceneSampler, tex + dir * 0.5).rgb
+    );
+
+    // Guard against over-blur: keep within local luminance band
+    float lumaB = Luma(rgbB);
+    if ((lumaB < lumaMin) || (lumaB > lumaMax))
+    {
+        rgbB = rgbA;
+    }
+
+    // Subpixel blend (fixed factor; parameterize if needed)
+    const float subpix = 0.99f;
+    float3 finalColor = lerp(rgbM, rgbB, subpix);
+
+    return float4(finalColor, 1.0f);
 }
 
-// Entry point aliases for engine's shader loader
+// Entry points (engine expects these)
 VS_OUT mainVS(uint id : SV_VertexID)
 {
     return VS_FullScreen(id);
 }
-
 float4 mainPS(VS_OUT input) : SV_Target
 {
     return PS_FXAA(input);

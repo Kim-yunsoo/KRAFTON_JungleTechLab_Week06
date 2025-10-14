@@ -1067,13 +1067,9 @@ void D3D11RHI::UpdateViewportCBFromCurrent()
 }
 
 void D3D11RHI::RefreshFXAAConstantsFromSwapchain()
-{
-    // Prefer the currently bound viewport dimensions instead of swapchain/backbuffer.
-    float w = ViewportInfo.Width;
-    float h = ViewportInfo.Height;
-
-    // Fallback to swapchain size if viewport is not initialized yet
-    if ((w <= 0.0f || h <= 0.0f) && SwapChain)
+{  
+    float w = 0.0f, h = 0.0f;
+    if (SwapChain)
     {
         DXGI_SWAP_CHAIN_DESC scd{};
         SwapChain->GetDesc(&scd);
@@ -1084,11 +1080,19 @@ void D3D11RHI::RefreshFXAAConstantsFromSwapchain()
         return;
 
     FXAAInfo info{};
-    info.RCPFrame[0] = 1.0f / w;
-    info.RCPFrame[1] = 1.0f / h;
-    info.SubPix = 0.75f;             // recommended default
-    info.EdgeThreshhold = 0.125f;    // recommended default
-    info.EdgeThreshholdMin = 0.0312f;// recommended default
+    info.InvResolution[0] = 1.0f / w; // static_cast<float>(ViewportInfo.Width);
+    info.InvResolution[1] = 1.0f / h; //static_cast<float>(ViewportInfo.Height);
+
+    info.Enabled = bFXAAEnabledFlag;
+
+    // Only set params if enabled
+    if (bFXAAEnabledFlag)
+    {
+        // Default values from NVIDIA FXAA 3.11
+        info.FXAASpanMax = 8.0f;
+        info.FXAAReduceMul = 1.0f / 8.0f;
+        info.FXAAReduceMin = 1.0f / 128.0f;
+    }
 
     UpdateFXAAConstantBuffers(info);
 }

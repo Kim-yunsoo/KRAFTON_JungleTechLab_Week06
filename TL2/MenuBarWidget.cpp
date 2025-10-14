@@ -2,6 +2,9 @@
 #include "MenuBarWidget.h"
 #include "SMultiViewportWindow.h"
 #include "ImGui/imgui.h"
+#include "UI/UIManager.h"
+#include "World.h"
+#include "Renderer.h"
 
 // 필요하다면 외부 free 함수 사용 가능 (동일 TU가 아닐 경우 extern 선언이 필요)
 // extern void LoadSplitterConfig(SSplitter* RootSplitter);
@@ -122,6 +125,92 @@ void UMenuBarWidget::RenderWidget()
         ImGui::EndMenu();
     }
 
+    // ===== AA (Anti-Aliasing) =====
+    // ===== AA (Anti-Aliasing) =====
+    if (ImGui::BeginMenu("AA"))
+    {
+        // Acquire renderer from current world
+        URenderer* Renderer = nullptr;
+        if (UWorld* World = UUIManager::GetInstance().GetWorld())
+        {
+            Renderer = World->GetRenderer();
+        }
+
+        if (!Renderer)
+        {
+            ImGui::TextDisabled("Renderer unavailable");
+            ImGui::EndMenu();
+            return;
+        }
+
+        // --- FXAA On/Off ---
+        bool fxaaEnabled = Renderer->IsFXAAEnabled();
+        const char* modeLabel = fxaaEnabled ? "FXAA" : "Off";
+        if (ImGui::BeginCombo("Mode", modeLabel))
+        {
+            const bool selOff = !fxaaEnabled;
+            const bool selFxaa = fxaaEnabled;
+
+            if (ImGui::Selectable("Off", selOff))
+            {
+                Renderer->SetFXAAEnabled(false);
+                fxaaEnabled = false;
+            }
+            if (ImGui::Selectable("FXAA", selFxaa))
+            {
+                Renderer->SetFXAAEnabled(true);
+                fxaaEnabled = true;
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::Separator();
+        ImGui::Text("Options");
+
+        // Checkbox toggle (동일 기능, 즉각 토글)
+        bool fxaaBox = fxaaEnabled;
+        if (ImGui::Checkbox("FXAA", &fxaaBox))
+        {
+            Renderer->SetFXAAEnabled(fxaaBox);
+            fxaaEnabled = fxaaBox;
+        }
+
+        // --- FXAA 파라미터 ---
+        if (ImGui::CollapsingHeader("FXAA Params"))
+        {
+            // Defaults from NVIDIA FXAA 3.11
+            static float fxaa_SpanMax = 8.0f;
+            static float fxaa_ReduceMul = 1.0f / 8.0f;
+            static float fxaa_ReduceMin = 1.0f / 128.0f;
+
+            if (fxaaEnabled)
+            {
+                bool changed = false;
+                changed |= ImGui::SliderFloat("Span Max", &fxaa_SpanMax, 1.0f, 16.0f, "%.1f");
+                changed |= ImGui::SliderFloat("Reduce Mul", &fxaa_ReduceMul, 1.0f / 32.0f, 1.0f / 4.0f, "%.4f");
+                changed |= ImGui::SliderFloat("Reduce Min", &fxaa_ReduceMin, 1.0f / 256.0f, 1.0f / 64.0f, "%.5f");
+
+                if (ImGui::Button("Reset FXAA"))
+                {
+                    fxaa_SpanMax = 8.0f;
+                    fxaa_ReduceMul = 1.0f / 8.0f;
+                    fxaa_ReduceMin = 1.0f / 128.0f;
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    Renderer->SetFXAAParams(fxaa_SpanMax, fxaa_ReduceMul, fxaa_ReduceMin);
+                }
+            }
+            else
+            {
+                ImGui::TextDisabled("FXAA disabled");
+            }
+        }
+
+        ImGui::EndMenu();
+    }
     // ===== Help =====
     if (ImGui::BeginMenu("Help"))
     {

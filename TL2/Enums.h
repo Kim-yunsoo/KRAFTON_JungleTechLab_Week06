@@ -456,11 +456,13 @@ const int MAX_LIGHT_COUNT = 8;
 
 struct FXAAInfo
 {
-    float RCPFrame[2];
-    float SubPix;
-    float EdgeThreshhold;
-    float EdgeThreshholdMin;
-    float Padding[3]; // pad to 32 bytes (D3D11 constant buffer requirement)
+    float InvResolution[2];
+    float FXAASpanMax;
+    float FXAAReduceMul;
+    // --- 16 byte boundary ---
+    float FXAAReduceMin;
+    int   Enabled;
+    float Padding[2];
 };
 
 static_assert(sizeof(FXAAInfo) % 16 == 0, "FXAAInfo must be 16-byte aligned");

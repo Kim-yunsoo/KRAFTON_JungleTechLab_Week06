@@ -4,6 +4,7 @@
 #include "../../SViewportWindow.h"
 #include "../../FViewport.h"
 #include "../UIManager.h"
+#include "../../Renderer.h"
 
 UShowFlagWidget::UShowFlagWidget()
 {
@@ -92,7 +93,6 @@ void UShowFlagWidget::RenderWidget()
                 RenderDebugSection(Viewport);
                 ImGui::Separator();
 
-                RenderLightingSection(Viewport);
             }
         }
         ImGui::EndChild();
@@ -289,3 +289,4 @@ void UShowFlagWidget::RenderControlButtons(FViewport* Viewport)
         Viewport->SetShowFlags(EEngineShowFlags::SF_DefaultEnabled);
     }
 }
+

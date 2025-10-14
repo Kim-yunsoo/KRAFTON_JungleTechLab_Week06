@@ -9,6 +9,7 @@ class UMeshComponent;
 class URHIDevice;
 class UShader;
 class UStaticMesh;
+class D3D11RHI;
 struct FMaterialSlot;
 
 class URenderer
@@ -77,6 +78,16 @@ public:
     void UpdateLightBuffer();
     void UpdateLightBuffer(const TArray<FLightInfo>& InLights);
      
+    // Anti-aliasing toggles
+    void SetFXAAEnabled(bool bEnabled);
+    void SetFXAAParams(float SpanMax, float ReduceMul, float ReduceMin);
+
+    bool IsFXAAEnabled() const { return bFXAAEnabled; }
+
+    int GetFXAAQuality() { return FXAAVersion; }
+    void SetFXAAQuality(int Version) { FXAAVersion = Version; }
+
+    void PostProcessing();
 
 private:
     URHIDevice* RHIDevice;
@@ -109,5 +120,7 @@ private:
 
     // Post-process FXAA shader
     UShader* FXAAShader = nullptr;
+    bool bFXAAEnabled = true;
+    int FXAAVersion = 1; 
 };
 

@@ -1,0 +1,578 @@
+// FXAA parameters and integration flags
+// Default to PC quality preset; adjust if targeting consoles.
+#ifndef FXAA_QUALITY__PRESET
+#define FXAA_QUALITY__PRESET 12  // 10~12 are common on PC (higher = better)
+#endif
+
+#ifndef FXAA_CONSOLE__
+#define FXAA_CONSOLE__ 0
+#endif
+
+// If you want to derive luma from green channel or alpha, set here later.
+#ifndef FXAA_GREEN_AS_LUMA
+#define FXAA_GREEN_AS_LUMA 0
+#endif
+
+cbuffer FXAAConstantBuffer : register(b0)
+{
+    float2 rcpFrame;                 // 1/width, 1/height
+    float  FXAASubPix;               // e.g., 0.75
+    float  FXAA_Edge_Threshhold;     // e.g., 0.125
+    float  FXAA_Edge_Threshhold_Min; // e.g., 0.0312
+};
+
+Texture2D ColorLdr : register(t0);
+SamplerState LinearClamp : register(s0);
+
+// Optional viewport input: x=StartX, y=StartY, z=SizeX, w=SizeY (pixels)
+cbuffer FXAAViewportCB : register(b6)
+{
+    float4 ViewportRect;
+}
+
+struct VS_OUT
+{
+    float4 pos : SV_Position;
+    float2 uv : TEXCOORD0;
+};
+
+VS_OUT VS_FullScreen(uint id: SV_VertexID)
+{
+    // Fullscreen triangle using SV_VertexID (no vertex buffer needed)
+    float2 verts[3] = {
+        float2(-1.0, -1.0),
+        float2(-1.0,  3.0),
+        float2( 3.0, -1.0)
+    };
+
+    float2 pos = verts[id];
+    VS_OUT output;
+    output.pos = float4(pos, 0.0f, 1.0f);
+    output.uv = 0.5f * float2(pos.x, -pos.y) + 0.5f; 
+    return output; 
+}
+
+// Step 2) Luma computation helper
+float ComputeLuma(float3 rgb)
+{ 
+    return dot(rgb, float3(0.299, 0.587, 0.114));
+}
+
+/*
+    // Compute UV from pixel position to avoid mismatch when viewport != texture size
+    float2 viewportLocalPos = input.pos.xy - ViewportRect.xy;
+    float2 viewportUV = viewportLocalPos / max(ViewportRect.zw, float2(1e-6, 1e-6));
+    float2 uv = (ViewportRect.xy + viewportUV * ViewportRect.zw) * rcpFrame;
+*/
+
+float4 PS_FXAA(VS_OUT input) : SV_Target
+{
+    // Use UV generated in VS for fullscreen triangle
+    //float2 uv = input.uv;
+    float2 viewportLocalPos = input.pos.xy - ViewportRect.xy;
+    float2 viewportUV = viewportLocalPos / max(ViewportRect.zw, float2(1e-6, 1e-6));
+    float2 uv = (ViewportRect.xy + viewportUV * ViewportRect.zw) * rcpFrame;
+    // Early bypass if disabled via negative SubPix (CPU toggle)
+    float3 colorBypass = ColorLdr.Sample(LinearClamp, uv).rgb;
+    if (FXAASubPix < 0.0)
+    {
+        return float4(colorBypass, 1.0f);
+    }
+
+    // Center sample
+    float3 colorCenter = ColorLdr.Sample(LinearClamp, uv).rgb;
+    float centerLuma = ComputeLuma(colorCenter);
+
+    // Neighbor offsets (correct axis directions)
+    float2 LeftOffset = float2(-rcpFrame.x, 0.0);
+    float2 RightOffset = float2(rcpFrame.x, 0.0);
+    float2 DownOffset = float2(0.0, rcpFrame.y);
+    float2 UpOffset = float2(0.0, -rcpFrame.y);
+
+    // ?????ÑÏïÑ???ΩÏ???luma Í∞íÏùÑ Íµ¨Ìïú??
+    float leftLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + LeftOffset).rgb);
+    float rightLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + RightOffset).rgb);
+    float downLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + DownOffset).rgb);
+    float upLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + UpOffset).rgb);
+     
+    // ?ÄÍ∞??ΩÏ???luma Í∞íÏùÑ Íµ¨Ìïú??
+    float leftDownLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + LeftOffset + DownOffset).rgb);
+    float leftUpLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + LeftOffset + UpOffset).rgb);
+    float rightDownLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + RightOffset + DownOffset).rgb);
+    float rightUpLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + RightOffset + UpOffset).rgb);
+      
+    // Step 1) Early exit test (contrast too low)
+    float minLuma = min(centerLuma, min(min(leftLuma, rightLuma), min(upLuma, downLuma)));
+    float maxLuma = max(centerLuma, max(max(leftLuma, rightLuma), max(upLuma, downLuma)));
+    float localContrast = maxLuma - minLuma;
+    
+    float threshold = max(FXAA_Edge_Threshhold_Min, FXAA_Edge_Threshhold * maxLuma);
+    if (localContrast < threshold)
+    {
+        return float4(colorCenter, 1.0f);
+    }
+    
+    // Step 2) Prepare combined luma values for gradient computation
+    float upDownLuma = upLuma + downLuma;
+    float leftRightLuma = leftLuma + rightLuma;
+    
+    float leftCornerLuma = leftDownLuma + leftUpLuma;
+    float downCornerLuma = leftDownLuma + rightDownLuma;
+    float rightCornerLuma = rightDownLuma + rightUpLuma;
+    float upCornerLuma = leftUpLuma + rightUpLuma;
+    
+    // Step 3) Edge direction estimation
+    float horiEdge = abs(-2.0f * leftLuma + leftCornerLuma) +
+                     abs(-2.0 * centerLuma + upDownLuma) * 2.0f +
+                     abs(-2.0f * rightLuma + rightCornerLuma);
+    float vertiEdge = abs(-2.0f * upLuma + upCornerLuma) +
+                      abs(-2.0f * centerLuma + leftRightLuma) * 2.0f +
+                      abs(-2.0f * downLuma + downCornerLuma);
+    bool isHorizontal = (horiEdge >= vertiEdge);
+
+    // Step 4) Choose edge orientation
+    float luma1 = isHorizontal ? downLuma : leftLuma;
+    float luma2 = isHorizontal ? upLuma : rightLuma;
+    
+    float gradient1 = luma1 - centerLuma;
+    float gradient2 = luma2 - centerLuma;
+    
+    bool is1Steepest = abs(gradient1) >= abs(gradient2);
+
+    // Scaled gradient threshold
+    const float CROSS_T = 0.25;
+    float scaledGradient = CROSS_T * max(abs(gradient1), abs(gradient2));
+    
+    // Step size for iteration
+    float stepLength = isHorizontal ? rcpFrame.y : rcpFrame.x;
+    
+    // Local average luma
+    float lumaLocalAverage = 0.0f;
+    if (is1Steepest)
+    {
+        stepLength = -stepLength;
+        lumaLocalAverage = 0.5f * (luma1 + centerLuma);
+    }
+    else
+    {
+        lumaLocalAverage = 0.5f * (luma2 + centerLuma);
+    }
+
+    // Shift UV by half pixel in the determined direction
+    float2 currentUv = uv;
+    if (isHorizontal)
+    {
+        currentUv.y += stepLength * 0.5;
+    }
+    else
+    {
+        currentUv.x += stepLength * 0.5;
+    }
+
+    // Step 5) Edge endpoint search
+    const int ITERATIONS = 12;
+    const float QUALITY[10] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.5, 2.0, 2.0, 2.0, 2.0 };
+
+    // Exploration offset direction (perpendicular to edge)
+    float2 offset = isHorizontal ? float2(rcpFrame.x, 0.0) : float2(0.0, rcpFrame.y);
+
+    // Initial exploration positions
+    float2 uv1 = currentUv - offset;
+    float2 uv2 = currentUv + offset;
+
+    // Read lumas at exploration points
+    float lumaEnd1 = ComputeLuma(ColorLdr.Sample(LinearClamp, uv1).rgb);
+    float lumaEnd2 = ComputeLuma(ColorLdr.Sample(LinearClamp, uv2).rgb);
+    lumaEnd1 -= lumaLocalAverage;
+    lumaEnd2 -= lumaLocalAverage;
+
+    // Check if edge end reached
+    bool reached1 = abs(lumaEnd1) >= scaledGradient;
+    bool reached2 = abs(lumaEnd2) >= scaledGradient;
+
+    // Continue exploring if not reached
+    if (!reached1)
+    {
+        uv1 -= offset;
+    }
+    if (!reached2)
+    {
+        uv2 += offset;
+    }
+
+    bool reachedBoth = reached1 && reached2;
+
+    // Step 6) Iterative search
+    if (!reachedBoth)
+    {
+        [unroll]
+        for (int i = 2; i < ITERATIONS; ++i)
+        {
+            if (!reached1)
+            {
+                lumaEnd1 = ComputeLuma(ColorLdr.Sample(LinearClamp, uv1).rgb);
+                lumaEnd1 -= lumaLocalAverage;
+                reached1 = abs(lumaEnd1) >= scaledGradient;
+            }
+            if (!reached2)
+            {
+                lumaEnd2 = ComputeLuma(ColorLdr.Sample(LinearClamp, uv2).rgb);
+                lumaEnd2 -= lumaLocalAverage;
+                reached2 = abs(lumaEnd2) >= scaledGradient;
+            }
+
+            reachedBoth = reached1 && reached2;
+
+            if (reachedBoth)
+                break;
+
+            if (!reached1)
+            {
+                uv1 -= offset * QUALITY[i - 2];
+            }
+            if (!reached2)
+            {
+                uv2 += offset * QUALITY[i - 2];
+            }
+        }
+    }
+
+    // Step 7) Estimate pixel offset
+    float distance1 = isHorizontal ? (currentUv.x - uv1.x) : (currentUv.y - uv1.y);
+    float distance2 = isHorizontal ? (uv2.x - currentUv.x) : (uv2.y - currentUv.y);
+
+    bool isDirection1Closer = distance1 < distance2;
+    float distanceFinal = min(distance1, distance2);
+
+    float edgeThickness = distance1 + distance2;
+    float pixelOffset = -distanceFinal / max(edgeThickness, 1e-5) + 0.5;
+
+    // Step 8) Luma coherency check
+    bool isLumaCenterSmaller = centerLuma < lumaLocalAverage;
+    float closerLumaEnd = isDirection1Closer ? lumaEnd1 : lumaEnd2;
+    bool correctVariation = (closerLumaEnd < 0.0) != isLumaCenterSmaller;
+
+    float finalOffsetMagnitude = correctVariation ? pixelOffset : 0.0;
+
+    // Step 9) Subpixel antialiasing
+    float lumaAverage = (1.0 / 12.0) * (2.0 * (upDownLuma + leftRightLuma) +
+                                         leftCornerLuma + rightCornerLuma);
+    float subPixelOffset1 = saturate(abs(lumaAverage - centerLuma) / localContrast);
+    float subPixelOffset2 = (-2.0 * subPixelOffset1 + 3.0) * subPixelOffset1 * subPixelOffset1;
+    float subPixelOffsetFinal = subPixelOffset2 * subPixelOffset2 * FXAASubPix;
+
+    // Use maximum of edge offset and subpixel offset
+    finalOffsetMagnitude = max(finalOffsetMagnitude, subPixelOffsetFinal);
+
+    // Step 10) Compute final UV and sample
+    float2 finalUv = currentUv;
+    if (isHorizontal)
+    {
+        finalUv.y += (isDirection1Closer ? -finalOffsetMagnitude : finalOffsetMagnitude) * stepLength;
+    }
+    else
+    {
+        finalUv.x += (isDirection1Closer ? -finalOffsetMagnitude : finalOffsetMagnitude) * stepLength;
+    }
+
+    float3 finalColor = ColorLdr.Sample(LinearClamp, finalUv).rgb;
+
+    // Compute blend amount from subpixel variability and edge strength
+    float lumaAvg3x3 = (centerLuma + upLuma + downLuma + rightLuma + leftLuma + rightUpLuma + leftUpLuma + rightDownLuma + leftDownLuma) / 9.0;
+    float range = localContrast; // maxLuma - minLuma
+    float subpix = saturate(abs(lumaAvg3x3 - centerLuma) / max(range, 1e-6));
+    float subpixBlend = saturate(subpix * FXAASubPix);
+    float edgeBlend = saturate((range - threshold) / max(range, 1e-6));
+    float blendAmt = max(subpixBlend, edgeBlend);
+
+    float3 result = lerp(colorCenter, finalColor, blendAmt);
+    return float4(result, 1.0f);
+
+}
+//float4 PS_FXAA(VS_OUT input) : SV_Target
+//{
+//    // Use UV generated in VS for fullscreen triangle
+//    float2 uv = input.uv;
+
+//    // Early bypass if disabled via negative SubPix (CPU toggle)
+//    float3 colorBypass = ColorLdr.Sample(LinearClamp, uv).rgb;
+//    if (FXAASubPix < 0.0)
+//    {
+//        return float4(colorBypass, 1.0f);
+//    }
+
+//    // Center sample
+//    float3 colorCenter = ColorLdr.Sample(LinearClamp, uv).rgb;
+//    float centerLuma= ComputeLuma(colorCenter);
+
+//    // Neighbor offsets (correct axis directions)
+//    // Left/Right move along X, Up/Down move along Y in texture space
+//    float2 LeftOffset  = float2(-rcpFrame.x, 0.0);
+//    float2 RightOffset = float2( rcpFrame.x, 0.0);
+//    float2 DownOffset  = float2(0.0,  rcpFrame.y);
+//    float2 UpOffset    = float2(0.0, -rcpFrame.y);
+
+//    // ?????ÑÏïÑ???ΩÏ???luma Í∞íÏùÑ Íµ¨Ìïú??
+//    float leftLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + LeftOffset).rgb);
+//    float rightLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + RightOffset).rgb);
+//    float downLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + DownOffset).rgb);
+//    float upLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + UpOffset).rgb);
+     
+//    // ?ÄÍ∞??ΩÏ???luma Í∞íÏùÑ Íµ¨Ìïú??
+//    float leftDownLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + LeftOffset + DownOffset).rgb);
+//    float leftUpLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + LeftOffset + UpOffset).rgb);
+//    float rightDownLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + RightOffset + DownOffset).rgb);
+//    float rightUpLuma = ComputeLuma(ColorLdr.Sample(LinearClamp, uv + RightOffset + UpOffset).rgb);
+      
+//    float minLuma = min(centerLuma, min(min(leftLuma, rightLuma), min(upLuma, downLuma)));
+//    //lumaMin = min(lumaMin, min(min(leftDownLuma, leftUpLuma), min(rightDownLuma, rightUpLuma)));
+    
+//    float maxLuma = max(centerLuma, max(max(leftLuma, rightLuma), max(upLuma, downLuma)));
+//    //lumaMax = max(lumaMax, max(max(leftDownLuma, leftUpLuma), max(rightDownLuma, rightUpLuma)));
+
+//    float localContrast = abs(minLuma - maxLuma);
+//    float threshold = max(FXAA_Edge_Threshhold_Min, FXAA_Edge_Threshhold * maxLuma);
+//    if (localContrast < threshold)
+//    {
+//        return float4(colorCenter, 1.0f);
+//    }
+//    float upDownLuma = upLuma + downLuma;
+//    float leftRightLuma = leftLuma + rightLuma;
+    
+//    float leftConerLuma = leftDownLuma + leftUpLuma;
+//    float downCornerLuma = leftDownLuma + rightDownLuma;
+//    float rightConerLuma = rightDownLuma + rightUpLuma;
+//    float upCornerLuma = leftUpLuma + rightUpLuma;
+    
+//    // Step 4) Edge direction estimation
+//    float horiEdge = abs(-2.0f * leftLuma + leftConerLuma) + abs(-2.0 * centerLuma + upDownLuma) * 2.0f + abs(-2.0f * rightLuma + rightConerLuma);
+//    float vertiEdge = abs(-2.0f * upLuma + upCornerLuma) + abs(-2.0f * centerLuma + leftRightLuma) + abs(-2.0f * downLuma + downCornerLuma);
+//    bool isHorizontal = (horiEdge >= vertiEdge); // stronger vertical gradient -> horizontal edge
+
+//     // Step 5) End-point search a long edge normal (simplified search)
+//    // Choosing edge orientation
+//    //float2 dir = isHorizontal ? float2(0.0, 1.0) : float2(1.0, 0.0);
+//    //float2 step = dir * float2(rcpFrame.x, rcpFrame.y);
+
+//    // Threshold to detect exiting the edge (fraction of local range)
+//    //float edgeT = CROSS_T * localContrast;
+//    float luma1 = isHorizontal ? downLuma : leftLuma;
+//    float luma2 = isHorizontal ? upLuma : rightLuma;
+    
+//    float gradient1 = luma1 - centerLuma;
+//    float gradient2 = luma2 - centerLuma;
+    
+//    bool is1Steepest = abs(gradient1) >= abs(gradient2);
+
+//    const float CROSS_T = 0.25;
+//    float scaledGradient = CROSS_T * max(abs(gradient1), abs(gradient2));
+//    float step  = isHorizontal ? rcpFrame.x : rcpFrame.y;  
+//    float lumaLocalAverage = 0.0f;
+    
+//    if(is1Steepest)
+//    {
+//        step = -step;
+//        lumaLocalAverage = 0.5f * (luma1 + centerLuma);
+//    }
+//    else
+//    {
+//        lumaLocalAverage = 0.5f * (luma2 + centerLuma);
+//    }
+// // Search in both directions with limited steps
+//    //const int SEARCH_STEPS = 8;
+//    //float distNeg = 0.0;
+//    //float distPos = 0.0;
+//    //bool foundNeg = false;
+//    //bool foundPos = false;
+
+//    //[unroll]
+//    //for (int i = 1; i <= SEARCH_STEPS; ++i)
+//    //{
+//    //    float2 uvNeg = uv - step * i;
+//    //    float2 uvPos = uv + step * i;
+//    //    float lNeg = ComputeLuma(ColorLdr.Sample(LinearClamp, uvNeg).rgb);
+//    //    float lPos = ComputeLuma(ColorLdr.Sample(LinearClamp, uvPos).rgb);
+
+//    //    float endLuma1 = lNeg = lumaLocalAverage;
+//    //    float endLuma2 = lPos = lumaLocalAverage;
+        
+//    //    if (!foundNeg && abs(lNeg - centerLuma)> edgeT) { distNeg = i; foundNeg = true; }
+//    //    if (!foundPos && abs(lPos - centerLuma) > edgeT) { distPos = i; foundPos = true; }
+
+//    //    if (foundNeg && foundPos) break;
+//    //}
+
+//    //// Compute signed offset toward the closer end
+//    //float signedOffset = 0.0;
+//    //if (foundNeg || foundPos)
+//    //{
+//    //    if (foundNeg && foundPos)
+//    //    {
+//    //        signedOffset = (distPos < distNeg ? +1.0 : -1.0) * (abs(distPos - distNeg) / max(distPos + distNeg, 1.0));
+//    //    }
+//    //    else if (foundPos)
+//    //    {
+//    //        signedOffset = +0.5;
+//    //    }
+//    //    else // foundNeg
+//    //    {
+//    //        signedOffset = -0.5;
+//    //    }
+//    //}
+
+//    //float2 blendUV = uv + step * signedOffset;
+//    //float3 colorEdge = ColorLdr.Sample(LinearClamp, blendUV).rgb;
+
+    
+//    const int ITERATIONS = 12;
+//// ?àÏßà(QUALITY) ?®Í≥Ñ??Î∞òÎ≥µ 5???¥ÌõÑÎ∂Ä???§ÌÖù ?¨Í∏∞Î•??òÎ†§ ?êÏÉâ ?çÎèÑÎ•??íÏûÖ?àÎã§.
+//// i=2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+//    const float QUALITY[11] = { 1.0, 1.0, 1.0, 1.5, 2.0, 2.0, 2.0, 2.0, 4.0, 8.0 };
+
+
+//// 1. Ï≤?Î≤àÏß∏ ?êÏÉâ (First iteration exploration)
+//// ----------------------------------------------------------------
+
+//// ?£Ï? Î∞©Ìñ•???òÏßÅ???êÏÉâ Î∞©Ìñ• ?§ÌîÑ?ãÏùÑ Í≥ÑÏÇ∞?©Îãà??
+//   // float2 offset = isHorizontal ? float2(rcpFrame.x, 0.0) : float2(0.0, rcpFrame.y);
+//    float2 offset = isHorizontal ? float2(0.0, rcpFrame.y) : float2(rcpFrame.x, 0.0);
+
+//// ?£Ï? ?ëÏ™Ω?ºÎ°ú ?êÏÉâ??Ï¥àÍ∏∞ UV Ï¢åÌëúÎ•??§Ï†ï?©Îãà??
+//    float2 uv1 = uv - offset; // Î∞©Ìñ• 1 (?§Í±∞?∞Î∏å Î∞©Ìñ•)
+//    float2 uv2 = uv + offset; // Î∞©Ìñ• 2 (?¨Ï??∞Î∏å Î∞©Ìñ•)
+
+//// ???ùÏùò ?òÎèÑÎ•??ΩÍ≥†, ÏßÄ???âÍ∑† ?òÎèÑ?Ä??Ï∞®Ïù¥Î•?Í≥ÑÏÇ∞?©Îãà??
+//    float lumaEnd1 = ComputeLuma(ColorLdr.Sample(LinearClamp, uv1).rgb);
+//    float lumaEnd2 = ComputeLuma(ColorLdr.Sample(LinearClamp, uv2).rgb);
+//    lumaEnd1 -= lumaLocalAverage;
+//    lumaEnd2 -= lumaLocalAverage;
+
+//// ?òÎèÑ Î≥Ä?îÎüâ???ÑÍ≥ÑÍ∞íÎ≥¥???¨Î©¥ ?£Ï????ùÏóê ?ÑÎã¨??Í≤ÉÏúºÎ°?Í∞ÑÏ£º?©Îãà??
+//    bool reached1 = abs(lumaEnd1) >= scaledGradient;
+//    bool reached2 = abs(lumaEnd2) >= scaledGradient;
+
+//// ?ÑÏßÅ ?£Ï? ?ùÏóê ?ÑÎã¨?òÏ? Î™ªÌñà?§Î©¥, ?¥Îãπ Î∞©Ìñ•?ºÎ°ú UVÎ•????ΩÏ? ???¥Îèô?úÌÇµ?àÎã§.
+//    if (!reached1)
+//    {
+//        uv1 -= offset;
+//    }
+//    if (!reached2)
+//    {
+//        uv2 += offset;
+//    }
+
+//    bool reachedBoth = reached1 && reached2;
+
+
+//// 2. Î∞òÎ≥µ ?êÏÉâ (Iterating)
+//// ----------------------------------------------------------------
+
+//    if (!reachedBoth)
+//    {
+//    [unroll]
+//        for (int i = 2; i < ITERATIONS; ++i)
+//        {
+//        // ?ÑÏßÅ ?ÑÎã¨?òÏ? ?äÏ? Î∞©Ìñ•???Ä?¥ÏÑúÎß??òÎèÑÎ•??òÌîåÎßÅÌïòÍ≥??∏Ì?Î•?Í≥ÑÏÇ∞?©Îãà??
+//            if (!reached1)
+//            {
+//                lumaEnd1 = ComputeLuma(ColorLdr.Sample(LinearClamp, uv1).rgb);
+//                lumaEnd1 -= lumaLocalAverage;
+//                reached1 = abs(lumaEnd1) >= scaledGradient;
+//            }
+//            if (!reached2)
+//            {
+//                lumaEnd2 = ComputeLuma(ColorLdr.Sample(LinearClamp, uv2).rgb);
+//                lumaEnd2 -= lumaLocalAverage;
+//                reached2 = abs(lumaEnd2) >= scaledGradient;
+//            }
+
+//            reachedBoth = reached1 && reached2;
+
+//        // ?ëÏ™Ω Î™®Îëê ?ÑÎã¨?àÎã§Î©??êÏÉâ??Ï§ëÎã®?©Îãà??
+//            if (reachedBoth)
+//                break;
+
+//        // ?ÑÎã¨?òÏ? ?äÏ? Î∞©Ìñ•?Ä Í∞ÄÎ≥Ä?ÅÏù∏ ?§ÌÖù(QUALITY)?ºÎ°ú ???êÏÉâ?©Îãà??
+//            if (!reached1)
+//            {
+//                uv1 -= offset * QUALITY[i - 2];
+//            } // Î∞∞Ïó¥ ?∏Îç±?§Îäî 0Î∂Ä???úÏûë
+//            if (!reached2)
+//            {
+//                uv2 += offset * QUALITY[i - 2];
+//            }
+//        }
+//    }
+
+
+//// 3. ?§ÌîÑ??Ï∂îÏ†ï (Estimating offset)
+//// ----------------------------------------------------------------
+
+//// Í∞??£Ï? ?ùÍπåÏßÄ??Í±∞Î¶¨Î•?Í≥ÑÏÇ∞?©Îãà??
+//    float distance1 = isHorizontal ? (uv.x - uv1.x) : (uv.y - uv1.y);
+//    float distance2 = isHorizontal ? (uv2.x - uv.x) : (uv2.y - uv.y);
+
+//// ?¥Îäê Î∞©Ìñ•???£Ï? ?ùÏù¥ ??Í∞ÄÍπåÏö¥ÏßÄ ?ïÏù∏?©Îãà??
+//    bool isDirection1Closer = distance1 < distance2;
+//    float distanceFinal = min(distance1, distance2);
+
+//// ?£Ï???Ï¥??êÍªòÎ•?Í≥ÑÏÇ∞?©Îãà??
+//    float edgeThickness = distance1 + distance2;
+
+//// UV ?§ÌîÑ?ãÏùÑ Í≥ÑÏÇ∞?©Îãà?? ??Í∞íÏ? ?ΩÏ????£Ï? Ï§ëÏã¨??Í∞ÄÍπåÏö∏?òÎ°ù 0??Í∞ÄÍπùÍ≥†,
+//// ?£Ï? ?ùÏóê Í∞ÄÍπåÏö∏?òÎ°ù 0.5??Í∞ÄÍπåÏõåÏßëÎãà??
+//    float pixelOffset = -distanceFinal / max(edgeThickness, 1e-5) + 0.5;
+
+
+//// 4. ?òÎèÑ ?ºÍ???Í≤Ä??(Coherency check)
+//// ----------------------------------------------------------------
+
+//// ?ÑÏû¨ ?ΩÏ????òÎèÑÍ∞Ä ÏßÄ???âÍ∑†Î≥¥Îã§ ?ëÏ?ÏßÄ ?ïÏù∏?©Îãà??
+//    bool isLumaCenterSmaller = centerLuma < lumaLocalAverage;
+
+//// Í∞ÄÍπåÏö¥ Ï™??£Ï? ?ùÏóê?úÏùò ?òÎèÑ Î≥Ä?îÍ? ?ÑÏû¨ ?ΩÏ???Î≥Ä??Î∞©Ìñ•Í≥??ºÏπò?òÎäîÏßÄ ?ïÏù∏?©Îãà??
+//// ?? Ï§ëÏïô ?ΩÏ????¥Îë°?§Î©¥(isLumaCenterSmaller=true), ?£Ï? ?ùÏ? Î∞ùÏïÑ???©Îãà??lumaEnd > 0).
+//    float closerLumaEnd = isDirection1Closer ? lumaEnd1 : lumaEnd2;
+//    bool correctVariation = (closerLumaEnd < 0.0) != isLumaCenterSmaller;
+
+//// Î≥Ä??Î∞©Ìñ•???ºÏπò??Í≤ΩÏö∞?êÎßå Í≥ÑÏÇ∞???§ÌîÑ?ãÏùÑ ?ÅÏö©?©Îãà??
+//    float finalOffsetMagnitude = correctVariation ? pixelOffset : 0.0;
+
+
+//// 5. ÏµúÏ¢Ö Î∏îÎ†å??UV Í≥ÑÏÇ∞ (Subpixel antialiasing)
+//// ----------------------------------------------------------------
+
+//// Í∞ÄÍπåÏö¥ ?£Ï? Î∞©Ìñ•?ºÎ°ú ÏµúÏ¢Ö ?§ÌîÑ?ãÏùÑ ?ÅÏö©?©Îãà??
+//    float signedOffset = isDirection1Closer ? -finalOffsetMagnitude : finalOffsetMagnitude;
+//    float2 blendUV = uv + offset * signedOffset;
+//    float3 colorEdge = ColorLdr.Sample(LinearClamp, blendUV).rgb;
+//    return float4(colorEdge, 1.0f);
+    
+//   //// =====================================================================================
+//   //// Step 6) Subpixel aliasing mitigation (3x3 variability based)
+//   //// =====================================================================================
+//   //float lumaAvg3x3 = (lumaM + lumaN + lumaS + lumaE + lumaW + lumaNE + lumaNW + lumaSE + lumaSW) / 9.0;
+//   //float subpix = saturate(abs(lumaAvg3x3 - lumaM) / max(range, 1e-6));
+//   //float subpixBlend = saturate(subpix * FXAASubPix);
+//   //
+//   //// Edge strength factor: stronger range vs threshold -> stronger blend
+//   //float edgeBlend = saturate((range - threshold) / max(range, 1e-6));
+//   //
+//   //// Use the stronger of the two
+//   //float blendAmt = max(subpixBlend, edgeBlend);
+//   //
+//   //float3 result = lerp(colorCenter, colorEdge, blendAmt);
+//   //return float4(result, 1.0f);
+//}
+
+// Entry point aliases for engine's shader loader
+VS_OUT mainVS(uint id : SV_VertexID)
+{
+    return VS_FullScreen(id);
+}
+
+float4 mainPS(VS_OUT input) : SV_Target
+{
+    return PS_FXAA(input);
+}
+
