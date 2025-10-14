@@ -137,9 +137,14 @@ void URenderer::UpdateViewportBuffer(float StartX, float StartY, float SizeX, fl
     static_cast<D3D11RHI*>(RHIDevice)->UpdateViewportConstantBuffer(StartX, StartY, SizeX, SizeY);
 }
 
-void URenderer::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane)
+void URenderer::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
 {
-    static_cast<D3D11RHI*>(RHIDevice)->UpdateDepthVisualizationBuffer(NearPlane, FarPlane);
+    static_cast<D3D11RHI*>(RHIDevice)->UpdateDepthVisualizationBuffer(
+        NearPlane, FarPlane,
+        ViewportX, ViewportY,
+        ViewportWidth, ViewportHeight,
+        ScreenWidth, ScreenHeight
+    );
 }
 
 void URenderer::UpdateUVScroll(const FVector2D& Speed, float TimeSec)

@@ -5,7 +5,7 @@
 //------------------------------------------------------
 // Resources
 //------------------------------------------------------
-Texture2D g_DepthTexture : register(t0); // Depth buffer SRV
+Texture2D g_DepthTexture : register(t0); // Depth buffer SRV (전체 화면)
 SamplerState g_Sampler : register(s0); // 텍스처 샘플러
 
 //------------------------------------------------------
@@ -15,7 +15,9 @@ cbuffer DepthVisualizationBuffer : register(b6)
 {
     float g_NearPlane; // 카메라 Near plane
     float g_FarPlane; // 카메라 Far plane
-    float2 g_Padding;
+    float2 g_ViewportPos; // Viewport 시작 위치 (픽셀 단위)
+    float2 g_ViewportSize; // Viewport 크기 (픽셀 단위)
+    float2 g_ScreenSize; // 전체 화면 크기 (픽셀 단위)
 }
 
 //------------------------------------------------------
@@ -25,7 +27,7 @@ cbuffer DepthVisualizationBuffer : register(b6)
 struct PS_INPUT
 {
     float4 position : SV_POSITION; // 클립 공간 좌표
-    float2 texCoord : TEXCOORD0; // UV 좌표
+    float2 texCoord : TEXCOORD0; // UV 좌표 [0,1] (Viewport 내 상대 좌표)
 };
 
 /**
@@ -70,15 +72,32 @@ float LinearizeDepth(float depthNDC)
 }
 
 /**
- * Pixel Shader: Depth 값을 선형화하여 그레이스케일로 시각화
+ * Pixel Shader: Viewport 영역의 Depth만 샘플링하여 시각화
  * 가까운 객체(0.0) = 검은색, 먼 객체(1.0) = 흰색
  */
 float4 mainPS(PS_INPUT input) : SV_TARGET
 {
-    // Depth 텍스처에서 NDC 깊이 값 샘플링 (비선형)
-    float depthNDC = g_DepthTexture.Sample(g_Sampler, input.texCoord).r;
+    // ============================================================
+    // 1. Viewport 내 상대 UV [0,1]을 전체 화면 UV로 변환
+    // ============================================================
     
-    // NDC depth를 선형 depth로 변환
+    // Viewport의 시작 위치를 [0,1] 범위로 정규화
+    float2 viewportStartNormalized = g_ViewportPos / g_ScreenSize;
+    
+    // Viewport의 크기를 [0,1] 범위로 정규화
+    float2 viewportSizeNormalized = g_ViewportSize / g_ScreenSize;
+    
+    // Viewport 내 상대 좌표 [0,1]을 전체 화면 좌표로 변환
+    float2 screenUV = viewportStartNormalized + input.texCoord * viewportSizeNormalized;
+    
+    // ============================================================
+    // 2. 전체 화면 Depth Texture에서 샘플링
+    // ============================================================
+    float depthNDC = g_DepthTexture.Sample(g_Sampler, screenUV).r;
+    
+    // ============================================================
+    // 3. NDC depth를 선형 depth로 변환
+    // ============================================================
     float linearDepth = LinearizeDepth(depthNDC);
     
     // 선형 깊이를 그레이스케일로 출력

@@ -143,7 +143,7 @@ public:
 	void InitializeFullscreenQuad();
 
 	// Post-process pass 렌더링
-	void RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix);
+	void RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport);
 
 private:
 	// 싱글톤 매니저 참조

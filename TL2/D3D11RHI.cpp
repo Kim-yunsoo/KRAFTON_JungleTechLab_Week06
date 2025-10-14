@@ -648,7 +648,7 @@ void D3D11RHI::CreateConstantBuffer()
     // b6 : DepthVisualizationBuffer (Scene Depth 시각화용)
     D3D11_BUFFER_DESC depthVisDesc = {};
     depthVisDesc.Usage = D3D11_USAGE_DYNAMIC;
-    depthVisDesc.ByteWidth = sizeof(float) * 4; // NearPlane, FarPlane, padding
+    depthVisDesc.ByteWidth = sizeof(float) * 8; // 8개의 float (32 bytes)
     depthVisDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     depthVisDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     Device->CreateBuffer(&depthVisDesc, nullptr, &DepthVisualizationCB);
@@ -708,7 +708,7 @@ void D3D11RHI::UpdateViewportConstantBuffer(float StartX, float StartY, float Si
     }
 }
 
-void D3D11RHI::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane)
+void D3D11RHI::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
 {
     if (!DepthVisualizationCB) return;
 
@@ -716,14 +716,23 @@ void D3D11RHI::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane)
     {
         float NearPlane;
         float FarPlane;
-        float Padding[2];
+        float ViewportPosX;
+        float ViewportPosY;
+        float ViewportSizeX;
+        float ViewportSizeY;
+        float ScreenSizeX;
+        float ScreenSizeY;
     };
 
     DepthVisualizationBufferType data;
     data.NearPlane = NearPlane;
     data.FarPlane = FarPlane;
-    data.Padding[0] = 0.0f;
-    data.Padding[1] = 0.0f;
+    data.ViewportPosX = ViewportX;
+    data.ViewportPosY = ViewportY;
+    data.ViewportSizeX = ViewportWidth;
+    data.ViewportSizeY = ViewportHeight;
+    data.ScreenSizeX = ScreenWidth;
+    data.ScreenSizeY = ScreenHeight;
 
     D3D11_MAPPED_SUBRESOURCE mapped;
     if (SUCCEEDED(DeviceContext->Map(DepthVisualizationCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))

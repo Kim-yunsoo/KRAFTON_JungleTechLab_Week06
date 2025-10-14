@@ -406,7 +406,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
     // ====================================================================
     if (ViewModeIndex == EViewModeIndex::VMI_SceneDepth)
     {
-        RenderSceneDepthPass(ViewMatrix, ProjectionMatrix);
+        RenderSceneDepthPass(ViewMatrix, ProjectionMatrix, Viewport);
     }
 }
 
@@ -1483,7 +1483,7 @@ void UWorld::InitializeFullscreenQuad()
     }
 }
 
-void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix)
+void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport)
 {
     if (!SceneDepthShader || !Renderer)
     {
@@ -1495,10 +1495,10 @@ void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& Proj
     ID3D11DeviceContext* DeviceContext = D3D11Device->GetDeviceContext();
 
     // ============================================================
-    // 0. 카메라 Near/Far Plane 가져오기
+    // 0. 카메라 Near/Far Plane 및 Viewport 정보 가져오기
     // ============================================================
-    float NearPlane = 0.1f; // 기본값
-    float FarPlane = 1000.0f; // 기본값
+    float NearPlane = 0.1f;
+    float FarPlane = 1000.0f;
 
     if (MainCameraActor && MainCameraActor->GetCameraComponent())
     {
@@ -1507,73 +1507,99 @@ void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& Proj
         FarPlane = CameraComp->GetFarClip();
     }
 
+    // ✅ Viewport 정보 가져오기
+    float ViewportX = 0.0f;
+    float ViewportY = 0.0f;
+    float ViewportWidth = 1920.0f;  // 기본값
+    float ViewportHeight = 1080.0f; // 기본값
+
+    if (Viewport)
+    {
+        ViewportX = static_cast<float>(Viewport->GetStartX());
+        ViewportY = static_cast<float>(Viewport->GetStartY());
+        ViewportWidth = static_cast<float>(Viewport->GetSizeX());
+        ViewportHeight = static_cast<float>(Viewport->GetSizeY());
+    }
+
+    // ✅ 전체 화면 크기 (메인 윈도우 크기)
+    float ScreenWidth = CLIENTWIDTH;   // 외부에서 정의된 전역 변수
+    float ScreenHeight = CLIENTHEIGHT; // 외부에서 정의된 전역 변수
+
     // ============================================================
-    // 1. Depth buffer를 SRV로 읽기 위해 DSV 언바인딩
+    // 1. 현재 Viewport 정보 저장
+    // ============================================================
+    UINT NumViewports = 1;
+    D3D11_VIEWPORT OldViewport;
+    DeviceContext->RSGetViewports(&NumViewports, &OldViewport);
+
+    // ============================================================
+    // 2. Depth buffer를 SRV로 읽기 위해 DSV 언바인딩
     // ============================================================
     ID3D11RenderTargetView* pRTV = nullptr;
     ID3D11DepthStencilView* pDSV = nullptr;
     DeviceContext->OMGetRenderTargets(1, &pRTV, &pDSV);
 
-    // Depth를 nullptr로 언바인딩
     DeviceContext->OMSetRenderTargets(1, &pRTV, nullptr);
 
-    // 참조 카운트 감소
     if (pRTV) pRTV->Release();
     if (pDSV) pDSV->Release();
 
     // ============================================================
-    // 2. 렌더링 상태 설정
+    // 3. 렌더링 상태 설정
     // ============================================================
 
-    // Depth test 비활성화
     Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
 
-    // Depth SRV 바인딩
+    // ✅ 메인 윈도우의 Depth SRV 사용 (전체 화면)
     ID3D11ShaderResourceView* DepthSRV = D3D11Device->GetDepthShaderResourceView();
+
     if (!DepthSRV)
     {
-        D3D11Device->OMSetRenderTargets(); // 복원
+        UE_LOG("ERROR: DepthSRV is nullptr!");
+        D3D11Device->OMSetRenderTargets();
+        DeviceContext->RSSetViewports(1, &OldViewport);
         return;
     }
 
     DeviceContext->PSSetShaderResources(0, 1, &DepthSRV);
 
-    // Scene Depth 셰이더 설정
     Renderer->PrepareShader(SceneDepthShader);
 
-    // Near/Far Plane 업데이트
-    Renderer->UpdateDepthVisualizationBuffer(NearPlane, FarPlane);
+    // ✅ Viewport 정보를 포함한 Constant Buffer 업데이트
+    Renderer->UpdateDepthVisualizationBuffer(
+        NearPlane, FarPlane,
+        ViewportX, ViewportY,
+        ViewportWidth, ViewportHeight,
+        ScreenWidth, ScreenHeight
+    );
 
-    // Sampler 설정
     D3D11Device->PSSetDefaultSampler(0);
 
     // ============================================================
-    // 3. 메시 없이 Fullscreen Triangle 렌더링
+    // 4. Viewport 설정
+    // ============================================================
+    DeviceContext->RSSetViewports(1, &OldViewport);
+
+    // ============================================================
+    // 5. Fullscreen Triangle 렌더링
     // ============================================================
 
-    // Vertex Buffer와 Index Buffer를 nullptr로 설정 (사용 안 함)
     DeviceContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
     DeviceContext->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
-
-    // Primitive Topology를 Triangle List로 설정
     DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    // Draw(3, 0) - 3개의 정점으로 fullscreen triangle 그리기
     DeviceContext->Draw(3, 0);
 
     // ============================================================
-    // 4. 정리 및 복원
+    // 6. 정리 및 복원
     // ============================================================
 
-    // SRV 언바인딩
     ID3D11ShaderResourceView* NullSRV = nullptr;
     DeviceContext->PSSetShaderResources(0, 1, &NullSRV);
 
-    // Depth buffer를 DSV로 재바인딩
     D3D11Device->OMSetRenderTargets();
-
-    // Depth test 복원
     Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
+    DeviceContext->RSSetViewports(1, &OldViewport);
 }
 
 /**
