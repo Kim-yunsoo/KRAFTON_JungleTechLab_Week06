@@ -1744,7 +1744,7 @@ void UWorld::RenderExponentialHeightFogPass(const FMatrix& ViewMatrix, const FMa
     Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
 
     // Scene Texture SRV (t0) - 현재 RenderTarget
-    ID3D11ShaderResourceView* SceneSRV = Viewport ? Viewport->GetShaderResourceView() : nullptr;
+	ID3D11ShaderResourceView* SceneSRV = nullptr; // TODO: 메인 RenderTarget의 SRV를 가져오는 로직 필요
 
     // Depth Texture SRV (t1)
     ID3D11ShaderResourceView* DepthSRV = D3D11Device->GetDepthShaderResourceView();
