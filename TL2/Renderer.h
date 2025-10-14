@@ -11,6 +11,7 @@ class UShader;
 class UStaticMesh;
 class D3D11RHI;
 struct FMaterialSlot;
+struct FHeatInfo;
 
 class URenderer
 {
@@ -55,6 +56,8 @@ public:
     void DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITIVE_TOPOLOGY InTopology, const TArray<FMaterialSlot>& InComponentMaterialSlots);
 
     void UpdateUVScroll(const FVector2D& Speed, float TimeSec);
+
+    void UpdateHeatConstantBuffer(const FHeatInfo& HeatCB);
 
     void DrawIndexedPrimitiveComponent(UTextRenderComponent* Comp, D3D11_PRIMITIVE_TOPOLOGY InTopology);
     void DrawIndexedPrimitiveComponent(UBillboardComponent* Comp,

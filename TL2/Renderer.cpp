@@ -154,6 +154,11 @@ void URenderer::UpdateUVScroll(const FVector2D& Speed, float TimeSec)
     RHIDevice->UpdateUVScrollConstantBuffers(Speed, TimeSec);
 }
 
+void URenderer::UpdateHeatConstantBuffer(const FHeatInfo& HeatCB)
+{ 
+    RHIDevice->UpdateHeatConstantBuffer(HeatCB);
+}
+
 void URenderer::DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITIVE_TOPOLOGY InTopology, const TArray<FMaterialSlot>& InComponentMaterialSlots)
 {
     URenderingStatsCollector& StatsCollector = URenderingStatsCollector::GetInstance();

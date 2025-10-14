@@ -54,6 +54,7 @@ public:
     void UpdateLightConstantBuffers(const TArray<FLightInfo>& InLights) override;
     void UpdateFXAAConstantBuffers(const FXAAInfo& InFXAAInfo) override;
     void UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
+    void UpdateHeatConstantBuffer(const FHeatInfo& HeatCB) override;
 
     void IASetPrimitiveTopology() override;
     void RSSetState(EViewModeIndex ViewModeIndex) override;
@@ -177,6 +178,7 @@ private:
     ID3D11Buffer* DepthVisualizationCB{};
     ID3D11Buffer* LightCB{}; 
     ID3D11Buffer* FXAACB{};
+    ID3D11Buffer* HeatCB{};
 
     ID3D11Buffer* ConstantBuffer{};
 

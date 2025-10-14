@@ -681,6 +681,14 @@ void D3D11RHI::CreateConstantBuffer()
     viewportDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     Device->CreateBuffer(&viewportDesc, nullptr, &ViewportCB);
 
+    // b6 : DepthVisualizationBuffer (Scene Depth 시각화용)
+    D3D11_BUFFER_DESC depthVisDesc = {};
+    depthVisDesc.Usage = D3D11_USAGE_DYNAMIC;
+    depthVisDesc.ByteWidth = sizeof(float) * 8; // 8개의 float (32 bytes)
+    depthVisDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    depthVisDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&depthVisDesc, nullptr, &DepthVisualizationCB);
+
     // b7 : Light array (FLightGPU[MAX_LIGHTS])
     D3D11_BUFFER_DESC lightDesc = {};
     lightDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -698,13 +706,14 @@ void D3D11RHI::CreateConstantBuffer()
     Device->CreateBuffer(&fxaaDesc, nullptr, &FXAACB);
 
 
-    // b6 : DepthVisualizationBuffer (Scene Depth 시각화용)
-    D3D11_BUFFER_DESC depthVisDesc = {};
-    depthVisDesc.Usage = D3D11_USAGE_DYNAMIC;
-    depthVisDesc.ByteWidth = sizeof(float) * 8; // 8개의 float (32 bytes)
-    depthVisDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    depthVisDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    Device->CreateBuffer(&depthVisDesc, nullptr, &DepthVisualizationCB);
+
+    // b8
+    D3D11_BUFFER_DESC heatDesc = {};
+    heatDesc.Usage = D3D11_USAGE_DYNAMIC;
+    heatDesc.ByteWidth = sizeof(FHeatInfo);
+    heatDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    heatDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; 
+    Device->CreateBuffer(&heatDesc, nullptr, &HeatCB);
 }
 
 void D3D11RHI::UpdateUVScrollConstantBuffers(const FVector2D& Speed, float TimeSec)
@@ -793,7 +802,13 @@ void D3D11RHI::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, f
         memcpy(mapped.pData, &data, sizeof(DepthVisualizationBufferType));
         DeviceContext->Unmap(DepthVisualizationCB, 0);
         DeviceContext->PSSetConstantBuffers(6, 1, &DepthVisualizationCB);
-    }
+ 
+   }
+}
+
+void D3D11RHI::UpdateHeatConstantBuffer(const FHeatInfo& HeatCB)
+{
+
 }
 
 void D3D11RHI::ReleaseSamplerState()
@@ -1181,3 +1196,21 @@ void D3D11RHI::UpdateFXAAConstantBuffers(const FXAAInfo& InFXAAInfo)
         DeviceContext->PSSetConstantBuffers(0, 1, &FXAACB);
     }
 }
+
+\
+
+void D3D11RHI::UpdateHeatConstantBuffer(const FHeatInfo& HeatInfo)
+{
+    if (!HeatCB) return;
+    D3D11_MAPPED_SUBRESOURCE mapped{};
+     
+    if (SUCCEEDED(DeviceContext->Map(HeatCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {  
+        auto* dataPtr = reinterpret_cast<FHeatInfo*>(mapped.pData);
+        *dataPtr = HeatInfo;
+        DeviceContext->Unmap(HeatCB, 0); 
+        DeviceContext->PSSetConstantBuffers(8, 1, &HeatCB);
+    }
+}
+
+\

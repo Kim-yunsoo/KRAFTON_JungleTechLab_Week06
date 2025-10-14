@@ -52,6 +52,7 @@ public:
     // Lighting
     virtual void UpdateLightConstantBuffers(const TArray<FLightInfo>& InLights) = 0;
     virtual void UpdateFXAAConstantBuffers(const FXAAInfo& InFXAA) = 0;
+    virtual void UpdateHeatConstantBuffer(const FHeatInfo& HeatCB) = 0;
 
     // clear
     virtual void ClearBackBuffer() = 0;
