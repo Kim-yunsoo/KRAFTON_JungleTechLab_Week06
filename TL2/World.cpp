@@ -1678,7 +1678,7 @@ void UWorld::RenderExponentialHeightFogPass(const FMatrix& ViewMatrix, const FMa
 
     if (!FogComponent || !FogComponent->IsEnabled())
     {
-        return; // Fog가 없으면 스킵
+        return;
     }
 
     D3D11RHI* D3D11Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
@@ -1704,27 +1704,31 @@ void UWorld::RenderExponentialHeightFogPass(const FMatrix& ViewMatrix, const FMa
     float ScreenHeight = CLIENTHEIGHT;
 
     // ============================================================
-    // ✅ Scene RTV 언바인딩 (SRV로 사용하기 위해)
+    // ✅ 1. 모든 RTV/DSV 언바인딩
     // ============================================================
     DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 
-    // ✅ Scene SRV와 Depth SRV 가져오기
+    // ============================================================
+    // ✅ 2. Scene SRV와 Depth SRV 가져오기
+    // ============================================================
     ID3D11ShaderResourceView* SceneSRV = D3D11Device->GetSceneShaderResourceView();
     ID3D11ShaderResourceView* DepthSRV = D3D11Device->GetDepthShaderResourceView();
 
     if (!SceneSRV || !DepthSRV)
     {
         UE_LOG("ERROR: SceneSRV or DepthSRV is nullptr!");
-        D3D11Device->OMSetRenderTargets(); // BackBuffer 복원
+        D3D11Device->OMSetRenderTargets();
         return;
     }
 
     // ============================================================
-    // ✅ BackBuffer RTV로 전환 (Fog 출력 대상)
+    // ✅ 3. BackBuffer RTV만 바인딩 (DSV 없이)
     // ============================================================
-    D3D11Device->OMSetRenderTargets(); // BackBuffer RTV + DSV nullptr
+    D3D11Device->OMSetBackBufferOnly(); // ← Scene Depth Pass와 동일한 방식 사용
 
-    // SRV 바인딩
+    // ============================================================
+    // 4. SRV 바인딩 (이제 Hazard 없음)
+    // ============================================================
     ID3D11ShaderResourceView* SRVs[2] = { SceneSRV, DepthSRV };
     DeviceContext->PSSetShaderResources(0, 2, SRVs);
 
@@ -1769,7 +1773,8 @@ void UWorld::RenderExponentialHeightFogPass(const FMatrix& ViewMatrix, const FMa
     ID3D11ShaderResourceView* NullSRVs[2] = { nullptr, nullptr };
     DeviceContext->PSSetShaderResources(0, 2, NullSRVs);
 
-    // State 복원
+    // ✅ 기본 상태 복원 (BackBuffer RTV + Depth DSV)
+    D3D11Device->OMSetRenderTargets();
     Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
 }
 
@@ -1803,9 +1808,7 @@ void UWorld::CopySceneToBackBuffer(FViewport* Viewport)
     D3D11RHI* D3D11Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
     ID3D11DeviceContext* DeviceContext = D3D11Device->GetDeviceContext();
 
-    // ============================================================
-    // Viewport 정보 가져오기
-    // ============================================================
+    // Viewport 정보
     float ViewportX = static_cast<float>(Viewport->GetStartX());
     float ViewportY = static_cast<float>(Viewport->GetStartY());
     float ViewportWidth = static_cast<float>(Viewport->GetSizeX());
@@ -1814,11 +1817,10 @@ void UWorld::CopySceneToBackBuffer(FViewport* Viewport)
     float ScreenHeight = CLIENTHEIGHT;
 
     // ============================================================
-    // Scene RTV 언바인딩 (SRV로 사용하기 위해)
+    // Scene RTV 언바인딩
     // ============================================================
     DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 
-    // Scene SRV 가져오기
     ID3D11ShaderResourceView* SceneSRV = D3D11Device->GetSceneShaderResourceView();
 
     if (!SceneSRV)
@@ -1829,9 +1831,9 @@ void UWorld::CopySceneToBackBuffer(FViewport* Viewport)
     }
 
     // ============================================================
-    // BackBuffer RTV로 전환
+    // ✅ BackBuffer RTV만 바인딩 (DSV 없이)
     // ============================================================
-    D3D11Device->OMSetRenderTargets();
+    D3D11Device->OMSetBackBufferOnly(); // ← 수정
 
     // SRV 바인딩
     DeviceContext->PSSetShaderResources(0, 1, &SceneSRV);
@@ -1843,30 +1845,27 @@ void UWorld::CopySceneToBackBuffer(FViewport* Viewport)
     // Shader 준비
     Renderer->PrepareShader(CopyShader);
 
-    // ✅ Viewport Constant Buffer 업데이트 (b7)
+    // Viewport Constant Buffer 업데이트
     Renderer->UpdateCopyShaderViewportBuffer(
         ViewportX, ViewportY,
         ViewportWidth, ViewportHeight,
         ScreenWidth, ScreenHeight
     );
 
-    // Sampler 설정
     D3D11Device->PSSetDefaultSampler(0);
 
-    // ============================================================
     // Fullscreen Triangle 렌더링
-    // ============================================================
     DeviceContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
     DeviceContext->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
     DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     DeviceContext->Draw(3, 0);
 
-    // ============================================================
     // 정리
-    // ============================================================
     ID3D11ShaderResourceView* NullSRV = nullptr;
     DeviceContext->PSSetShaderResources(0, 1, &NullSRV);
 
+    // ✅ 기본 상태 복원
+    D3D11Device->OMSetRenderTargets();
     Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
 }
 
