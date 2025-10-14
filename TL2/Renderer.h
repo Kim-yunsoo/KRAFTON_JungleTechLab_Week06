@@ -59,6 +59,8 @@ public:
 
     void UpdateInverseViewProjMatrixBuffer(const FMatrix& InvViewMatrix, const FMatrix& InvProjectionMatrix);
 
+    void UpdateCopyShaderViewportBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
+
     void DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITIVE_TOPOLOGY InTopology, const TArray<FMaterialSlot>& InComponentMaterialSlots);
 
     void UpdateUVScroll(const FVector2D& Speed, float TimeSec);
@@ -80,6 +82,11 @@ public:
     void OMSetDepthStencilState(EComparisonFunc Func);
 
     URHIDevice* GetRHIDevice() { return RHIDevice; }
+
+    // ✅ Scene RenderTarget 관리
+    void BeginSceneRendering();
+    void EndSceneRendering();
+
 private:
 	URHIDevice* RHIDevice;
 

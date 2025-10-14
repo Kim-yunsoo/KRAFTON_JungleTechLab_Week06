@@ -86,6 +86,8 @@ void D3D11RHI::Initialize(HWND hWindow)
     // 이곳에서 Device, DeviceContext, viewport, swapchain를 초기화한다
     CreateDeviceAndSwapChain(hWindow);
     CreateFrameBuffer();
+	CreateDepthBuffer();
+	CreateSceneRenderTarget();
     CreateRasterizerState();
     CreateBlendState();
     CreateConstantBuffer();
@@ -129,6 +131,7 @@ void D3D11RHI::Release()
 	if (FogParameterCB) { FogParameterCB->Release(); FogParameterCB = nullptr; }
 	if (InvViewProjCB) { InvViewProjCB->Release(); InvViewProjCB = nullptr; }
 	if (ViewportFogCB) { ViewportFogCB->Release(); ViewportFogCB = nullptr; }
+	if (CopyShaderViewportCB) { CopyShaderViewportCB->Release(); CopyShaderViewportCB = nullptr; }
 
     // 상태 객체
     if (DepthStencilState) { DepthStencilState->Release(); DepthStencilState = nullptr; }
@@ -144,8 +147,9 @@ void D3D11RHI::Release()
     if (FrontCullRasterizerState) { FrontCullRasterizerState->Release();   FrontCullRasterizerState = nullptr; }
     if (BlendState) { BlendState->Release();        BlendState = nullptr; }
 
-    // RTV/DSV/FrameBuffer
     ReleaseFrameBuffer();
+	ReleaseDepthBuffer();
+	ReleaseSceneRenderTarget();
 
     // Device + SwapChain
     ReleaseDeviceAndSwapChain();
@@ -161,6 +165,12 @@ void D3D11RHI::ClearDepthBuffer(float Depth, UINT Stencil)
 {
     DeviceContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, Depth, Stencil);
 
+}
+
+void D3D11RHI::ClearSceneRenderTarget()
+{
+    float ClearColor[4] = { 0.025f, 0.025f, 0.025f, 1.0f };
+	DeviceContext->ClearRenderTargetView(SceneRenderTargetView, ClearColor);
 }
 
 void D3D11RHI::CreateBlendState()
@@ -424,6 +434,11 @@ void D3D11RHI::OMSetRenderTargets()
     DeviceContext->OMSetRenderTargets(1, &RenderTargetView, DepthStencilView);
 }
 
+void D3D11RHI::OMSetSceneRenderTarget()
+{
+    DeviceContext->OMSetRenderTargets(1, &SceneRenderTargetView, DepthStencilView);
+}
+
 void D3D11RHI::OMSetBlendState(bool bIsBlendMode)
 {
     if (bIsBlendMode == true)
@@ -489,10 +504,10 @@ void D3D11RHI::CreateFrameBuffer()
     framebufferRTVdesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 
     Device->CreateRenderTargetView(FrameBuffer, &framebufferRTVdesc, &RenderTargetView);
+}
 
-    // =====================================
-    // 깊이/스텐실 버퍼 생성
-    // =====================================
+void D3D11RHI::CreateDepthBuffer()
+{
     DXGI_SWAP_CHAIN_DESC swapDesc;
     SwapChain->GetDesc(&swapDesc);
 
@@ -517,7 +532,7 @@ void D3D11RHI::CreateFrameBuffer()
 
     Device->CreateDepthStencilView(depthTexture, &dsvDesc, &DepthStencilView);
 
-	// ShaderResourceView 생성 (쉐이더에서 깊이값 읽기용)
+    // ShaderResourceView 생성 (쉐이더에서 깊이값 읽기용)
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // SRV는 R24_UNORM_X8_TYPELESS 포맷
     srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
@@ -527,6 +542,60 @@ void D3D11RHI::CreateFrameBuffer()
     Device->CreateShaderResourceView(depthTexture, &srvDesc, &DepthShaderResourceView);
 
     depthTexture->Release(); // 뷰만 참조 유지
+}
+
+void D3D11RHI::CreateSceneRenderTarget()
+{
+    // BackBuffer와 동일한 크기/포맷으로 Scene Texture 생성
+    D3D11_TEXTURE2D_DESC backBufferDesc;
+    FrameBuffer->GetDesc(&backBufferDesc);
+
+    D3D11_TEXTURE2D_DESC sceneTextureDesc = {};
+    sceneTextureDesc.Width = backBufferDesc.Width;
+    sceneTextureDesc.Height = backBufferDesc.Height;
+    sceneTextureDesc.MipLevels = 1;
+    sceneTextureDesc.ArraySize = 1;
+    sceneTextureDesc.Format = backBufferDesc.Format; // 동일한 포맷 사용
+    sceneTextureDesc.SampleDesc.Count = 1;
+    sceneTextureDesc.SampleDesc.Quality = 0;
+    sceneTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+    sceneTextureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    sceneTextureDesc.CPUAccessFlags = 0;
+    sceneTextureDesc.MiscFlags = 0;
+
+	ID3D11Texture2D* SceneTexture = nullptr;
+    HRESULT hr = Device->CreateTexture2D(&sceneTextureDesc, nullptr, &SceneTexture);
+    if (FAILED(hr))
+    {
+        UE_LOG("ERROR: Failed to create Scene Texture");
+        return;
+    }
+
+    // Scene RenderTargetView 생성
+    hr = Device->CreateRenderTargetView(SceneTexture, nullptr, &SceneRenderTargetView);
+    if (FAILED(hr))
+    {
+        UE_LOG("ERROR: Failed to create Scene RenderTargetView");
+        return;
+    }
+
+    // Scene ShaderResourceView 생성
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = sceneTextureDesc.Format;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = 1;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+
+    hr = Device->CreateShaderResourceView(SceneTexture, &srvDesc, &SceneShaderResourceView);
+    if (FAILED(hr))
+    {
+        UE_LOG("ERROR: Failed to create Scene ShaderResourceView");
+        return;
+    }
+
+    UE_LOG("SUCCESS: Scene RenderTarget created (%ux%u)", sceneTextureDesc.Width, sceneTextureDesc.Height);
+
+	SceneTexture->Release(); // 뷰만 참조 유지
 }
 
 void D3D11RHI::CreateRasterizerState()
@@ -688,6 +757,14 @@ void D3D11RHI::CreateConstantBuffer()
     viewportFogDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     viewportFogDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     Device->CreateBuffer(&viewportFogDesc, nullptr, &ViewportFogCB);
+
+    // b7: CopyShader Viewport Buffer
+    D3D11_BUFFER_DESC copyViewportDesc = {};
+    copyViewportDesc.Usage = D3D11_USAGE_DYNAMIC;
+    copyViewportDesc.ByteWidth = sizeof(float) * 8; // 32 bytes (2 float4)
+    copyViewportDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    copyViewportDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&copyViewportDesc, nullptr, &CopyShaderViewportCB);
 }
 
 void D3D11RHI::UpdateUVScrollConstantBuffers(const FVector2D& Speed, float TimeSec)
@@ -894,6 +971,36 @@ void D3D11RHI::UpdateInverseViewProjMatrixConstantBuffer(const FMatrix& InvViewM
     }
 }
 
+void D3D11RHI::UpdateCopyShaderViewportBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
+{
+    if (!CopyShaderViewportCB) return;
+
+    struct CopyViewportBufferType {
+        float ViewportPos[2];    // g_ViewportPos
+        float ViewportSize[2];   // g_ViewportSize
+        float ScreenSize[2];     // g_ScreenSize
+        float Padding[2];        // 16바이트 정렬
+    };
+
+    CopyViewportBufferType data;
+    data.ViewportPos[0] = ViewportX;
+    data.ViewportPos[1] = ViewportY;
+    data.ViewportSize[0] = ViewportWidth;
+    data.ViewportSize[1] = ViewportHeight;
+    data.ScreenSize[0] = ScreenWidth;
+    data.ScreenSize[1] = ScreenHeight;
+    data.Padding[0] = 0.0f;
+    data.Padding[1] = 0.0f;
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(CopyShaderViewportCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(CopyViewportBufferType));
+        DeviceContext->Unmap(CopyShaderViewportCB, 0);
+        DeviceContext->PSSetConstantBuffers(7, 1, &CopyShaderViewportCB); // b7 슬롯
+    }
+}
+
 void D3D11RHI::ReleaseSamplerState()
 {
     if (DefaultSamplerState)
@@ -949,18 +1056,36 @@ void D3D11RHI::ReleaseFrameBuffer()
         RenderTargetView->Release();
         RenderTargetView = nullptr;
     }
+}
 
-    if (DepthShaderResourceView)
-    {
-        DepthShaderResourceView->Release();
-        DepthShaderResourceView = nullptr;
-    }
-
+void D3D11RHI::ReleaseDepthBuffer()
+{
     if (DepthStencilView)
     {
         DepthStencilView->Release();
         DepthStencilView = nullptr;
     }
+
+    if (DepthShaderResourceView)
+    {
+        DepthShaderResourceView->Release();
+        DepthShaderResourceView = nullptr;
+	}
+}
+
+void D3D11RHI::ReleaseSceneRenderTarget()
+{
+    if (SceneRenderTargetView)
+    {
+        SceneRenderTargetView->Release();
+        SceneRenderTargetView = nullptr;
+    }
+
+    if (SceneShaderResourceView)
+    {
+        SceneShaderResourceView->Release();
+        SceneShaderResourceView = nullptr;
+	}
 }
 
 void D3D11RHI::ReleaseDeviceAndSwapChain()

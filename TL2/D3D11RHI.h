@@ -23,6 +23,7 @@ public:
     // clear
     void ClearBackBuffer() override;
     void ClearDepthBuffer(float Depth, UINT Stencil) override;
+	void ClearSceneRenderTarget() override;
     void CreateBlendState() override;
 
     template<typename TVertex>
@@ -58,6 +59,7 @@ public:
     void UpdateCameraNearFarConstantBuffer(float NearPlane, float FarPlane);
     void UpdateFogParameterConstantBuffer(float FogDensity, float FogHeightFalloff, float FogStartDistance, float FogCutoffDistance, float FogMaxOpacity, const FVector4& FogInscatteringColor, const FVector& FogComponentPosition);
     void UpdateInverseViewProjMatrixConstantBuffer(const FMatrix& InvViewMatrix, const FMatrix& InvProjectionMatrix);
+    void UpdateCopyShaderViewportBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
 
     void IASetPrimitiveTopology() override;
     void RSSetState(EViewModeIndex ViewModeIndex) override;
@@ -66,6 +68,7 @@ public:
     void RSSetDefaultState() override;
     void RSSetViewport() override;
     void OMSetRenderTargets() override;
+	void OMSetSceneRenderTarget() override;
     void OMSetBlendState(bool bIsBlendMode) override;
     void Present() override;
 	void PSSetDefaultSampler(UINT StartSlot) override;
@@ -96,6 +99,11 @@ public:
     {
         return SwapChain;
     }
+    inline ID3D11ShaderResourceView* GetSceneShaderResourceView()
+    {
+        return SceneShaderResourceView;
+	}
+
     inline ID3D11ShaderResourceView* GetDepthShaderResourceView()
     {
         return DepthShaderResourceView;
@@ -104,6 +112,8 @@ public:
 private:
     void CreateDeviceAndSwapChain(HWND hWindow)override; // 여기서 디바이스, 디바이스 컨택스트, 스왑체인, 뷰포트를 초기화한다
     void CreateFrameBuffer() override;
+	void CreateDepthBuffer() override;
+	void CreateSceneRenderTarget() override;
     void CreateRasterizerState() override;
     void CreateConstantBuffer() override;
     void CreateDepthStencilState() override;
@@ -114,6 +124,8 @@ private:
     void ReleaseBlendState();
     void ReleaseRasterizerState(); // rs
     void ReleaseFrameBuffer(); // fb, rtv
+    void ReleaseDepthBuffer();
+	void ReleaseSceneRenderTarget();
     void ReleaseDeviceAndSwapChain();
  
 	void OmSetDepthStencilState(EComparisonFunc Func) override;
@@ -142,10 +154,17 @@ private:
 
     ID3D11BlendState* BlendState{};
 
+    // BackBuffer (SwapChain)
     ID3D11Texture2D* FrameBuffer{};//
     ID3D11RenderTargetView* RenderTargetView{};//
-    ID3D11DepthStencilView* DepthStencilView{};//
-    ID3D11ShaderResourceView* DepthShaderResourceView{}; // Depth buffer를 셰이더에서 읽기 위한 SRV
+    
+    // Scene RenderTarget (중간 렌더링용)
+    ID3D11RenderTargetView* SceneRenderTargetView = nullptr;
+    ID3D11ShaderResourceView* SceneShaderResourceView = nullptr;
+
+    // Depth/Stencil (공유)
+    ID3D11DepthStencilView* DepthStencilView{};
+    ID3D11ShaderResourceView* DepthShaderResourceView{};
 
     // 버퍼 핸들
     ID3D11Buffer* ModelCB{};
@@ -164,6 +183,9 @@ private:
     ID3D11Buffer* FogParameterCB = nullptr;       // b1: Fog Parameters
     ID3D11Buffer* InvViewProjCB = nullptr;   // b2: Inverse Matrices
     ID3D11Buffer* ViewportFogCB = nullptr;        // b3: Viewport Info
+
+    // ✅ CopyShader용 Constant Buffer (b7)
+    ID3D11Buffer* CopyShaderViewportCB = nullptr;
 
     ID3D11Buffer* ConstantBuffer{};
 

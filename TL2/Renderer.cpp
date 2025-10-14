@@ -172,6 +172,13 @@ void URenderer::UpdateInverseViewProjMatrixBuffer(const FMatrix& InvViewMatrix, 
 	static_cast<D3D11RHI*>(RHIDevice)->UpdateInverseViewProjMatrixConstantBuffer(InvViewMatrix, InvProjectionMatrix);
 }
 
+void URenderer::UpdateCopyShaderViewportBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
+{
+    static_cast<D3D11RHI*>(RHIDevice)->UpdateCopyShaderViewportBuffer(
+        ViewportX, ViewportY, ViewportWidth, ViewportHeight, ScreenWidth, ScreenHeight
+    );
+}
+
 void URenderer::UpdateUVScroll(const FVector2D& Speed, float TimeSec)
 {
     RHIDevice->UpdateUVScrollConstantBuffers(Speed, TimeSec);
@@ -426,6 +433,18 @@ void URenderer::EndFrame()
 void URenderer::OMSetDepthStencilState(EComparisonFunc Func)
 {
     RHIDevice->OmSetDepthStencilState(Func);
+}
+
+void URenderer::BeginSceneRendering()
+{
+	RHIDevice->OMSetSceneRenderTarget();
+	RHIDevice->ClearSceneRenderTarget();
+    RHIDevice->ClearDepthBuffer(1.0f, 0);
+}
+
+void URenderer::EndSceneRendering()
+{
+    // RHIDevice->OMSetRenderTargets();
 }
 
 void URenderer::InitializeLineBatch()

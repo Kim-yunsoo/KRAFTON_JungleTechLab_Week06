@@ -148,6 +148,12 @@ public:
 	// Exponential Height Fog Pass
 	void RenderExponentialHeightFogPass(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport);
 
+	// ✅ Scene → BackBuffer 복사 함수 추가
+	void CopySceneToBackBuffer(FViewport* Viewport);
+
+	// ✅ Fog 활성화 여부 확인 함수
+	bool HasActiveFog() const;
+
 private:
 	// 싱글톤 매니저 참조
 	UResourceManager& ResourceManager;
@@ -194,6 +200,8 @@ private:
 	UShader* SceneDepthShader = nullptr;
 	// Exponential Height Fog Shader 
 	UShader* ExponentialHeightFogShader = nullptr;
+	// CopyShader
+	UShader* CopyShader = nullptr; // ✅ 추가
 };
 
 template<class T>
