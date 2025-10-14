@@ -8,11 +8,6 @@ UProjectileMovementComponent::UProjectileMovementComponent()
     : Gravity(0.0f, 0.0f, -9.80f)  // Z-Up 좌표계에서 중력은 Z방향으로 -980 cm/s^2
     , InitialSpeed(30.0f)
     , MaxSpeed(0.0f)  // 0 = 제한 없음
-    , Bounciness(0.6f)
-    , Friction(0.0f)
-    , bShouldBounce(true)
-    , MaxBounces(0)  // 0 = 무제한
-    , CurrentBounceCount(0)
     , HomingTargetActor(nullptr)
     , HomingTargetComponent(nullptr)
     , HomingAccelerationMagnitude(0.0f)
@@ -105,7 +100,6 @@ void UProjectileMovementComponent::FireInDirection(const FVector& ShootDirection
     // 상태 초기화
     bIsActive = true;
     CurrentLifetime = 0.0f;
-    CurrentBounceCount = 0;
 }
 
 void UProjectileMovementComponent::SetVelocityInLocalSpace(const FVector& NewVelocity)
@@ -141,40 +135,6 @@ void UProjectileMovementComponent::LimitVelocity()
        Velocity.Normalize();  
        Velocity *= MaxSpeed;  
    }  
-}
-
-void UProjectileMovementComponent::HandleBounce(const FVector& HitNormal, const FVector& HitLocation)
-{
-    if (!bShouldBounce)
-        return;
-
-    // 최대 바운스 횟수 체크
-    if (MaxBounces > 0 && CurrentBounceCount >= MaxBounces)
-    {
-        bIsActive = false;
-        Velocity = FVector(0, 0, 0);
-        return;
-    }
-
-    // 반사 벡터 계산: V' = V - 2(V·N)N
-    float Speed = Velocity.Size();
-    FVector NormalizedVelocity = Velocity;
-    NormalizedVelocity.Normalize();
-
-    FVector ReflectedVelocity = NormalizedVelocity - HitNormal * (2.0f * NormalizedVelocity.Dot(HitNormal));
-
-    // 반발 계수와 마찰 적용
-    float NewSpeed = Speed * Bounciness * (1.0f - Friction);
-    Velocity = ReflectedVelocity * NewSpeed;
-
-    CurrentBounceCount++;
-
-    // 속도가 너무 작으면 정지
-    if (Velocity.Size() < 10.0f)  // 10 cm/s 이하
-    {
-        bIsActive = false;
-        Velocity = FVector(0, 0, 0);
-    }
 }
 
 void UProjectileMovementComponent::ComputeHomingAcceleration(float DeltaTime)
@@ -243,13 +203,6 @@ UObject* UProjectileMovementComponent::Duplicate(FObjectDuplicationParameters Pa
     DupObject->Gravity = Gravity;
     DupObject->InitialSpeed = InitialSpeed;
     DupObject->MaxSpeed = MaxSpeed;
-
-    // 바운스 속성 복사
-    DupObject->Bounciness = Bounciness;
-    DupObject->Friction = Friction;
-    DupObject->bShouldBounce = bShouldBounce;
-    DupObject->MaxBounces = MaxBounces;
-    // CurrentBounceCount는 런타임 상태이므로 복사하지 않음 (0으로 초기화됨)
 
     // 호밍 속성 복사
     // HomingTarget은 포인터이지만, PIE 복제를 위해 복사함

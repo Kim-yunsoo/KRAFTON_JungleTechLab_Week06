@@ -37,21 +37,6 @@ public:
     void SetMaxSpeed(float NewMaxSpeed) { MaxSpeed = NewMaxSpeed; }
     float GetMaxSpeed() const { return MaxSpeed; }
 
-    // 바운스 속성 Getter/Setter
-    void SetBounciness(float NewBounciness) { Bounciness = FMath::Clamp(NewBounciness, 0.0f, 1.0f); }
-    float GetBounciness() const { return Bounciness; }
-
-    void SetFriction(float NewFriction) { Friction = FMath::Clamp(NewFriction, 0.0f, 1.0f); }
-    float GetFriction() const { return Friction; }
-
-    void SetShouldBounce(bool bNewShouldBounce) { bShouldBounce = bNewShouldBounce; }
-    bool ShouldBounce() const { return bShouldBounce; }
-
-    void SetMaxBounces(int32 NewMaxBounces) { MaxBounces = NewMaxBounces; }
-    int32 GetMaxBounces() const { return MaxBounces; }
-
-    int32 GetCurrentBounceCount() const { return CurrentBounceCount; }
-
     // 호밍 속성 Getter/Setter
     void SetHomingTarget(AActor* Target);
     void SetHomingTarget(USceneComponent* Target);
@@ -89,7 +74,6 @@ public:
 protected:
     // 내부 헬퍼 함수
     void LimitVelocity();
-    void HandleBounce(const FVector& HitNormal, const FVector& HitLocation);
     void ComputeHomingAcceleration(float DeltaTime);
     void UpdateRotationFromVelocity();
 
@@ -105,22 +89,6 @@ protected:
 
     // 최대 속도 제한 (cm/s), 0이면 제한 없음
     float MaxSpeed;
-
-    // === 바운스 속성 ===
-    // 반발 계수 (0~1), 1이면 완전 탄성 충돌
-    float Bounciness;
-
-    // 마찰 계수 (0~1), 바운스 시 속도 감소
-    float Friction;
-
-    // 바운스 기능 활성화 여부
-    bool bShouldBounce;
-
-    // 최대 바운스 횟수 (0이면 무제한)
-    int32 MaxBounces;
-
-    // 현재 바운스 횟수
-    int32 CurrentBounceCount;
 
     // === 호밍 속성 ===
     // 호밍 타겟 액터

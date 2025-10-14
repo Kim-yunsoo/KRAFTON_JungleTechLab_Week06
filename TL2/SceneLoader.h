@@ -74,10 +74,6 @@ struct FComponentData
     FVector Gravity;
     float InitialSpeed = 30.0f;
     float MaxSpeed = 0.0f;
-    float Bounciness = 0.6f;
-    float Friction = 0.0f;
-    bool bShouldBounce = true;
-    int32 MaxBounces = 0;
     float HomingAccelerationMagnitude = 0.0f;
     bool bIsHomingProjectile = false;
     bool bRotationFollowsVelocity = true;

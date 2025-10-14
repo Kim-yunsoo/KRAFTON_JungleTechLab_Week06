@@ -956,46 +956,6 @@ void UTargetActorTransformWidget::RenderWidget()
 
 					ImGui::Spacing();
 					ImGui::Separator();
-					ImGui::Text("Bounce Settings");
-
-					// 바운스 활성화
-					bool bShouldBounce = ProjectileComp->ShouldBounce();
-					if (ImGui::Checkbox("Enable Bounce", &bShouldBounce))
-					{
-						ProjectileComp->SetShouldBounce(bShouldBounce);
-					}
-
-					// 반발 계수
-					float bounciness = ProjectileComp->GetBounciness();
-					if (ImGui::DragFloat("Bounciness", &bounciness, 0.01f, 0.0f, 1.0f))
-					{
-						ProjectileComp->SetBounciness(bounciness);
-					}
-
-					// 마찰 계수
-					float friction = ProjectileComp->GetFriction();
-					if (ImGui::DragFloat("Friction", &friction, 0.01f, 0.0f, 1.0f))
-					{
-						ProjectileComp->SetFriction(friction);
-					}
-
-					// 최대 바운스 횟수
-					int32 maxBounces = ProjectileComp->GetMaxBounces();
-					if (ImGui::DragInt("Max Bounces", &maxBounces, 1.0f, 0, 100))
-					{
-						ProjectileComp->SetMaxBounces(maxBounces);
-					}
-					if (ImGui::IsItemHovered())
-					{
-						ImGui::SetTooltip("0 = Unlimited");
-					}
-
-					// 현재 바운스 횟수 (읽기 전용)
-					int32 currentBounces = ProjectileComp->GetCurrentBounceCount();
-					ImGui::Text("Current Bounces: %d", currentBounces);
-
-					ImGui::Spacing();
-					ImGui::Separator();
 					ImGui::Text("Homing Settings");
 
 					// 호밍 활성화

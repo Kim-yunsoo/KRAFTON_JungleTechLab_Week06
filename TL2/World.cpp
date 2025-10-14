@@ -1062,10 +1062,6 @@ void UWorld::SaveSceneV2(const FString& SceneName)
                         CompData.Gravity = ProjectileComp->GetGravity();
                         CompData.InitialSpeed = ProjectileComp->GetInitialSpeed();
                         CompData.MaxSpeed = ProjectileComp->GetMaxSpeed();
-                        CompData.Bounciness = ProjectileComp->GetBounciness();
-                        CompData.Friction = ProjectileComp->GetFriction();
-                        CompData.bShouldBounce = ProjectileComp->ShouldBounce();
-                        CompData.MaxBounces = ProjectileComp->GetMaxBounces();
                         CompData.HomingAccelerationMagnitude = ProjectileComp->GetHomingAccelerationMagnitude();
                         CompData.bIsHomingProjectile = ProjectileComp->IsHomingProjectile();
                         CompData.bRotationFollowsVelocity = ProjectileComp->GetRotationFollowsVelocity();
@@ -1266,10 +1262,6 @@ void UWorld::LoadSceneV2(const FString& SceneName)
                     ProjectileComp->SetGravity(CompData.Gravity);
                     ProjectileComp->SetInitialSpeed(CompData.InitialSpeed);
                     ProjectileComp->SetMaxSpeed(CompData.MaxSpeed);
-                    ProjectileComp->SetBounciness(CompData.Bounciness);
-                    ProjectileComp->SetFriction(CompData.Friction);
-                    ProjectileComp->SetShouldBounce(CompData.bShouldBounce);
-                    ProjectileComp->SetMaxBounces(CompData.MaxBounces);
                     ProjectileComp->SetHomingAccelerationMagnitude(CompData.HomingAccelerationMagnitude);
                     ProjectileComp->SetIsHomingProjectile(CompData.bIsHomingProjectile);
                     ProjectileComp->SetRotationFollowsVelocity(CompData.bRotationFollowsVelocity);

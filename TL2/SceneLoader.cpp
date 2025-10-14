@@ -360,10 +360,6 @@ void FSceneLoader::SaveV2(const FSceneData& SceneData, const FString& SceneName)
                 oss << ",\n";
                 oss << "      \"InitialSpeed\" : " << Comp.InitialSpeed << ",\n";
                 oss << "      \"MaxSpeed\" : " << Comp.MaxSpeed << ",\n";
-                oss << "      \"Bounciness\" : " << Comp.Bounciness << ",\n";
-                oss << "      \"Friction\" : " << Comp.Friction << ",\n";
-                oss << "      \"bShouldBounce\" : " << (Comp.bShouldBounce ? "true" : "false") << ",\n";
-                oss << "      \"MaxBounces\" : " << Comp.MaxBounces << ",\n";
                 oss << "      \"HomingAccelerationMagnitude\" : " << Comp.HomingAccelerationMagnitude << ",\n";
                 oss << "      \"bIsHomingProjectile\" : " << (Comp.bIsHomingProjectile ? "true" : "false") << ",\n";
                 oss << "      \"bRotationFollowsVelocity\" : " << (Comp.bRotationFollowsVelocity ? "true" : "false") << ",\n";
@@ -641,18 +637,6 @@ FSceneData FSceneLoader::ParseV2(const JSON& Json)
 
             if (CompJson.hasKey("MaxSpeed"))
                 Comp.MaxSpeed = (float)CompJson.at("MaxSpeed").ToFloat();
-
-            if (CompJson.hasKey("Bounciness"))
-                Comp.Bounciness = (float)CompJson.at("Bounciness").ToFloat();
-
-            if (CompJson.hasKey("Friction"))
-                Comp.Friction = (float)CompJson.at("Friction").ToFloat();
-
-            if (CompJson.hasKey("bShouldBounce"))
-                Comp.bShouldBounce = CompJson.at("bShouldBounce").ToBool();
-
-            if (CompJson.hasKey("MaxBounces"))
-                Comp.MaxBounces = static_cast<int32>(CompJson.at("MaxBounces").ToInt());
 
             if (CompJson.hasKey("HomingAccelerationMagnitude"))
                 Comp.HomingAccelerationMagnitude = (float)CompJson.at("HomingAccelerationMagnitude").ToFloat();
