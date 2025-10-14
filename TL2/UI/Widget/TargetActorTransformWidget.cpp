@@ -17,6 +17,7 @@
 #include "DecalComponent.h"
 #include "MovementComponent.h"
 #include "RotatingMovementComponent.h"
+#include "ProjectileMovementComponent.h"
 #include <filesystem>
 #include <vector>
 
@@ -216,7 +217,8 @@ void UTargetActorTransformWidget::RenderWidget()
 			{ "Scene Component", USceneComponent::StaticClass() },
 			{ "Billboard Component", UBillboardComponent::StaticClass() },
 			{ "Decal Component", UDecalComponent::StaticClass() },
-			{ "Rotating Movement Component", URotatingMovementComponent::StaticClass() }
+			{ "Rotating Movement Component", URotatingMovementComponent::StaticClass() },
+			{ "Projectile Movement Component", UProjectileMovementComponent::StaticClass() }
 		};
 
 		// 컴포넌트 추가 메뉴
@@ -862,8 +864,9 @@ void UTargetActorTransformWidget::RenderWidget()
 			}
 			else if (UMovementComponent* MovementComp = Cast<UMovementComponent>(SelectedComponent))
 			{
-				// RotatingMovementComponent로 캐스팅을 시도하여 성공 여부를 저장
+				// RotatingMovementComponent와 ProjectileMovementComponent 캐스팅 시도
 				URotatingMovementComponent* RotatingComp = Cast<URotatingMovementComponent>(MovementComp);
+				UProjectileMovementComponent* ProjectileComp = Cast<UProjectileMovementComponent>(MovementComp);
 
 				ImGui::Separator();
 				ImGui::Text("Movement Component Settings");
@@ -891,7 +894,6 @@ void UTargetActorTransformWidget::RenderWidget()
 					MovementComp->SetUpdateOnlyIfRendered(bUpdateOnlyIfRendered);
 				}
 
-				// MovementComp가 URotatingMovementComponent일 경우 비활성화 끝
 				if (RotatingComp)
 				{
 					ImGui::EndDisabled(); // UI 비활성화 종료
@@ -917,6 +919,218 @@ void UTargetActorTransformWidget::RenderWidget()
 					if (ImGui::Checkbox("Rotation In Local Space", &bRotationInLocalSpace))
 					{
 						RotatingComp->SetRotationInLocalSpace(bRotationInLocalSpace);
+					}
+				}
+
+				// ProjectileMovementComponent 전용 속성
+				if (ProjectileComp)
+				{
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Text("Projectile Physics Settings");
+
+					// 중력
+					FVector gravity = ProjectileComp->GetGravity();
+					if (ImGui::DragFloat3("Gravity", &gravity.X, 0.1f))
+					{
+						ProjectileComp->SetGravity(gravity);
+					}
+
+					// 초기 속도
+					float initialSpeed = ProjectileComp->GetInitialSpeed();
+					if (ImGui::DragFloat("Initial Speed", &initialSpeed, 1.0f, 0.0f, 10000.0f))
+					{
+						ProjectileComp->SetInitialSpeed(initialSpeed);
+					}
+
+					// 최대 속도
+					float maxSpeed = ProjectileComp->GetMaxSpeed();
+					if (ImGui::DragFloat("Max Speed", &maxSpeed, 1.0f, 0.0f, 10000.0f))
+					{
+						ProjectileComp->SetMaxSpeed(maxSpeed);
+					}
+					if (ImGui::IsItemHovered())
+					{
+						ImGui::SetTooltip("0 = No Limit");
+					}
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Text("Homing Settings");
+
+					// 호밍 활성화
+					bool bIsHoming = ProjectileComp->IsHomingProjectile();
+					if (ImGui::Checkbox("Enable Homing", &bIsHoming))
+					{
+						ProjectileComp->SetIsHomingProjectile(bIsHoming);
+					}
+
+					// 호밍 가속도
+					float homingAccel = ProjectileComp->GetHomingAccelerationMagnitude();
+					if (ImGui::DragFloat("Homing Acceleration", &homingAccel, 1.0f, 0.0f, 10000.0f))
+					{
+						ProjectileComp->SetHomingAccelerationMagnitude(homingAccel);
+					}
+
+					// TODO: 호밍 타겟은 런타임에 스폰시 결정되어야함. 이 코드는 시연을 위해 혹시 몰라서 만든 것. 지워야함.
+					// 호밍 타겟 설정 UI
+					ImGui::Spacing();
+					ImGui::Text("Homing Target");
+
+					// 현재 타겟 표시
+					AActor* CurrentTargetActor = ProjectileComp->GetHomingTargetActor();
+					USceneComponent* CurrentTargetComp = ProjectileComp->GetHomingTargetComponent();
+
+					FString CurrentTargetDisplay;
+					if (CurrentTargetComp)
+					{
+						CurrentTargetDisplay = CurrentTargetComp->GetName() + " (Component)";
+					}
+					else if (CurrentTargetActor)
+					{
+						CurrentTargetDisplay = CurrentTargetActor->GetName().ToString() + " (Actor)";
+					}
+					else
+					{
+						CurrentTargetDisplay = "<None>";
+					}
+					ImGui::Text("Current: %s", CurrentTargetDisplay.c_str());
+
+					// World에서 모든 Actor 가져오기
+					UWorld* World = SelectedActor->GetWorld();
+					if (World)
+					{
+						const TArray<AActor*>& AllActors = World->GetActors();
+
+						// 타겟 가능한 Actor 목록 생성 (자기 자신 제외)
+						TArray<AActor*> TargetableActors;
+						TArray<FString> ActorNames;
+
+						// "<None>" 옵션 추가
+						ActorNames.push_back("<None>");
+
+						for (AActor* Actor : AllActors)
+						{
+							if (Actor && Actor != SelectedActor)
+							{
+								TargetableActors.push_back(Actor);
+								ActorNames.push_back(Actor->GetName().ToString());
+							}
+						}
+
+						// ImGui 콤보박스용 문자열 배열
+						TArray<const char*> ActorNamesCStr;
+						for (const FString& Name : ActorNames)
+						{
+							ActorNamesCStr.push_back(Name.c_str());
+						}
+
+						// 선택된 인덱스 유지 (정적 변수)
+						static int SelectedHomingTargetIdx = 0; // 0 = <None>
+
+						// 현재 타겟과 일치하는 인덱스 찾기
+						if (CurrentTargetActor)
+						{
+							SelectedHomingTargetIdx = 0; // 기본값
+							for (int i = 0; i < static_cast<int>(TargetableActors.size()); ++i)
+							{
+								if (TargetableActors[i] == CurrentTargetActor)
+								{
+									SelectedHomingTargetIdx = i + 1; // +1 because of "<None>" at index 0
+									break;
+								}
+							}
+						}
+						else
+						{
+							SelectedHomingTargetIdx = 0;
+						}
+
+						ImGui::SetNextItemWidth(240);
+						if (ImGui::Combo("Target Actor", &SelectedHomingTargetIdx, ActorNamesCStr.data(), static_cast<int>(ActorNamesCStr.size())))
+						{
+							if (SelectedHomingTargetIdx == 0)
+							{
+								// "<None>" 선택 - 타겟 해제
+								ProjectileComp->SetHomingTarget(static_cast<AActor*>(nullptr));
+							}
+							else
+							{
+								// Actor 선택 - 타겟 설정
+								int ActorIdx = SelectedHomingTargetIdx - 1;
+								if (ActorIdx >= 0 && ActorIdx < static_cast<int>(TargetableActors.size()))
+								{
+									ProjectileComp->SetHomingTarget(TargetableActors[ActorIdx]);
+								}
+							}
+						}
+
+						// Clear Target 버튼
+						ImGui::SameLine();
+						if (ImGui::Button("Clear"))
+						{
+							ProjectileComp->SetHomingTarget(static_cast<AActor*>(nullptr));
+							SelectedHomingTargetIdx = 0;
+						}
+					}
+					else
+					{
+						ImGui::TextDisabled("No World available");
+					}
+					// TODO: 호밍 타겟은 런타임에 스폰시 결정되어야함. 이 코드는 시연을 위해 혹시 몰라서 만든 것. 지워야함.
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Text("Rotation Settings");
+
+					// 속도 방향 추적
+					bool bRotationFollows = ProjectileComp->GetRotationFollowsVelocity();
+					if (ImGui::Checkbox("Rotation Follows Velocity", &bRotationFollows))
+					{
+						ProjectileComp->SetRotationFollowsVelocity(bRotationFollows);
+					}
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Text("Lifespan Settings");
+
+					// 생명 시간
+					float lifespan = ProjectileComp->GetProjectileLifespan();
+					if (ImGui::DragFloat("Lifespan (seconds)", &lifespan, 0.1f, 0.0f, 100.0f))
+					{
+						ProjectileComp->SetProjectileLifespan(lifespan);
+					}
+					if (ImGui::IsItemHovered())
+					{
+						ImGui::SetTooltip("0 = Unlimited");
+					}
+
+					// 자동 파괴
+					bool bAutoDestroy = ProjectileComp->GetAutoDestroyWhenLifespanExceeded();
+					if (ImGui::Checkbox("Auto Destroy When Expired", &bAutoDestroy))
+					{
+						ProjectileComp->SetAutoDestroyWhenLifespanExceeded(bAutoDestroy);
+					}
+
+					// 현재 생존 시간 (읽기 전용)
+					float currentLifetime = ProjectileComp->GetCurrentLifetime();
+					ImGui::Text("Current Lifetime: %.2f s", currentLifetime);
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Text("State");
+
+					// 활성화 상태
+					bool bIsActive = ProjectileComp->IsActive();
+					if (ImGui::Checkbox("Is Active", &bIsActive))
+					{
+						ProjectileComp->SetActive(bIsActive);
+					}
+
+					// 생존 시간 리셋 버튼
+					if (ImGui::Button("Reset Lifetime"))
+					{
+						ProjectileComp->ResetLifetime();
 					}
 				}
 			}

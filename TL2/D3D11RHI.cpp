@@ -129,6 +129,7 @@ void D3D11RHI::Release()
     if (ViewportCB) { ViewportCB->Release(); ViewportCB = nullptr; }
     if (ConstantBuffer) { ConstantBuffer->Release(); ConstantBuffer = nullptr; }
     if (FXAACB) { FXAACB->Release(); FXAACB = nullptr; }
+    if (DepthVisualizationCB) { DepthVisualizationCB->Release(); DepthVisualizationCB = nullptr; }
 
     // 상태 객체
     if (DepthStencilState) { DepthStencilState->Release(); DepthStencilState = nullptr; }
@@ -154,10 +155,8 @@ void D3D11RHI::Release()
 void D3D11RHI::ClearBackBuffer()
 {
     float ClearColor[4] = { 0.025f, 0.025f, 0.025f, 1.0f };
-    if (RenderTargetView)
-        DeviceContext->ClearRenderTargetView(RenderTargetView, ClearColor);
-    if (FXAARTV)
-        DeviceContext->ClearRenderTargetView(FXAARTV, ClearColor);
+    DeviceContext->ClearRenderTargetView(RenderTargetView, ClearColor);
+    DeviceContext->ClearRenderTargetView(FXAARTV, ClearColor);
 }
 
 void D3D11RHI::ClearDepthBuffer(float Depth, UINT Stencil)
@@ -420,16 +419,14 @@ void D3D11RHI::RSSetDefaultState()
 void D3D11RHI::RSSetViewport()
 {
     DeviceContext->RSSetViewports(1, &ViewportInfo);
-    // Keep FXAA constants in sync with the active viewport size
-    RefreshFXAAConstantsFromSwapchain();
 }
 
 void D3D11RHI::OMSetRenderTargets()
 {
     if (FXAARTV)
         DeviceContext->OMSetRenderTargets(1, &FXAARTV, DepthStencilView);
-    else
-        DeviceContext->OMSetRenderTargets(1, &RenderTargetView, DepthStencilView); 
+    else 
+        DeviceContext->OMSetRenderTargets(1, &RenderTargetView, DepthStencilView);
 }
 
 void D3D11RHI::OMSetBlendState(bool bIsBlendMode)
@@ -498,7 +495,6 @@ void D3D11RHI::CreateFrameBuffer()
 
     Device->CreateRenderTargetView(FrameBuffer, &framebufferRTVdesc, &RenderTargetView);
 
-     
     // =====================================
     // 깊이/스텐실 버퍼 생성
     // =====================================
@@ -515,27 +511,28 @@ void D3D11RHI::CreateFrameBuffer()
     depthDesc.Usage = D3D11_USAGE_DEFAULT;
     depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE; // SRV 바인딩 추가
 
-    ID3D11Texture2D* depthBuffer = nullptr;
-    Device->CreateTexture2D(&depthDesc, nullptr, &depthBuffer);
+    ID3D11Texture2D* depthTexture = nullptr;
+    Device->CreateTexture2D(&depthDesc, nullptr, &depthTexture);
 
-    // DepthStencilView 생성
+    // DepthStencilView 생성 (렌더링용)
     D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
     dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // DSV는 D24_UNORM_S8_UINT 포맷
     dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
     dsvDesc.Texture2D.MipSlice = 0;
 
-    Device->CreateDepthStencilView(depthBuffer, &dsvDesc, &DepthStencilView);
+    Device->CreateDepthStencilView(depthTexture, &dsvDesc, &DepthStencilView);
 
-    // ShaderResourceView 생성 (데칼 렌더링에서 사용)
+	// ShaderResourceView 생성 (쉐이더에서 깊이값 읽기용)
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // SRV는 R24_UNORM_X8_TYPELESS 포맷
     srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
     srvDesc.Texture2D.MipLevels = 1;
     srvDesc.Texture2D.MostDetailedMip = 0;
 
-    Device->CreateShaderResourceView(depthBuffer, &srvDesc, &DepthSRV);
+    Device->CreateShaderResourceView(depthTexture, &srvDesc, &DepthShaderResourceView);
 
-    depthBuffer->Release(); // 뷰만 참조 유지
+    depthTexture->Release(); // 뷰만 참조 유지
+    
 
     // FXAA SRV생성
     D3D11_TEXTURE2D_DESC FXAAtd = {};
@@ -697,6 +694,14 @@ void D3D11RHI::CreateConstantBuffer()
     fxaaDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     Device->CreateBuffer(&fxaaDesc, nullptr, &FXAACB);
 
+
+    // b6 : DepthVisualizationBuffer (Scene Depth 시각화용)
+    D3D11_BUFFER_DESC depthVisDesc = {};
+    depthVisDesc.Usage = D3D11_USAGE_DYNAMIC;
+    depthVisDesc.ByteWidth = sizeof(float) * 8; // 8개의 float (32 bytes)
+    depthVisDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    depthVisDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&depthVisDesc, nullptr, &DepthVisualizationCB);
 }
 
 void D3D11RHI::UpdateUVScrollConstantBuffers(const FVector2D& Speed, float TimeSec)
@@ -750,6 +755,41 @@ void D3D11RHI::UpdateViewportConstantBuffer(float StartX, float StartY, float Si
         memcpy(mapped.pData, &data, sizeof(ViewportBufferType));
         DeviceContext->Unmap(ViewportCB, 0);
         DeviceContext->PSSetConstantBuffers(6, 1, &ViewportCB);
+    }
+}
+
+void D3D11RHI::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
+{
+    if (!DepthVisualizationCB) return;
+
+    struct DepthVisualizationBufferType
+    {
+        float NearPlane;
+        float FarPlane;
+        float ViewportPosX;
+        float ViewportPosY;
+        float ViewportSizeX;
+        float ViewportSizeY;
+        float ScreenSizeX;
+        float ScreenSizeY;
+    };
+
+    DepthVisualizationBufferType data;
+    data.NearPlane = NearPlane;
+    data.FarPlane = FarPlane;
+    data.ViewportPosX = ViewportX;
+    data.ViewportPosY = ViewportY;
+    data.ViewportSizeX = ViewportWidth;
+    data.ViewportSizeY = ViewportHeight;
+    data.ScreenSizeX = ScreenWidth;
+    data.ScreenSizeY = ScreenHeight;
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(DepthVisualizationCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(DepthVisualizationBufferType));
+        DeviceContext->Unmap(DepthVisualizationCB, 0);
+        DeviceContext->PSSetConstantBuffers(6, 1, &DepthVisualizationCB);
     }
 }
 
@@ -816,11 +856,11 @@ void D3D11RHI::ReleaseFrameBuffer()
     if (FXAARTV)
     {
         FXAARTV->Release();
-    }
-    if (DepthSRV)
+    } 
+    if (DepthShaderResourceView)
     {
-        DepthSRV->Release();
-        DepthSRV = nullptr;
+        DepthShaderResourceView->Release();
+        DepthShaderResourceView = nullptr;
     }
     if (FXAASRV)
     {

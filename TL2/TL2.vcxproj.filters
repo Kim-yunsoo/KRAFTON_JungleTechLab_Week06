@@ -851,9 +851,9 @@
     </ClInclude>
     <ClInclude Include="OrientedBox.h" />
     <ClInclude Include="UI\Widget\ActorSpawnWidget.h" />
+    <ClInclude Include="MovementComponent.h">
     <ClInclude Include="FireBallComponent.h" />
     <ClInclude Include="FireBallActor.h" />
-    <ClInclude Include="MovementComponent.h">
       <Filter>Components\Movement</Filter>
     </ClInclude>
     <ClInclude Include="RotatingMovementComponent.h">
@@ -887,6 +887,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="ProjectionDecal.hlsl" />
+    <FxCompile Include="SceneDepthShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <!-- ==================== 리소스 파일 ==================== -->
   <ItemGroup>

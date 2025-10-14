@@ -53,6 +53,7 @@ public:
     void UpdateViewportConstantBuffer(float StartX, float StartY, float SizeX, float SizeY);
     void UpdateLightConstantBuffers(const TArray<FLightInfo>& InLights) override;
     void UpdateFXAAConstantBuffers(const FXAAInfo& InFXAAInfo) override;
+    void UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
 
     void IASetPrimitiveTopology() override;
     void RSSetState(EViewModeIndex ViewModeIndex) override;
@@ -100,9 +101,9 @@ public:
     {
         return SwapChain;
     }
-    inline ID3D11ShaderResourceView* GetDepthSRV()
+    inline ID3D11ShaderResourceView* GetDepthShaderResourceView()
     {
-        return DepthSRV;
+        return DepthShaderResourceView;
     }
     inline ID3D11ShaderResourceView* GetFXAASRV()
     {
@@ -156,7 +157,7 @@ private:
     ID3D11Texture2D* FrameBuffer{};//
     ID3D11RenderTargetView* RenderTargetView{};//
     ID3D11DepthStencilView* DepthStencilView{};//
-    ID3D11ShaderResourceView* DepthSRV{}; // Depth buffer를 셰이더에서 읽기 위한 SRV
+    ID3D11ShaderResourceView* DepthShaderResourceView{}; // Depth buffer를 셰이더에서 읽기 위한 SRV
 
     //FXAA 
     ID3D11Texture2D* FXAATex = nullptr;
@@ -173,6 +174,7 @@ private:
     ID3D11Buffer* UVScrollCB{};
     ID3D11Buffer* InvWorldCB{};
     ID3D11Buffer* ViewportCB{};
+    ID3D11Buffer* DepthVisualizationCB{};
     ID3D11Buffer* LightCB{}; 
     ID3D11Buffer* FXAACB{};
 

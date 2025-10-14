@@ -55,9 +55,10 @@
 #include "FireBallActor.h"
 #include "LightComponent.h"
 #include "PointLightComponent.h"
-
+ 
 #include"MovementComponent.h"
 #include"RotatingMovementComponent.h"
+#include"ProjectileMovementComponent.h"
 // ... (rest of the file)
 IMPLEMENT_CLASS(UWorld)
 
@@ -66,6 +67,7 @@ IMPLEMENT_CLASS(UPrimitiveComponent)
 IMPLEMENT_CLASS(UActorComponent)
 IMPLEMENT_CLASS(UMovementComponent)
 IMPLEMENT_CLASS(URotatingMovementComponent)
+IMPLEMENT_CLASS(UProjectileMovementComponent)
 IMPLEMENT_CLASS(USceneComponent)
 IMPLEMENT_CLASS(UCameraComponent)
 IMPLEMENT_CLASS(UStaticMeshComponent)

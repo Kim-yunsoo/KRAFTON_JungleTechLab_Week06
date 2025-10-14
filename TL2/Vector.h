@@ -412,6 +412,9 @@ struct FQuat
         return FQuat(N.X * S, N.Y * S, N.Z * S, std::cos(Half));
     }
 
+    // Direction Vector → Quaternion (Z-Up 좌표계, Forward=Y축 기준)
+    static FQuat FromDirectionVector(const FVector& Direction);
+
     // 쿼터니언 → 오일러 (Pitch, Yaw, Roll) in degrees
     // ZYX 순서 (Tait-Bryan) - FromEuler와 일치 (로컬 축 회전)
     FVector ToEuler() const
@@ -766,6 +769,9 @@ struct alignas(16) FMatrix
         return rot;
     }
 
+    // Matrix → Quaternion
+    FQuat ToQuat() const;
+
     // View/Proj (L H)
     static FMatrix LookAtLH(const FVector& Eye, const FVector& At, const FVector& Up);
     static FMatrix PerspectiveFovLH(float FovY, float Aspect, float Zn, float Zf);
@@ -921,6 +927,116 @@ inline FMatrix FQuat::ToMatrix() const
         2.0f * (XZ - WY), 2.0f * (YZ + WX), 1.0f - 2.0f * (XX + YY), 0.0f,
         0.0f, 0.0f, 0.0f, 1.0f
     );
+}
+
+// Matrix → Quaternion (Shepperd's method)
+inline FQuat FMatrix::ToQuat() const
+{
+    // 3x3 회전 부분만 사용
+    const float m00 = M[0][0], m01 = M[0][1], m02 = M[0][2];
+    const float m10 = M[1][0], m11 = M[1][1], m12 = M[1][2];
+    const float m20 = M[2][0], m21 = M[2][1], m22 = M[2][2];
+
+    // Trace 계산
+    const float trace = m00 + m11 + m22;
+
+    FQuat q;
+
+    if (trace > 0.0f)
+    {
+        // W가 가장 큰 경우
+        float s = std::sqrt(trace + 1.0f);
+        q.W = s * 0.5f;
+        s = 0.5f / s;
+        q.X = (m21 - m12) * s;
+        q.Y = (m02 - m20) * s;
+        q.Z = (m10 - m01) * s;
+    }
+    else
+    {
+        // W가 가장 크지 않은 경우 - X, Y, Z 중 가장 큰 것 선택
+        if (m00 > m11 && m00 > m22)
+        {
+            // X가 가장 큰 경우
+            float s = std::sqrt(1.0f + m00 - m11 - m22);
+            q.X = s * 0.5f;
+            s = 0.5f / s;
+            q.Y = (m01 + m10) * s;
+            q.Z = (m02 + m20) * s;
+            q.W = (m21 - m12) * s;
+        }
+        else if (m11 > m22)
+        {
+            // Y가 가장 큰 경우
+            float s = std::sqrt(1.0f + m11 - m00 - m22);
+            q.Y = s * 0.5f;
+            s = 0.5f / s;
+            q.X = (m01 + m10) * s;
+            q.Z = (m12 + m21) * s;
+            q.W = (m02 - m20) * s;
+        }
+        else
+        {
+            // Z가 가장 큰 경우
+            float s = std::sqrt(1.0f + m22 - m00 - m11);
+            q.Z = s * 0.5f;
+            s = 0.5f / s;
+            q.X = (m02 + m20) * s;
+            q.Y = (m12 + m21) * s;
+            q.W = (m10 - m01) * s;
+        }
+    }
+
+    q.Normalize();
+    return q;
+}
+
+// Direction Vector → Quaternion (Z-Up 좌표계, Forward=Y축 기준)
+inline FQuat FQuat::FromDirectionVector(const FVector& Direction)
+{
+    FVector Forward = Direction.GetNormalized();
+    FVector WorldUp(0, 0, 1);  // Z-Up
+
+    // Forward가 WorldUp과 평행한 경우 처리
+    FVector Right;
+    if (fabsf(Forward.Dot(WorldUp)) > 0.99f)
+    {
+        // Forward가 거의 위/아래 방향이면 대체 Right 벡터 사용
+        Right = FVector(1, 0, 0);
+    }
+    else
+    {
+        Right = FVector::Cross(WorldUp, Forward);
+        Right.Normalize();
+    }
+
+    FVector Up = FVector::Cross(Forward, Right);
+    Up.Normalize();
+
+    // 회전 행렬 생성 (열 기준)
+    FMatrix RotationMatrix;
+    RotationMatrix.M[0][0] = Right.X;
+    RotationMatrix.M[0][1] = Right.Y;
+    RotationMatrix.M[0][2] = Right.Z;
+    RotationMatrix.M[0][3] = 0.0f;
+
+    RotationMatrix.M[1][0] = Forward.X;
+    RotationMatrix.M[1][1] = Forward.Y;
+    RotationMatrix.M[1][2] = Forward.Z;
+    RotationMatrix.M[1][3] = 0.0f;
+
+    RotationMatrix.M[2][0] = Up.X;
+    RotationMatrix.M[2][1] = Up.Y;
+    RotationMatrix.M[2][2] = Up.Z;
+    RotationMatrix.M[2][3] = 0.0f;
+
+    RotationMatrix.M[3][0] = 0.0f;
+    RotationMatrix.M[3][1] = 0.0f;
+    RotationMatrix.M[3][2] = 0.0f;
+    RotationMatrix.M[3][3] = 1.0f;
+
+    // 행렬을 쿼터니언으로 변환
+    return RotationMatrix.ToQuat();
 }
 
 // Row-major + 행벡터(p' = p * M), Left-Handed: forward = +Z

@@ -25,8 +25,9 @@ static std::string WideToUtf8(const std::wstring& w)
 
 /**
  * @brief ImGui 초기화 함수
+ * // [[DEPRECATED]]
  */
-[[DEPRECATED]]void UImGuiHelper::Initialize(HWND InWindowHandle)
+void UImGuiHelper::Initialize(HWND InWindowHandle)
 {
 	if (bIsInitialized)
 	{

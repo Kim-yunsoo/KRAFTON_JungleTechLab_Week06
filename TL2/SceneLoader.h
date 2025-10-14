@@ -69,6 +69,17 @@ struct FComponentData
     FVector RotationRate;
     FVector PivotTranslation;
     bool bRotationInLocalSpace = true;
+
+    // ProjectileMovementComponent 전용 속성
+    FVector Gravity;
+    float InitialSpeed = 30.0f;
+    float MaxSpeed = 0.0f;
+    float HomingAccelerationMagnitude = 0.0f;
+    bool bIsHomingProjectile = false;
+    bool bRotationFollowsVelocity = true;
+    float ProjectileLifespan = 0.0f;
+    bool bAutoDestroyWhenLifespanExceeded = false;
+    bool bIsActive = true;
 };
 
 struct FActorData
