@@ -69,6 +69,7 @@ public:
     void RSSetViewport() override;
     void OMSetRenderTargets() override;
 	void OMSetSceneRenderTarget() override;
+	void OMSetBackBufferOnly() override;
     void OMSetBlendState(bool bIsBlendMode) override;
     void Present() override;
 	void PSSetDefaultSampler(UINT StartSlot) override;

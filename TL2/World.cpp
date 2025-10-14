@@ -1592,22 +1592,16 @@ void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& Proj
     // ============================================================
     // 2. Depth buffer를 SRV로 읽기 위해 DSV 언바인딩
     // ============================================================
-    ID3D11RenderTargetView* pRTV = nullptr;
-    ID3D11DepthStencilView* pDSV = nullptr;
-    DeviceContext->OMGetRenderTargets(1, &pRTV, &pDSV);
-
-    DeviceContext->OMSetRenderTargets(1, &pRTV, nullptr);
-
-    if (pRTV) pRTV->Release();
-    if (pDSV) pDSV->Release();
+    DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 
     // ============================================================
     // 3. 렌더링 상태 설정
     // ============================================================
 
+	D3D11Device->OMSetBackBufferOnly(); // BackBuffer RTV + DSV nullptr
+
     Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
 
-    // ✅ 메인 윈도우의 Depth SRV 사용 (전체 화면)
     ID3D11ShaderResourceView* DepthSRV = D3D11Device->GetDepthShaderResourceView();
 
     if (!DepthSRV)

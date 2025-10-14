@@ -439,6 +439,11 @@ void D3D11RHI::OMSetSceneRenderTarget()
     DeviceContext->OMSetRenderTargets(1, &SceneRenderTargetView, DepthStencilView);
 }
 
+void D3D11RHI::OMSetBackBufferOnly()
+{
+    DeviceContext->OMSetRenderTargets(1, &RenderTargetView, nullptr);
+}
+
 void D3D11RHI::OMSetBlendState(bool bIsBlendMode)
 {
     if (bIsBlendMode == true)

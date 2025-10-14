@@ -64,6 +64,7 @@ public:
     virtual void RSSetDefaultState() = 0;
     virtual void OMSetRenderTargets() = 0;
 	virtual void OMSetSceneRenderTarget() = 0;
+	virtual void OMSetBackBufferOnly() = 0;
     virtual void OMSetBlendState(bool bIsBlendMode) = 0;
     virtual void OmSetDepthStencilState(EComparisonFunc Func) = 0;
     virtual void Present() = 0;
