@@ -871,6 +871,12 @@ void UTargetActorTransformWidget::RenderWidget()
 				ImGui::Separator();
 				ImGui::Text("Movement Component Settings");
 
+				// MovementComp가 URotatingMovementComponent일 경우 UI 비활성화 시작
+				if (RotatingComp)
+				{
+					ImGui::BeginDisabled(true); // UI 비활성화
+				}
+
 				// MovementComponent 공통 속성
 				FVector velocity = MovementComp->GetVelocity();
 				if (ImGui::DragFloat3("Velocity", &velocity.X, 0.1f))
@@ -886,6 +892,11 @@ void UTargetActorTransformWidget::RenderWidget()
 				if (ImGui::Checkbox("Update Only If Rendered", &bUpdateOnlyIfRendered))
 				{
 					MovementComp->SetUpdateOnlyIfRendered(bUpdateOnlyIfRendered);
+				}
+
+				if (RotatingComp)
+				{
+					ImGui::EndDisabled(); // UI 비활성화 종료
 				}
 
 				// RotatingMovementComponent 전용 속성
