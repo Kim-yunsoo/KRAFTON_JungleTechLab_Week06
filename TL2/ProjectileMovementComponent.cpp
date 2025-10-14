@@ -47,11 +47,12 @@ void UProjectileMovementComponent::TickComponent(float DeltaSeconds)
         {
             if (bAutoDestroyWhenLifespanExceeded)
             {
-                // Owner Actor 파괴
+                // Owner Actor 파괴 (현재 지연 삭제 처리가 없어서 안보이게만 처리.)
                 AActor* Owner = UpdatedComponent->GetOwner();
                 if (Owner)
                 {
-                    Owner->Destroy();
+                    //Owner->Destroy();
+                    Owner->SetActorHiddenInGame(true);
                     return;
                 }
             }
