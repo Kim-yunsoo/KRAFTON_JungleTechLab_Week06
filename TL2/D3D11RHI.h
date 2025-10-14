@@ -53,7 +53,11 @@ public:
     void UpdateUVScrollConstantBuffers(const FVector2D& Speed, float TimeSec) override;
     void UpdateInvWorldConstantBuffer(const FMatrix& InvWorldMatrix, const FMatrix& InvViewProjMatrix) override;
     void UpdateViewportConstantBuffer(float StartX, float StartY, float SizeX, float SizeY);
+    void UpdateViewportConstantBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
     void UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
+    void UpdateCameraNearFarConstantBuffer(float NearPlane, float FarPlane);
+    void UpdateFogParameterConstantBuffer(float FogDensity, float FogHeightFalloff, float FogStartDistance, float FogCutoffDistance, float FogMaxOpacity, const FVector4& FogInscatteringColor, const FVector& FogComponentPosition);
+    void UpdateInverseViewProjMatrixConstantBuffer(const FMatrix& InvViewMatrix, const FMatrix& InvProjectionMatrix);
 
     void IASetPrimitiveTopology() override;
     void RSSetState(EViewModeIndex ViewModeIndex) override;
@@ -154,6 +158,12 @@ private:
     ID3D11Buffer* InvWorldCB{};
     ID3D11Buffer* ViewportCB{};
     ID3D11Buffer* DepthVisualizationCB{};
+
+    // ✅ Fog Pass용 Constant Buffers
+    ID3D11Buffer* CameraNearFarCB = nullptr;          // b0: Camera Info
+    ID3D11Buffer* FogParameterCB = nullptr;       // b1: Fog Parameters
+    ID3D11Buffer* InvViewProjCB = nullptr;   // b2: Inverse Matrices
+    ID3D11Buffer* ViewportFogCB = nullptr;        // b3: Viewport Info
 
     ID3D11Buffer* ConstantBuffer{};
 

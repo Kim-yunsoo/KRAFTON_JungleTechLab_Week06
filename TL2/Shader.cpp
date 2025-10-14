@@ -40,6 +40,12 @@ void UShader::CreateInputLayout(ID3D11Device* Device, const FString& InShaderPat
     const D3D11_INPUT_ELEMENT_DESC* layout = descArray.data();
     uint32 layoutCount = static_cast<uint32>(descArray.size());
 
+    if (layoutCount == 0)
+    {
+		// 레이아웃 정보가 없으면 생성하지 않음
+        return;
+	}
+
     HRESULT hr = Device->CreateInputLayout(
         layout,
         layoutCount,

@@ -125,6 +125,10 @@ void D3D11RHI::Release()
     if (ViewportCB) { ViewportCB->Release(); ViewportCB = nullptr; }
     if (ConstantBuffer) { ConstantBuffer->Release(); ConstantBuffer = nullptr; }
     if (DepthVisualizationCB) { DepthVisualizationCB->Release(); DepthVisualizationCB = nullptr; }
+	if (CameraNearFarCB) { CameraNearFarCB->Release(); CameraNearFarCB = nullptr; }
+	if (FogParameterCB) { FogParameterCB->Release(); FogParameterCB = nullptr; }
+	if (InvViewProjCB) { InvViewProjCB->Release(); InvViewProjCB = nullptr; }
+	if (ViewportFogCB) { ViewportFogCB->Release(); ViewportFogCB = nullptr; }
 
     // 상태 객체
     if (DepthStencilState) { DepthStencilState->Release(); DepthStencilState = nullptr; }
@@ -652,6 +656,38 @@ void D3D11RHI::CreateConstantBuffer()
     depthVisDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     depthVisDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     Device->CreateBuffer(&depthVisDesc, nullptr, &DepthVisualizationCB);
+
+    // b0: Camera Buffer (Fog용 - Near/Far Plane)
+    D3D11_BUFFER_DESC cameraFogDesc = {};
+    cameraFogDesc.Usage = D3D11_USAGE_DYNAMIC;
+    cameraFogDesc.ByteWidth = sizeof(float) * 4; // NearPlane, FarPlane, Padding[2]
+    cameraFogDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cameraFogDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&cameraFogDesc, nullptr, &CameraNearFarCB);
+
+    // b1: Fog Parameter Buffer
+    D3D11_BUFFER_DESC fogParamDesc = {};
+    fogParamDesc.Usage = D3D11_USAGE_DYNAMIC;
+    fogParamDesc.ByteWidth = sizeof(float) * 16; // 64 bytes (4 float4)
+    fogParamDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    fogParamDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&fogParamDesc, nullptr, &FogParameterCB);
+
+    // b2: Inverse Matrix Buffer
+    D3D11_BUFFER_DESC invMatrixDesc = {};
+    invMatrixDesc.Usage = D3D11_USAGE_DYNAMIC;
+    invMatrixDesc.ByteWidth = sizeof(FMatrix) * 2; // InvView + InvProj
+    invMatrixDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    invMatrixDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&invMatrixDesc, nullptr, &InvViewProjCB);
+
+    // b3: Viewport Buffer (Fog용)
+    D3D11_BUFFER_DESC viewportFogDesc = {};
+    viewportFogDesc.Usage = D3D11_USAGE_DYNAMIC;
+    viewportFogDesc.ByteWidth = sizeof(float) * 8; // 32 bytes (2 float4)
+    viewportFogDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    viewportFogDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&viewportFogDesc, nullptr, &ViewportFogCB);
 }
 
 void D3D11RHI::UpdateUVScrollConstantBuffers(const FVector2D& Speed, float TimeSec)
@@ -708,6 +744,35 @@ void D3D11RHI::UpdateViewportConstantBuffer(float StartX, float StartY, float Si
     }
 }
 
+void D3D11RHI::UpdateViewportConstantBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
+{
+    if (!ViewportFogCB) return;
+
+    struct ViewportBufferType {
+        float ViewportPos[2];
+        float ViewportSize[2];
+        float ScreenSize[2];
+        float Padding[2];
+    };
+
+    ViewportBufferType data;
+    data.ViewportPos[0] = ViewportX;
+    data.ViewportPos[1] = ViewportY;
+    data.ViewportSize[0] = ViewportWidth;
+    data.ViewportSize[1] = ViewportHeight;
+    data.ScreenSize[0] = ScreenWidth;
+    data.ScreenSize[1] = ScreenHeight;
+    data.Padding[0] = data.Padding[1] = 0.0f;
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(ViewportFogCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(ViewportBufferType));
+        DeviceContext->Unmap(ViewportFogCB, 0);
+        DeviceContext->PSSetConstantBuffers(3, 1, &ViewportFogCB);
+    }
+}
+
 void D3D11RHI::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
 {
     if (!DepthVisualizationCB) return;
@@ -740,6 +805,92 @@ void D3D11RHI::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, f
         memcpy(mapped.pData, &data, sizeof(DepthVisualizationBufferType));
         DeviceContext->Unmap(DepthVisualizationCB, 0);
         DeviceContext->PSSetConstantBuffers(6, 1, &DepthVisualizationCB);
+    }
+}
+
+void D3D11RHI::UpdateCameraNearFarConstantBuffer(float NearPlane, float FarPlane)
+{
+    if (!CameraNearFarCB) return;
+
+    struct CameraBufferType {
+        float NearPlane;
+        float FarPlane;
+        float Padding[2];
+    };
+
+    CameraBufferType data;
+    data.NearPlane = NearPlane;
+    data.FarPlane = FarPlane;
+    data.Padding[0] = 0.0f;
+    data.Padding[1] = 0.0f;
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(CameraNearFarCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(CameraBufferType));
+        DeviceContext->Unmap(CameraNearFarCB, 0);
+        DeviceContext->PSSetConstantBuffers(0, 1, &CameraNearFarCB);
+    }
+}
+
+void D3D11RHI::UpdateFogParameterConstantBuffer(float FogDensity, float FogHeightFalloff, float FogStartDistance, float FogCutoffDistance, float FogMaxOpacity, const FVector4& FogInscatteringColor, const FVector& FogComponentPosition)
+{
+    if (!FogParameterCB) return;
+
+    struct FogParameterBufferType {
+        float FogDensity;
+        float FogHeightFalloff;
+        float FogStartDistance;
+        float FogCutoffDistance;
+
+        float FogMaxOpacity;
+        float Padding1[3];
+
+        FVector4 FogInscatteringColor;
+
+        FVector FogComponentPosition;
+        float Padding2;
+    };
+
+    FogParameterBufferType data;
+    data.FogDensity = FogDensity;
+    data.FogHeightFalloff = FogHeightFalloff;
+    data.FogStartDistance = FogStartDistance;
+    data.FogCutoffDistance = FogCutoffDistance;
+    data.FogMaxOpacity = FogMaxOpacity;
+    data.Padding1[0] = data.Padding1[1] = data.Padding1[2] = 0.0f;
+    data.FogInscatteringColor = FogInscatteringColor;
+    data.FogComponentPosition = FogComponentPosition;
+    data.Padding2 = 0.0f;
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(FogParameterCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(FogParameterBufferType));
+        DeviceContext->Unmap(FogParameterCB, 0);
+        DeviceContext->PSSetConstantBuffers(1, 1, &FogParameterCB);
+    }
+}
+
+void D3D11RHI::UpdateInverseViewProjMatrixConstantBuffer(const FMatrix& InvViewMatrix, const FMatrix& InvProjectionMatrix)
+{
+    if (!InvViewProjCB) return;
+
+    struct InverseMatrixBufferType {
+        FMatrix InvView;
+        FMatrix InvProjection;
+    };
+
+    InverseMatrixBufferType data;
+    data.InvView = InvViewMatrix;
+    data.InvProjection = InvProjectionMatrix;
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(InvViewProjCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(InverseMatrixBufferType));
+        DeviceContext->Unmap(InvViewProjCB, 0);
+        DeviceContext->PSSetConstantBuffers(2, 1, &InvViewProjCB);
     }
 }
 

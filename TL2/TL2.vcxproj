@@ -161,6 +161,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ExponentialHeightFogShader.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="ActorComponent.cpp" />
     <ClCompile Include="AllClassesRegistration.cpp" />
     <ClCompile Include="AABoundingBoxComponent.cpp" />
@@ -172,6 +176,7 @@
     <ClCompile Include="EditorClipboard.cpp" />
     <ClCompile Include="EditorEngine.cpp" />
     <ClCompile Include="Engine.cpp" />
+    <ClCompile Include="ExponentialHeightFogActor.cpp" />
     <ClCompile Include="GameEngine.cpp" />
     <ClCompile Include="Frustum.cpp" />
     <ClCompile Include="FViewportClient.cpp" />
@@ -284,6 +289,7 @@
     <ClCompile Include="TextRenderComponent.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="UEContainer.cpp" />
+    <ClCompile Include="HeightFogComponent.cpp" />
     <ClCompile Include="UI\Factory\UIWindowFactory.cpp" />
     <ClCompile Include="UI\GlobalConsole.cpp" />
     <ClCompile Include="UI\ImGui\ImGuiHelper.cpp" />
@@ -377,6 +383,7 @@
     <ClInclude Include="EditorClipboard.h" />
     <ClInclude Include="EditorEngine.h" />
     <ClInclude Include="Engine.h" />
+    <ClInclude Include="ExponentialHeightFogActor.h" />
     <ClInclude Include="Frustum.h" />
     <ClInclude Include="FViewportClient.h" />
     <ClInclude Include="GameEngine.h" />
@@ -456,6 +463,7 @@
     <ClInclude Include="ObjectIterator.h" />
     <ClInclude Include="Triangle.h" />
     <ClInclude Include="UEContainer.h" />
+    <ClInclude Include="HeightFogComponent.h" />
     <ClInclude Include="UI\Factory\UIWindowFactory.h" />
     <ClInclude Include="UI\GlobalConsole.h" />
     <ClInclude Include="UI\ImGui\ImGuiHelper.h" />

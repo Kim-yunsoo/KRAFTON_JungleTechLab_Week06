@@ -142,8 +142,11 @@ public:
 	// Fullscreen quad 초기화
 	void InitializeFullscreenQuad();
 
-	// Post-process pass 렌더링
+	// Scene Depth Pass
 	void RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport);
+
+	// Exponential Height Fog Pass
+	void RenderExponentialHeightFogPass(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport);
 
 private:
 	// 싱글톤 매니저 참조
@@ -189,7 +192,10 @@ private:
 
 	// Scene Depth Pass용 전체 화면 쿼드 쉐이더
 	UShader* SceneDepthShader = nullptr;
+	// Exponential Height Fog Shader 
+	UShader* ExponentialHeightFogShader = nullptr;
 };
+
 template<class T>
 inline T* UWorld::SpawnActor()
 {

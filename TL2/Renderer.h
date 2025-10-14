@@ -49,7 +49,15 @@ public:
 
     void UpdateViewportBuffer(float StartX, float StartY, float SizeX, float SizeY);
 
+    void UpdateViewportBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
+
     void UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
+
+    void UpdateCameraNearFarBuffer(float NearPlane, float FarPlane);
+
+    void UpdateFogParameterBuffer(float FogDensity, float FogHeightFalloff, float FogStartDistance, float FogCutoffDistance, float FogMaxOpacity, const FVector4& FogInscatteringColor, const FVector& FogComponentPosition);
+
+    void UpdateInverseViewProjMatrixBuffer(const FMatrix& InvViewMatrix, const FMatrix& InvProjectionMatrix);
 
     void DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITIVE_TOPOLOGY InTopology, const TArray<FMaterialSlot>& InComponentMaterialSlots);
 

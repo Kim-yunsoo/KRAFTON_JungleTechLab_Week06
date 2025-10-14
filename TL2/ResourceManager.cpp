@@ -369,16 +369,15 @@ void UResourceManager::InitShaderILMap()
 {
     TArray<D3D11_INPUT_ELEMENT_DESC> layout;
 
+	layout.clear();
+    ShaderToInputLayoutMap["SceneDepthShader.hlsl"] = layout;
+	ShaderToInputLayoutMap["ExponentialHeightFogShader.hlsl"] = layout;
+
     layout.Add({ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 });
     layout.Add({ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 });
     ShaderToInputLayoutMap["ShaderLine.hlsl"] = layout;
     ShaderToInputLayoutMap["Primitive.hlsl"] = layout;
     layout.clear();
-
-    layout.Add({ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 });
-	layout.Add({ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 });
-	ShaderToInputLayoutMap["SceneDepthShader.hlsl"] = layout;
-	layout.clear();
 
     layout.Add({ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 });
     layout.Add({ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 });

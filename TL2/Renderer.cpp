@@ -137,6 +137,13 @@ void URenderer::UpdateViewportBuffer(float StartX, float StartY, float SizeX, fl
     static_cast<D3D11RHI*>(RHIDevice)->UpdateViewportConstantBuffer(StartX, StartY, SizeX, SizeY);
 }
 
+void URenderer::UpdateViewportBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
+{
+    static_cast<D3D11RHI*>(RHIDevice)->UpdateViewportConstantBuffer(
+        ViewportX, ViewportY, ViewportWidth, ViewportHeight, ScreenWidth, ScreenHeight
+    );
+}
+
 void URenderer::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
 {
     static_cast<D3D11RHI*>(RHIDevice)->UpdateDepthVisualizationBuffer(
@@ -145,6 +152,24 @@ void URenderer::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, 
         ViewportWidth, ViewportHeight,
         ScreenWidth, ScreenHeight
     );
+}
+
+void URenderer::UpdateCameraNearFarBuffer(float NearPlane, float FarPlane)
+{
+    static_cast<D3D11RHI*>(RHIDevice)->UpdateCameraNearFarConstantBuffer(NearPlane, FarPlane);
+}
+
+void URenderer::UpdateFogParameterBuffer(float FogDensity, float FogHeightFalloff, float FogStartDistance, float FogCutoffDistance, float FogMaxOpacity, const FVector4& FogInscatteringColor, const FVector& FogComponentPosition)
+{
+    static_cast<D3D11RHI*>(RHIDevice)->UpdateFogParameterConstantBuffer(
+        FogDensity, FogHeightFalloff, FogStartDistance, FogCutoffDistance,
+        FogMaxOpacity, FogInscatteringColor, FogComponentPosition
+    );
+}
+
+void URenderer::UpdateInverseViewProjMatrixBuffer(const FMatrix& InvViewMatrix, const FMatrix& InvProjectionMatrix)
+{
+	static_cast<D3D11RHI*>(RHIDevice)->UpdateInverseViewProjMatrixConstantBuffer(InvViewMatrix, InvProjectionMatrix);
 }
 
 void URenderer::UpdateUVScroll(const FVector2D& Speed, float TimeSec)
