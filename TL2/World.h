@@ -38,9 +38,6 @@ public:
 	UWorld();
 	~UWorld() override;
 
-protected:
-
-
 public:
 	/** 초기화 */
 	void Initialize();
@@ -141,6 +138,13 @@ public:
 	void CleanupWorld();
 
 	bool IsPIEWorld() const { return WorldType == EWorldType::PIE; }
+
+	// Fullscreen quad 초기화
+	void InitializeFullscreenQuad();
+
+	// Post-process pass 렌더링
+	void RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport);
+
 private:
 	// 싱글톤 매니저 참조
 	UResourceManager& ResourceManager;
@@ -182,6 +186,9 @@ private:
 	// BVH 주기적 재빌드 관련
 	int32 BVHRebuildInterval = 30; // 0 = 더티 플래그만 사용, N = N프레임마다 재빌드
 	int32 BVHFrameCounter = 0;
+
+	// Scene Depth Pass용 전체 화면 쿼드 쉐이더
+	UShader* SceneDepthShader = nullptr;
 };
 template<class T>
 inline T* UWorld::SpawnActor()

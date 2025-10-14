@@ -49,6 +49,8 @@ public:
 
     void UpdateViewportBuffer(float StartX, float StartY, float SizeX, float SizeY);
 
+    void UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
+
     void DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITIVE_TOPOLOGY InTopology, const TArray<FMaterialSlot>& InComponentMaterialSlots);
 
     void UpdateUVScroll(const FVector2D& Speed, float TimeSec);
