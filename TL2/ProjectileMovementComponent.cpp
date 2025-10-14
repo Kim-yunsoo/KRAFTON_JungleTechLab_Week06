@@ -235,14 +235,6 @@ void UProjectileMovementComponent::UpdateRotationFromVelocity()
     UpdatedComponent->SetWorldRotation(NewRotation);
 }
 
-UObject* UProjectileMovementComponent::Duplicate()
-{
-    UProjectileMovementComponent* DuplicatedComponent = NewObject<UProjectileMovementComponent>(*this);
-    DuplicatedComponent->DuplicateSubObjects();
-
-    return DuplicatedComponent;
-}
-
 UObject* UProjectileMovementComponent::Duplicate(FObjectDuplicationParameters Parameters)
 {
     auto DupObject = static_cast<UProjectileMovementComponent*>(Super_t::Duplicate(Parameters));
@@ -260,7 +252,10 @@ UObject* UProjectileMovementComponent::Duplicate(FObjectDuplicationParameters Pa
     // CurrentBounceCount는 런타임 상태이므로 복사하지 않음 (0으로 초기화됨)
 
     // 호밍 속성 복사
-    // HomingTargetActor와 HomingTargetComponent는 포인터이므로 복사하지 않음
+    // HomingTarget은 포인터이지만, PIE 복제를 위해 복사함
+    DupObject->HomingTargetActor = HomingTargetActor;
+    DupObject->HomingTargetComponent = HomingTargetComponent;
+
     DupObject->HomingAccelerationMagnitude = HomingAccelerationMagnitude;
     DupObject->bIsHomingProjectile = bIsHomingProjectile;
 

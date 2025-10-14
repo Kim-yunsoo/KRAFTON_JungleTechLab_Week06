@@ -83,7 +83,6 @@ public:
     float GetCurrentLifetime() const { return CurrentLifetime; }
 
     // 복제
-    UObject* Duplicate() override;
     UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
     void DuplicateSubObjects() override;
 
