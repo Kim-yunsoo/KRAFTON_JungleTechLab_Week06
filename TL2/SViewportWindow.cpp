@@ -221,13 +221,25 @@ void SViewportWindow::RenderToolbar()
 
 		if (ImGui::Button("Reset")) { /* TODO: 카메라 Reset */ }
 
-		const char* viewModes[] = { "Lit", "Unlit", "Wireframe" };
-		int currentViewMode = static_cast<int>(ViewportClient-> GetViewModeIndex())-1; // 0=Lit, 1=Unlit, 2=Wireframe -1이유 1부터 시작이여서 
+		const char* viewModes[] = { "Lit", "Unlit", "Wireframe", "Scene Depth" };
+		int currentViewMode = static_cast<int>(ViewportClient->GetViewModeIndex()) - 1;
 
 		ImGui::SameLine();
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 2)); // 버튼/콤보 내부 여백 축소
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 0)); // 아이템 간 간격 축소
-		ImGui::SetNextItemWidth(80.0f);                                // ✅ 폭 줄이기
+
+		// 동적 폭 계산: 가장 긴 텍스트 찾기
+		float maxTextWidth = 0.0f;
+		for (int i = 0; i < IM_ARRAYSIZE(viewModes); i++)
+		{
+			float textWidth = ImGui::CalcTextSize(viewModes[i]).x;
+			if (textWidth > maxTextWidth)
+				maxTextWidth = textWidth;
+		}
+		// 여백 추가 (화살표 아이콘 + 패딩)
+		float comboWidth = maxTextWidth + ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetFrameHeight();
+		ImGui::SetNextItemWidth(comboWidth);
+
 		bool changed = ImGui::Combo("##ViewMode", &currentViewMode, viewModes, IM_ARRAYSIZE(viewModes));
 		ImGui::PopStyleVar(2);
 
@@ -238,12 +250,13 @@ void SViewportWindow::RenderToolbar()
 			case 0: ViewportClient->SetViewModeIndex(EViewModeIndex::VMI_Lit); break;
 			case 1: ViewportClient->SetViewModeIndex(EViewModeIndex::VMI_Unlit); break;
 			case 2: ViewportClient->SetViewModeIndex(EViewModeIndex::VMI_Wireframe); break;
+			case 3: ViewportClient->SetViewModeIndex(EViewModeIndex::VMI_SceneDepth); break;
 			}
 		}
 
 		// ShowFlags 콤보박스
 		ImGui::SameLine();
-		ImGui::SetNextItemWidth(70.0f);
+		ImGui::SetNextItemWidth(120.0f);
 		if (ImGui::BeginCombo("##ShowFlags", "Show Flags"))
 		{
 			// Primitives
@@ -287,13 +300,6 @@ void SViewportWindow::RenderToolbar()
 			{
 				Viewport->ToggleShowFlag(EEngineShowFlags::SF_Decals);
 			}
-
-			//// Wireframe
-			//bool bWireframeEnabled = Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Wireframe);
-			//if (ImGui::Checkbox("Wireframe", &bWireframeEnabled))
-			//{
-			//	Viewport->ToggleShowFlag(EEngineShowFlags::SF_Wireframe);
-			//}
 
 			ImGui::EndCombo();
 		}
@@ -361,9 +367,6 @@ void SViewportWindow::RenderToolbar()
 			}
 		
 		}
-
-		//ImGui::PopStyleVar();
-
 	}
 	ImGui::End();
 }
