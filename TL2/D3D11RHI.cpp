@@ -419,7 +419,10 @@ void D3D11RHI::RSSetDefaultState()
 void D3D11RHI::RSSetViewport()
 {
     DeviceContext->RSSetViewports(1, &ViewportInfo);
+
+    RefreshFXAAConstantsFromSwapchain();
 }
+
 
 void D3D11RHI::OMSetRenderTargets()
 {
