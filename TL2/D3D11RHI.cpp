@@ -429,7 +429,7 @@ void D3D11RHI::OMSetRenderTargets()
     if (FXAARTV)
         DeviceContext->OMSetRenderTargets(1, &FXAARTV, DepthStencilView);
     else
-        DeviceContext->OMSetRenderTargets(1, &RenderTargetView, DepthStencilView);
+        DeviceContext->OMSetRenderTargets(1, &RenderTargetView, DepthStencilView); 
 }
 
 void D3D11RHI::OMSetBlendState(bool bIsBlendMode)
@@ -1080,8 +1080,8 @@ void D3D11RHI::RefreshFXAAConstantsFromSwapchain()
         return;
 
     FXAAInfo info{};
-    info.InvResolution[0] = 1.0f / w; // static_cast<float>(ViewportInfo.Width);
-    info.InvResolution[1] = 1.0f / h; //static_cast<float>(ViewportInfo.Height);
+    info.InvResolution[0] = 1.0f / static_cast<float>(ViewportInfo.Width);
+    info.InvResolution[1] = 1.0f / static_cast<float>(ViewportInfo.Height);
 
     info.Enabled = bFXAAEnabledFlag;
 

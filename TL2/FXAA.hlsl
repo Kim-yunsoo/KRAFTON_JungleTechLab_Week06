@@ -62,10 +62,10 @@ float Luma(float3 color)
 //------------------------------------------------------------------------------
 float4 PS_FXAA(VS_OUT input) : SV_Target
 {
-    // Viewport-aware UV (frame pixel -> normalized)
-    float2 viewportLocalPos = input.pos.xy - ViewportRect.xy; // in pixels
-    float2 viewportUV = viewportLocalPos / max(ViewportRect.zw, float2(1e-6, 1e-6));
-    float2 tex = (ViewportRect.xy + viewportUV * ViewportRect.zw) * InvResolution;
+    //픽셀 좌표계를 viewport rect를 사용해서 viewportLoalPos로 변환
+    float2 viewportLocalPos = input.pos.xy - ViewportRect.xy; // 0,0 ~ v
+    float2 viewportUV = viewportLocalPos / max(ViewportRect.zw, float2(1e-6, 1e-6)); // viewport에 맞는 UV zw는 width height
+    float2 tex = (ViewportRect.xy + viewportLocalPos) * InvResolution;
 
     // Bypass if disabled
     if (!Enabled)

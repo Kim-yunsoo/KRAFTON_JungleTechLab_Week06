@@ -43,6 +43,7 @@ void URenderer::BeginFrame()
     //OM
     //RHIDevice->OMSetBlendState();
     RHIDevice->OMSetRenderTargets();
+	OMSetDepthStencilState(EComparisonFunc::LessEqual);
 }
 
 void URenderer::PrepareShader(FShader& InShader)
@@ -461,7 +462,8 @@ void URenderer::SetFXAAParams(float SpanMax, float ReduceMul, float ReduceMin)
 }
 
 void URenderer::PostProcessing()
-{ 
+{
+ 
     /// Post-process: FXAA  
     if (!FXAAShader)
     {
@@ -590,8 +592,7 @@ void URenderer::EndLineBatch(const FMatrix& ModelMatrix, const FMatrix& ViewMatr
     {
         bLineBatchActive = false;
         return;
-    }
-    
+    } 
     // Set up rendering state
     UpdateConstantBuffer(ModelMatrix, ViewMatrix, ProjectionMatrix);
     PrepareShader(LineShader);

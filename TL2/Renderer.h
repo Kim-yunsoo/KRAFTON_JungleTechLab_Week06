@@ -120,7 +120,7 @@ private:
 
     // Post-process FXAA shader
     UShader* FXAAShader = nullptr;
-    bool bFXAAEnabled = true;
+    bool bFXAAEnabled = false;
     int FXAAVersion = 1; 
 };
 

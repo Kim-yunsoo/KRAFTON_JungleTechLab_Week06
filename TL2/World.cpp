@@ -256,9 +256,8 @@ void UWorld::Render()
     {
         MultiViewport->OnRender();
     }
-
-    //======post processing=========// 
-    Renderer->PostProcessing(); 
+     
+    PostProcessing(); 
 
     //프레임 종료 
     Renderer->EndFrame();
@@ -436,9 +435,11 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
             }
         }
     }
-    StatsCollector.EndDecalPass();
 
-	Renderer->EndLineBatch(FMatrix::Identity(), ViewMatrix, ProjectionMatrix);
+    StatsCollector.EndDecalPass();
+	
+    Renderer->EndLineBatch(FMatrix::Identity(), ViewMatrix, ProjectionMatrix);
+     
 }
 
 void UWorld::RenderEngineActors(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport)
@@ -484,6 +485,41 @@ void UWorld::RenderEngineActors(const FMatrix& ViewMatrix, const FMatrix& Projec
         }
         Renderer->OMSetBlendState(false);
     }
+}
+
+void UWorld::ApplyFXAA(FViewport* vt)
+{
+
+    UShader* FXAAShader = UResourceManager::GetInstance().Load<UShader>("FXAA.hlsl");
+
+    // Update viewport CB (b6) and bind backbuffer for FXAA 
+    Renderer->UpdateViewportBuffer(vt->GetStartX(), vt->GetStartY(), vt->GetSizeX(), vt->GetSizeY());
+
+
+    Renderer->PrepareShader(FXAAShader);
+    Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqualReadOnly);
+
+    ID3D11DeviceContext* DevieContext = Renderer->GetRHIDevice()->GetDeviceContext();
+    // Set FXAA shader (uses SV_VertexID, no input layout)
+    DevieContext->VSSetShader(FXAAShader->GetVertexShader(), nullptr, 0);
+    DevieContext->PSSetShader(FXAAShader->GetPixelShader(), nullptr, 0);
+    DevieContext->IASetInputLayout(FXAAShader->GetInputLayout());
+    DevieContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // Ensure no blending for fullscreen resolve
+    Renderer->OMSetBlendState(false);
+
+    // Bind source color as t0
+    ID3D11ShaderResourceView* srcSRV = static_cast<D3D11RHI*>(Renderer->GetRHIDevice())->GetFXAASRV();
+    Renderer->GetRHIDevice()->PSSetDefaultSampler(0);
+    DevieContext->PSSetShaderResources(0, 1, &srcSRV);
+
+    // Draw fullscreen triangle
+    DevieContext->Draw(3, 0);
+
+    // Unbind SRV to avoid warnings on next frame when rebinding as RTV
+    ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+
+    DevieContext->PSSetShaderResources(0, 1, nullSRV); 
 }
 
 void UWorld::Tick(float DeltaSeconds)
@@ -1575,3 +1611,80 @@ void UWorld::UpdateBVHIfNeeded()
     }
 }
 
+void UWorld::PostProcessing()
+{ 
+
+    if (!MultiViewport) return;
+
+    auto* Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
+
+    auto ApplyOne = [&](FViewport* vp) {
+        if (!vp) return;
+
+        // (A) 이 뷰 사각형만 쓰도록 RS Viewport/Scissor 고정
+        D3D11_VIEWPORT v{};
+        v.TopLeftX = (float)vp->GetStartX();
+        v.TopLeftY = (float)vp->GetStartY();
+        v.Width = (float)vp->GetSizeX();
+        v.Height = (float)vp->GetSizeY();
+        v.MinDepth = 0.0f; v.MaxDepth = 1.0f;
+        Renderer->GetRHIDevice()->GetDeviceContext()->RSSetViewports(1, &v);
+
+        D3D11_RECT sc = {
+            (LONG)vp->GetStartX(), (LONG)vp->GetStartY(),
+            (LONG)(vp->GetStartX() + vp->GetSizeX()),
+            (LONG)(vp->GetStartY() + vp->GetSizeY())
+        };
+
+        Renderer->GetRHIDevice()->GetDeviceContext()->RSSetScissorRects(1, &sc);
+
+        // (B) FXAA 출력 타겟: 백버퍼 RTV (깊이X) 바인딩  ← 이것이 빠지면 화면에 안 찍힘
+        Device->OMSetBackBufferNoDepth();                                  // 렌더러 경로가 하던 것과 동일
+        // (C) 뷰포트 CB 업데이트 및 드로우
+        ApplyFXAA(vp);
+        };
+
+    if (MultiViewport->GetCurrentLayoutMode() == EViewportLayoutMode::FourSplit) {
+        auto** Viewports = MultiViewport->GetViewports();
+        for (int i = 0; i < 4; ++i)
+        { 
+            ApplyOne(Viewports[i]->GetViewport());
+        }
+    }
+    else 
+    {
+            ApplyOne(MultiViewport->GetMainViewport()->GetViewport());
+
+    }
+   /* if (MultiViewport)
+    {
+        if (MultiViewport->GetCurrentLayoutMode() == EViewportLayoutMode::FourSplit)
+        {
+            SViewportWindow** Viewports = MultiViewport->GetViewports();
+            for (int i = 0; i < 4; ++i)
+            {
+                if (Viewports[i])
+                {
+                    FViewport* vp = Viewports[i]->GetViewport();
+                    if (vp)
+                    {
+                        ApplyFXAA(vp);
+                    }
+                }
+            }
+        }
+        else
+        {
+            SViewportWindow* mainVP = MultiViewport->GetMainViewport();
+            if (mainVP)
+            {
+                FViewport* vp = mainVP->GetViewport();
+                if (vp)
+                {
+                    ApplyFXAA(vp);
+                }
+            }
+        }
+    }*/
+
+}
