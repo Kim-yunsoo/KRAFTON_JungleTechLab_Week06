@@ -22,7 +22,6 @@ public:
     void Render(class URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
 
     // Duplicate
-    virtual UObject* Duplicate() override;
     virtual UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
     virtual void DuplicateSubObjects() override;
 

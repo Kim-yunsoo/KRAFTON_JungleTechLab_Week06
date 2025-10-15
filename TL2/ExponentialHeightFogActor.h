@@ -29,7 +29,6 @@ public:
     virtual bool DeleteComponent(USceneComponent* ComponentToDelete) override;
 
     // Duplication (PIE 모드 지원)
-    virtual UObject* Duplicate() override;
     virtual UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
     virtual void DuplicateSubObjects() override;
 

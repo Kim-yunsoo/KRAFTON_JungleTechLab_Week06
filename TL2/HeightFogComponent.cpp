@@ -80,57 +80,27 @@ float UHeightFogComponent::CalculateFogAmount(const FVector& CameraPosition, con
     return FMath::Clamp(FogAmount, 0.0f, FogMaxOpacity);
 }
 
-UObject* UHeightFogComponent::Duplicate()
-{
-    // ✅ 얕은 복사: NewObject로 기본 생성 후 *this로 복사
-    UHeightFogComponent* NewComp = NewObject<UHeightFogComponent>(*this);
-
-    // ✅ 명시적으로 속성 복사 (얕은 복사 보완)
-    NewComp->FogDensity = FogDensity;
-    NewComp->FogHeightFalloff = FogHeightFalloff;
-    NewComp->StartDistance = StartDistance;
-    NewComp->FogCutoffDistance = FogCutoffDistance;
-    NewComp->FogMaxOpacity = FogMaxOpacity;
-    NewComp->FogInscatteringColor = FogInscatteringColor;
-    NewComp->bEnabled = bEnabled;
-
-    return NewComp;
-}
-
 UObject* UHeightFogComponent::Duplicate(FObjectDuplicationParameters Parameters)
 {
-    // ✅ 1. DuplicationSeed에서 이미 복제된 객체 찾기
-    auto It = Parameters.DuplicationSeed.find(this);
-    if (It != Parameters.DuplicationSeed.end())
-    {
-        return It->second;
-    }
+    // 부모 클래스의 Duplicate 호출 (Transform 등 기본 속성 복사)
+    UHeightFogComponent* DuplicatedObject = static_cast<UHeightFogComponent*>(Super_t::Duplicate(Parameters));
 
-    // ✅ 2. 새로운 인스턴스 생성 (얕은 복사)
-    UHeightFogComponent* NewComp = NewObject<UHeightFogComponent>(*this);
+    // HeightFogComponent 전용 속성 복사
+    DuplicatedObject->FogDensity = FogDensity;
+    DuplicatedObject->FogHeightFalloff = FogHeightFalloff;
+    DuplicatedObject->StartDistance = StartDistance;
+    DuplicatedObject->FogCutoffDistance = FogCutoffDistance;
+    DuplicatedObject->FogMaxOpacity = FogMaxOpacity;
+    DuplicatedObject->FogInscatteringColor = FogInscatteringColor;
+    DuplicatedObject->bEnabled = bEnabled;
 
-    // ✅ 3. Outer 설정
-    if (Parameters.DestOuter)
-    {
-        NewComp->SetOuter(Parameters.DestOuter);
-    }
+    // Billboard 속성 복사 (에디터 전용)
+    DuplicatedObject->BillboardWidth = BillboardWidth;
+    DuplicatedObject->BillboardHeight = BillboardHeight;
 
-    // ✅ 4. 속성 복사
-    NewComp->FogDensity = FogDensity;
-    NewComp->FogHeightFalloff = FogHeightFalloff;
-    NewComp->StartDistance = StartDistance;
-    NewComp->FogCutoffDistance = FogCutoffDistance;
-    NewComp->FogMaxOpacity = FogMaxOpacity;
-    NewComp->FogInscatteringColor = FogInscatteringColor;
-    NewComp->bEnabled = bEnabled;
+    DuplicatedObject->DuplicateSubObjects();
 
-    // ✅ 5. CreatedObjects 맵에 등록
-    Parameters.CreatedObjects.emplace(this, NewComp);
-
-    // ✅ 6. DuplicateSubObjects 호출
-    NewComp->DuplicateSubObjects();
-
-    return NewComp;
+    return DuplicatedObject;
 }
 
 void UHeightFogComponent::DuplicateSubObjects()

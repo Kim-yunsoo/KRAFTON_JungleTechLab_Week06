@@ -66,37 +66,6 @@ bool AExponentialHeightFogActor::DeleteComponent(USceneComponent* ComponentToDel
     return Super_t::DeleteComponent(ComponentToDelete);
 }
 
-UObject* AExponentialHeightFogActor::Duplicate()
-{
-    // 원본(this)의 컴포넌트들 저장
-    USceneComponent* OriginalRoot = this->RootComponent;
-
-    // 얕은 복사 수행 (생성자 실행됨 - HeightFogComponent 생성)
-    AExponentialHeightFogActor* DuplicatedActor = NewObject<AExponentialHeightFogActor>(*this);
-
-    // 생성자가 만든 컴포넌트 삭제
-    if (DuplicatedActor->HeightFogComponent)
-    {
-        DuplicatedActor->OwnedComponents.Remove(DuplicatedActor->HeightFogComponent);
-        ObjectFactory::DeleteObject(DuplicatedActor->HeightFogComponent);
-        DuplicatedActor->HeightFogComponent = nullptr;
-    }
-
-    DuplicatedActor->RootComponent = nullptr;
-    DuplicatedActor->OwnedComponents.clear();
-
-    // 원본의 RootComponent(HeightFogComponent) 복제
-    if (OriginalRoot)
-    {
-        DuplicatedActor->RootComponent = Cast<USceneComponent>(OriginalRoot->Duplicate());
-    }
-
-    // OwnedComponents 재구성 및 타입별 포인터 재설정
-    DuplicatedActor->DuplicateSubObjects();
-
-    return DuplicatedActor;
-}
-
 UObject* AExponentialHeightFogActor::Duplicate(FObjectDuplicationParameters Parameters)
 {
     // 부모 클래스의 Duplicate 호출 (Transform 등 복사)
