@@ -165,7 +165,7 @@ void D3D11RHI::Release()
 
 void D3D11RHI::ClearBackBuffer()
 {
-    float ClearColor[4] = { 0.025f, 0.025f, 0.025f, 1.0f };
+    float ClearColor[4] = { 0.15f, 0.15f, 0.16f, 1.0f };
     DeviceContext->ClearRenderTargetView(RenderTargetView, ClearColor);
     DeviceContext->ClearRenderTargetView(FXAARTV, ClearColor);
     DeviceContext->ClearRenderTargetView(HeatRTV, ClearColor);
@@ -179,8 +179,8 @@ void D3D11RHI::ClearDepthBuffer(float Depth, UINT Stencil)
 
 void D3D11RHI::ClearSceneRenderTarget()
 {
-    float ClearColor[4] = { 0.025f, 0.025f, 0.025f, 1.0f };
-	DeviceContext->ClearRenderTargetView(SceneRenderTargetView, ClearColor);
+    float ClearColor[4] = { 0.15f, 0.15f, 0.15f, 1.0f };
+    DeviceContext->ClearRenderTargetView(SceneRenderTargetView, ClearColor);
 }
 
 void D3D11RHI::CreateBlendState()

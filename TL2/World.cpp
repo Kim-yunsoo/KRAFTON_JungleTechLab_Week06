@@ -68,6 +68,8 @@ static float WorldRadiusToPixelRadius_Persp(
     return WorldRadius * (float(ScreenHeightPx) * 0.5f)  / FMath::Max(ViewZ, 1e-3f) * fy;
 }
 
+
+
 static inline bool WorldToScreenOutViewZ(
     const FVector& P,
     const FMatrix& View,

@@ -1,19 +1,37 @@
 {
   "Version" : 2,
-  "NextUUID" : 1438,
+  "NextUUID" : 3102,
   "PerspectiveCamera" : {
     "FOV" : [60.000000],
     "FarClip" : [4000.000000],
-    "Location" : [-7.283911, -21.029236, 23.266830],
+    "Location" : [-7.550120, -19.766983, 29.662500],
     "NearClip" : [0.100000],
-    "Rotation" : [0.000000, 47.700012, 53.999905]
+    "Rotation" : [0.000000, 49.800056, 61.999882]
   },
   "Actors" : [
+    {
+      "UUID" : 850,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Sphere_36",
+      "RootComponentUUID" : 852
+    },
     {
       "UUID" : 537,
       "Type" : "AStaticMeshActor",
       "Name" : "ship_0",
       "RootComponentUUID" : 539
+    },
+    {
+      "UUID" : 601,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Sphere_0",
+      "RootComponentUUID" : 603
+    },
+    {
+      "UUID" : 916,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Sphere_58",
+      "RootComponentUUID" : 918
     },
     {
       "UUID" : 595,
@@ -22,10 +40,10 @@
       "RootComponentUUID" : 597
     },
     {
-      "UUID" : 601,
+      "UUID" : 859,
       "Type" : "AStaticMeshActor",
-      "Name" : "Sphere_0",
-      "RootComponentUUID" : 603
+      "Name" : "Sphere_39",
+      "RootComponentUUID" : 861
     },
     {
       "UUID" : 604,
@@ -46,10 +64,22 @@
       "RootComponentUUID" : 612
     },
     {
+      "UUID" : 862,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Sphere_40",
+      "RootComponentUUID" : 864
+    },
+    {
       "UUID" : 613,
       "Type" : "AStaticMeshActor",
       "Name" : "Sphere_4",
       "RootComponentUUID" : 615
+    },
+    {
+      "UUID" : 823,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Sphere_27",
+      "RootComponentUUID" : 825
     },
     {
       "UUID" : 616,
@@ -70,10 +100,22 @@
       "RootComponentUUID" : 624
     },
     {
+      "UUID" : 874,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Sphere_44",
+      "RootComponentUUID" : 876
+    },
+    {
       "UUID" : 625,
       "Type" : "AStaticMeshActor",
       "Name" : "Sphere_8",
       "RootComponentUUID" : 627
+    },
+    {
+      "UUID" : 883,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Sphere_47",
+      "RootComponentUUID" : 885
     },
     {
       "UUID" : 628,
@@ -82,10 +124,22 @@
       "RootComponentUUID" : 630
     },
     {
+      "UUID" : 808,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Sphere_22",
+      "RootComponentUUID" : 810
+    },
+    {
       "UUID" : 631,
       "Type" : "AStaticMeshActor",
       "Name" : "Sphere_10",
       "RootComponentUUID" : 633
+    },
+    {
+      "UUID" : 961,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Sphere_73",
+      "RootComponentUUID" : 963
     },
     {
       "UUID" : 634,
@@ -94,10 +148,22 @@
       "RootComponentUUID" : 636
     },
     {
+      "UUID" : 886,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Sphere_48",
+      "RootComponentUUID" : 888
+    },
+    {
       "UUID" : 637,
       "Type" : "AStaticMeshActor",
       "Name" : "Sphere_12",
       "RootComponentUUID" : 639
+    },
+    {
+      "UUID" : 847,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Sphere_35",
+      "RootComponentUUID" : 849
     },
     {
       "UUID" : 640,
@@ -118,10 +184,22 @@
       "RootComponentUUID" : 648
     },
     {
+      "UUID" : 898,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Sphere_52",
+      "RootComponentUUID" : 900
+    },
+    {
       "UUID" : 649,
       "Type" : "AStaticMeshActor",
       "Name" : "Sphere_16",
       "RootComponentUUID" : 651
+    },
+    {
+      "UUID" : 907,
+      "Type" : "AStaticMeshActor",
+      "Name" : "Sphere_55",
+      "RootComponentUUID" : 909
     },
     {
       "UUID" : 652,
@@ -154,12 +232,6 @@
       "RootComponentUUID" : 807
     },
     {
-      "UUID" : 808,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Sphere_22",
-      "RootComponentUUID" : 810
-    },
-    {
       "UUID" : 811,
       "Type" : "AStaticMeshActor",
       "Name" : "Sphere_23",
@@ -182,12 +254,6 @@
       "Type" : "AStaticMeshActor",
       "Name" : "Sphere_26",
       "RootComponentUUID" : 822
-    },
-    {
-      "UUID" : 823,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Sphere_27",
-      "RootComponentUUID" : 825
     },
     {
       "UUID" : 826,
@@ -232,18 +298,6 @@
       "RootComponentUUID" : 846
     },
     {
-      "UUID" : 847,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Sphere_35",
-      "RootComponentUUID" : 849
-    },
-    {
-      "UUID" : 850,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Sphere_36",
-      "RootComponentUUID" : 852
-    },
-    {
       "UUID" : 853,
       "Type" : "AStaticMeshActor",
       "Name" : "Sphere_37",
@@ -254,18 +308,6 @@
       "Type" : "AStaticMeshActor",
       "Name" : "Sphere_38",
       "RootComponentUUID" : 858
-    },
-    {
-      "UUID" : 859,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Sphere_39",
-      "RootComponentUUID" : 861
-    },
-    {
-      "UUID" : 862,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Sphere_40",
-      "RootComponentUUID" : 864
     },
     {
       "UUID" : 865,
@@ -286,12 +328,6 @@
       "RootComponentUUID" : 873
     },
     {
-      "UUID" : 874,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Sphere_44",
-      "RootComponentUUID" : 876
-    },
-    {
       "UUID" : 877,
       "Type" : "AStaticMeshActor",
       "Name" : "Sphere_45",
@@ -302,18 +338,6 @@
       "Type" : "AStaticMeshActor",
       "Name" : "Sphere_46",
       "RootComponentUUID" : 882
-    },
-    {
-      "UUID" : 883,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Sphere_47",
-      "RootComponentUUID" : 885
-    },
-    {
-      "UUID" : 886,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Sphere_48",
-      "RootComponentUUID" : 888
     },
     {
       "UUID" : 889,
@@ -334,12 +358,6 @@
       "RootComponentUUID" : 897
     },
     {
-      "UUID" : 898,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Sphere_52",
-      "RootComponentUUID" : 900
-    },
-    {
       "UUID" : 901,
       "Type" : "AStaticMeshActor",
       "Name" : "Sphere_53",
@@ -352,12 +370,6 @@
       "RootComponentUUID" : 906
     },
     {
-      "UUID" : 907,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Sphere_55",
-      "RootComponentUUID" : 909
-    },
-    {
       "UUID" : 910,
       "Type" : "AStaticMeshActor",
       "Name" : "Sphere_56",
@@ -368,12 +380,6 @@
       "Type" : "AStaticMeshActor",
       "Name" : "Sphere_57",
       "RootComponentUUID" : 915
-    },
-    {
-      "UUID" : 916,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Sphere_58",
-      "RootComponentUUID" : 918
     },
     {
       "UUID" : 919,
@@ -460,35 +466,22 @@
       "RootComponentUUID" : 960
     },
     {
-      "UUID" : 961,
-      "Type" : "AStaticMeshActor",
-      "Name" : "Sphere_73",
-      "RootComponentUUID" : 963
+      "UUID" : 3096,
+      "Type" : "AExponentialHeightFogActor",
+      "Name" : "ExponentialHeightFog_0",
+      "RootComponentUUID" : 3098
     }
   ],
   "Components" : [
     {
-      "UUID" : 539,
-      "OwnerActorUUID" : 537,
+      "UUID" : 852,
+      "OwnerActorUUID" : 850,
       "ParentComponentUUID" : 0,
       "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [0.000000, -7.397187, 0.000000],
-      "RelativeRotation" : [-179.999985, 0.000000, -0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/ship/ship.obj"
-    },
-    {
-      "UUID" : 540,
-      "OwnerActorUUID" : 537,
-      "ParentComponentUUID" : 539,
-      "Type" : "UPointLightComponent",
-      "RelativeLocation" : [0.000000, 5.000000, 0.000000],
+      "RelativeLocation" : [2.530290, 2.749413, 4.852138],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "LightColor" : [1.000000, 0.000000, 0.000000, 0.000000],
-      "AttenuationRadius" : 4.800000,
-      "Intensity" : 1709.000000,
-      "LightFalloffExponent" : 1.000000
+      "StaticMesh" : "Data/Sphere.obj"
     },
     {
       "UUID" : 584,
@@ -525,6 +518,42 @@
       "bIsActive" : true
     },
     {
+      "UUID" : 539,
+      "OwnerActorUUID" : 537,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [0.000000, -7.691238, -0.092470],
+      "RelativeRotation" : [-179.999939, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/ship/ship.obj"
+    },
+    {
+      "UUID" : 540,
+      "OwnerActorUUID" : 537,
+      "ParentComponentUUID" : 539,
+      "Type" : "UPointLightComponent",
+      "RelativeLocation" : [0.000000, 5.000000, 0.000000],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "LightColor" : [1.000000, 0.000000, 0.000000, 0.000000],
+      "AttenuationRadius" : 4.800000,
+      "Intensity" : 1709.000000,
+      "LightFalloffExponent" : 1.000000
+    },
+    {
+      "UUID" : 1749,
+      "OwnerActorUUID" : 537,
+      "ParentComponentUUID" : 539,
+      "Type" : "UPointLightComponent",
+      "RelativeLocation" : [0.000000, -1.300000, -2.200000],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "LightColor" : [1.000000, 1.000000, 1.000000, 0.000000],
+      "AttenuationRadius" : 3.300000,
+      "Intensity" : 1.000000,
+      "LightFalloffExponent" : 0.700000
+    },
+    {
       "UUID" : 582,
       "OwnerActorUUID" : 537,
       "ParentComponentUUID" : 539,
@@ -538,11 +567,31 @@
       "LightFalloffExponent" : 0.700000
     },
     {
+      "UUID" : 603,
+      "OwnerActorUUID" : 601,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [2.168493, 1.168340, 1.065432],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/Sphere.obj"
+    },
+    {
+      "UUID" : 918,
+      "OwnerActorUUID" : 916,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [9.648426, 6.259041, 3.815729],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/Sphere.obj"
+    },
+    {
       "UUID" : 597,
       "OwnerActorUUID" : 595,
       "ParentComponentUUID" : 0,
       "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [13.458964, 1.300520, 1.711839],
+      "RelativeLocation" : [11.888528, 1.300520, 3.381895],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [3.000000, 3.000000, 3.000000],
       "StaticMesh" : "Data/Sphere.obj"
@@ -556,16 +605,16 @@
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
       "LightColor" : [1.000000, 0.277992, 0.000000, 0.000000],
-      "AttenuationRadius" : 7.500000,
-      "Intensity" : 10.000000,
-      "LightFalloffExponent" : 2.000000
+      "AttenuationRadius" : 9.000000,
+      "Intensity" : 2.000000,
+      "LightFalloffExponent" : 0.800000
     },
     {
-      "UUID" : 603,
-      "OwnerActorUUID" : 601,
+      "UUID" : 861,
+      "OwnerActorUUID" : 859,
       "ParentComponentUUID" : 0,
       "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [2.168493, 1.168340, 1.065432],
+      "RelativeLocation" : [8.736534, 2.867213, 3.515427],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
       "StaticMesh" : "Data/Sphere.obj"
@@ -601,11 +650,31 @@
       "StaticMesh" : "Data/Sphere.obj"
     },
     {
+      "UUID" : 864,
+      "OwnerActorUUID" : 862,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [-8.925749, -5.986206, -4.049501],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/Sphere.obj"
+    },
+    {
       "UUID" : 615,
       "OwnerActorUUID" : 613,
       "ParentComponentUUID" : 0,
       "Type" : "UStaticMeshComponent",
       "RelativeLocation" : [4.797358, -2.975707, -4.356670],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/Sphere.obj"
+    },
+    {
+      "UUID" : 825,
+      "OwnerActorUUID" : 823,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [-3.796807, 5.696890, 2.107914],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
       "StaticMesh" : "Data/Sphere.obj"
@@ -641,11 +710,31 @@
       "StaticMesh" : "Data/Sphere.obj"
     },
     {
+      "UUID" : 876,
+      "OwnerActorUUID" : 874,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [6.906034, -5.818354, -1.324198],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/Sphere.obj"
+    },
+    {
       "UUID" : 627,
       "OwnerActorUUID" : 625,
       "ParentComponentUUID" : 0,
       "Type" : "UStaticMeshComponent",
       "RelativeLocation" : [-0.657521, 1.112857, -4.500412],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/Sphere.obj"
+    },
+    {
+      "UUID" : 885,
+      "OwnerActorUUID" : 883,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [-0.622272, 6.913969, -4.426710],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
       "StaticMesh" : "Data/Sphere.obj"
@@ -661,11 +750,31 @@
       "StaticMesh" : "Data/Sphere.obj"
     },
     {
+      "UUID" : 810,
+      "OwnerActorUUID" : 808,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [5.257424, 6.943266, -0.109562],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/Sphere.obj"
+    },
+    {
       "UUID" : 633,
       "OwnerActorUUID" : 631,
       "ParentComponentUUID" : 0,
       "Type" : "UStaticMeshComponent",
       "RelativeLocation" : [1.751915, -0.584582, -0.423749],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/Sphere.obj"
+    },
+    {
+      "UUID" : 963,
+      "OwnerActorUUID" : 961,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [2.141484, 7.614674, 0.931730],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
       "StaticMesh" : "Data/Sphere.obj"
@@ -681,11 +790,31 @@
       "StaticMesh" : "Data/Sphere.obj"
     },
     {
+      "UUID" : 888,
+      "OwnerActorUUID" : 886,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [5.973998, 5.077364, 8.524734],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/Sphere.obj"
+    },
+    {
       "UUID" : 639,
       "OwnerActorUUID" : 637,
       "ParentComponentUUID" : 0,
       "Type" : "UStaticMeshComponent",
       "RelativeLocation" : [-0.300149, -2.752312, -3.919950],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/Sphere.obj"
+    },
+    {
+      "UUID" : 849,
+      "OwnerActorUUID" : 847,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [6.360363, -8.059633, 6.595966],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
       "StaticMesh" : "Data/Sphere.obj"
@@ -721,11 +850,31 @@
       "StaticMesh" : "Data/Sphere.obj"
     },
     {
+      "UUID" : 900,
+      "OwnerActorUUID" : 898,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [4.136784, 3.964659, 9.199194],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/Sphere.obj"
+    },
+    {
       "UUID" : 651,
       "OwnerActorUUID" : 649,
       "ParentComponentUUID" : 0,
       "Type" : "UStaticMeshComponent",
       "RelativeLocation" : [2.071749, -3.964812, 2.925352],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000],
+      "StaticMesh" : "Data/Sphere.obj"
+    },
+    {
+      "UUID" : 909,
+      "OwnerActorUUID" : 907,
+      "ParentComponentUUID" : 0,
+      "Type" : "UStaticMeshComponent",
+      "RelativeLocation" : [-9.779046, 5.306253, -7.764214],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
       "StaticMesh" : "Data/Sphere.obj"
@@ -781,16 +930,6 @@
       "StaticMesh" : "Data/Sphere.obj"
     },
     {
-      "UUID" : 810,
-      "OwnerActorUUID" : 808,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [5.257424, 6.943266, -0.109562],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Sphere.obj"
-    },
-    {
       "UUID" : 813,
       "OwnerActorUUID" : 811,
       "ParentComponentUUID" : 0,
@@ -826,16 +965,6 @@
       "ParentComponentUUID" : 0,
       "Type" : "UStaticMeshComponent",
       "RelativeLocation" : [5.509506, 7.753838, -7.587817],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Sphere.obj"
-    },
-    {
-      "UUID" : 825,
-      "OwnerActorUUID" : 823,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [-3.796807, 5.696890, 2.107914],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
       "StaticMesh" : "Data/Sphere.obj"
@@ -911,26 +1040,6 @@
       "StaticMesh" : "Data/Sphere.obj"
     },
     {
-      "UUID" : 849,
-      "OwnerActorUUID" : 847,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [6.360363, -8.059633, 6.595966],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Sphere.obj"
-    },
-    {
-      "UUID" : 852,
-      "OwnerActorUUID" : 850,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [2.530290, 2.749413, 4.852138],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Sphere.obj"
-    },
-    {
       "UUID" : 855,
       "OwnerActorUUID" : 853,
       "ParentComponentUUID" : 0,
@@ -946,26 +1055,6 @@
       "ParentComponentUUID" : 0,
       "Type" : "UStaticMeshComponent",
       "RelativeLocation" : [0.368968, 4.211249, -7.377850],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Sphere.obj"
-    },
-    {
-      "UUID" : 861,
-      "OwnerActorUUID" : 859,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [8.736534, 2.867213, 3.515427],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Sphere.obj"
-    },
-    {
-      "UUID" : 864,
-      "OwnerActorUUID" : 862,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [-8.925749, -5.986206, -4.049501],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
       "StaticMesh" : "Data/Sphere.obj"
@@ -1001,16 +1090,6 @@
       "StaticMesh" : "Data/Sphere.obj"
     },
     {
-      "UUID" : 876,
-      "OwnerActorUUID" : 874,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [6.906034, -5.818354, -1.324198],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Sphere.obj"
-    },
-    {
       "UUID" : 879,
       "OwnerActorUUID" : 877,
       "ParentComponentUUID" : 0,
@@ -1026,26 +1105,6 @@
       "ParentComponentUUID" : 0,
       "Type" : "UStaticMeshComponent",
       "RelativeLocation" : [6.738792, 8.507034, -0.555132],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Sphere.obj"
-    },
-    {
-      "UUID" : 885,
-      "OwnerActorUUID" : 883,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [-0.622272, 6.913969, -4.426710],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Sphere.obj"
-    },
-    {
-      "UUID" : 888,
-      "OwnerActorUUID" : 886,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [5.973998, 5.077364, 8.524734],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
       "StaticMesh" : "Data/Sphere.obj"
@@ -1081,16 +1140,6 @@
       "StaticMesh" : "Data/Sphere.obj"
     },
     {
-      "UUID" : 900,
-      "OwnerActorUUID" : 898,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [4.136784, 3.964659, 9.199194],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Sphere.obj"
-    },
-    {
       "UUID" : 903,
       "OwnerActorUUID" : 901,
       "ParentComponentUUID" : 0,
@@ -1111,16 +1160,6 @@
       "StaticMesh" : "Data/Sphere.obj"
     },
     {
-      "UUID" : 909,
-      "OwnerActorUUID" : 907,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [-9.779046, 5.306253, -7.764214],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Sphere.obj"
-    },
-    {
       "UUID" : 912,
       "OwnerActorUUID" : 910,
       "ParentComponentUUID" : 0,
@@ -1136,16 +1175,6 @@
       "ParentComponentUUID" : 0,
       "Type" : "UStaticMeshComponent",
       "RelativeLocation" : [9.766228, -3.053377, -1.653188],
-      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
-      "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Sphere.obj"
-    },
-    {
-      "UUID" : 918,
-      "OwnerActorUUID" : 916,
-      "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [9.648426, 6.259041, 3.815729],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
       "StaticMesh" : "Data/Sphere.obj"
@@ -1291,14 +1320,29 @@
       "StaticMesh" : "Data/Sphere.obj"
     },
     {
-      "UUID" : 963,
-      "OwnerActorUUID" : 961,
+      "UUID" : 3097,
+      "OwnerActorUUID" : 3096,
       "ParentComponentUUID" : 0,
-      "Type" : "UStaticMeshComponent",
-      "RelativeLocation" : [2.141484, 7.614674, 0.931730],
+      "Type" : "USceneComponent",
+      "RelativeLocation" : [0.000000, 0.000000, 0.000000],
+      "RelativeRotation" : [0.000000, 0.000000, 0.000000],
+      "RelativeScale" : [1.000000, 1.000000, 1.000000]
+    },
+    {
+      "UUID" : 3098,
+      "OwnerActorUUID" : 3096,
+      "ParentComponentUUID" : 0,
+      "Type" : "UHeightFogComponent",
+      "RelativeLocation" : [0.000000, 0.000000, 13.885456],
       "RelativeRotation" : [0.000000, 0.000000, 0.000000],
       "RelativeScale" : [1.000000, 1.000000, 1.000000],
-      "StaticMesh" : "Data/Sphere.obj"
+      "FogDensity" : 0.015000,
+      "FogHeightFalloff" : 0.200000,
+      "StartDistance" : 0.000000,
+      "FogCutoffDistance" : 3600.000000,
+      "FogMaxOpacity" : 1.000000,
+      "FogInscatteringColor" : [0.000000, 0.000000, 0.000000, 1.000000],
+      "bHeightFogEnabled" : true
     }
   ]
 }
