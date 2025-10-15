@@ -33,8 +33,8 @@ cbuffer LightBuffer : register(b7)
 float SoftAttenuate(FLightInfo LightInfo, float3 Position)
 {
     float dist = length(Position - LightInfo.LightPos);
-    float x = saturate(dist / LightInfo.Radius);
-    return pow(1.0f - x, LightInfo.RadiusFallOff) * LightInfo.Intensity;
+    float x = saturate(dist / max(LightInfo.Radius, 1e-3));
+    return max(pow(1.0f - x, LightInfo.RadiusFallOff) * LightInfo.Intensity, 1e-3);
 }
 
 // Diffuse-only point light helper (world-space)
@@ -43,7 +43,7 @@ float3 Calculate_PointLight_Diffuse(FLightInfo LightInfo, float3 worldPos, float
     //LightInfo.LightPos = float3(0, 0, 0);
 
     float3 L = normalize(LightInfo.LightPos - worldPos);
-    float NdotL = max(dot(worldNormal, L),1e-3);
+    float NdotL = max( dot(worldNormal, L),1e-3);
     
     float atten = SoftAttenuate(LightInfo, worldPos);
     
