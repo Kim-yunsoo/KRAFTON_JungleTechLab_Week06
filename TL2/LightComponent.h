@@ -6,8 +6,9 @@ class ULightComponent : public USceneComponent
 public:
     DECLARE_CLASS(ULightComponent, USceneComponent)
     ULightComponent();
-
-    UObject* Duplication(FObjectDuplicationParameters Parameters);
+     
+    // Proper duplicate override to carry light-specific properties
+    UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
 
     //FLinearColor GetLightColor() { return LightColor; }
     FVector4 GetLightColor() { return LightColor; }

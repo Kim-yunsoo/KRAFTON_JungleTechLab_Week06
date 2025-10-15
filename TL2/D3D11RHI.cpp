@@ -591,7 +591,7 @@ void D3D11RHI::CreateFrameBuffer()
 }
 
 void D3D11RHI::CreateDepthBuffer()
-{
+{  
     DXGI_SWAP_CHAIN_DESC swapDesc;
     SwapChain->GetDesc(&swapDesc);
 
