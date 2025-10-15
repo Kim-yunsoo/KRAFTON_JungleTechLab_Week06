@@ -410,8 +410,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
                         Heat.UV = OutUV;
                         Heat.RadiusPx = RadiusPx;
                         Heat.Strength = Strength;
-                        HeatCB.Spots[HeatCB.NumSpots++] = Heat;
-
+                        HeatCB.Spots[HeatCB.NumSpots++] = Heat; 
                     }
 
                 }
@@ -639,8 +638,8 @@ void UWorld::ApplyHeat(FViewport* vt)
     DeviceContext->PSSetShaderResources(0, 1, &SceneSRV);
 
     // Noise texture for distortion
-    //FTextureData* NoiseTexData = UResourceManager::GetInstance().CreateOrGetTextureData("./Data/WorleyNoise.jpg");
-    FTextureData* NoiseTexData = UResourceManager::GetInstance().CreateOrGetTextureData("./Data/PerlinNoise.png");
+    FTextureData* NoiseTexData = UResourceManager::GetInstance().CreateOrGetTextureData("./Data/WorleyNoise.jpg");
+    //FTextureData* NoiseTexData = UResourceManager::GetInstance().CreateOrGetTextureData("./Data/PerlinNoise.png");
     DeviceContext->PSSetShaderResources(1, 1, &NoiseTexData->TextureSRV);
 
     Renderer->GetRHIDevice()->PSSetMirrorSampler(0);
