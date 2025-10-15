@@ -457,7 +457,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
         // Depth 시각화
         RenderSceneDepthPass(ViewMatrix, ProjectionMatrix, Viewport);
     }
-    else if (HasActiveFog())
+	else if (HasActiveFog() && Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Fog))
     {
         // Fog 적용
         RenderExponentialHeightFogPass(ViewMatrix, ProjectionMatrix, Viewport);
