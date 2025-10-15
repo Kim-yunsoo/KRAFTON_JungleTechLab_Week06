@@ -29,6 +29,7 @@
 #include "HeightFogComponent.h"
 #include "LightComponent.h"
 #include "PointLightComponent.h"
+#include "FireBallActor.h"
 #include "D3D11RHI.h"
 
 extern float CLIENTWIDTH;
@@ -1306,6 +1307,14 @@ void UWorld::SaveSceneV2(const FString& SceneName)
                     CompData.FogInscatteringColor = HeightFogComp->GetFogInscatteringColor();
                     CompData.bHeightFogEnabled = HeightFogComp->IsEnabled();
                 }
+                else if (UPointLightComponent* PointLightComp = Cast<UPointLightComponent>(Comp))
+                {
+                    // PointLightComponent 속성 저장 (ULightComponent 기본 속성 포함)
+                    CompData.LightColor = PointLightComp->GetLightColor();
+                    CompData.AttenuationRadius = PointLightComp->GetAttenuationRadius();
+                    CompData.Intensity = PointLightComp->GetIntensity();
+                    CompData.LightFalloffExponent = PointLightComp->GetFalloff();
+                }
             }
             else
             {
@@ -1429,6 +1438,11 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         {
             DecalActor->ClearDefaultComponents();
         }
+        // FireBallActor의 경우 생성자가 만든 컴포넌트들을 삭제 (StaticMeshActor보다 먼저 체크)
+        else if (AFireBallActor* FireBallActor = Cast<AFireBallActor>(NewActor))
+        {
+            FireBallActor->ClearDefaultComponents();
+        }
         // StaticMeshActor의 경우 생성자가 만든 컴포넌트들을 삭제
         else if (AStaticMeshActor* StaticMeshActor = Cast<AStaticMeshActor>(NewActor))
         {
@@ -1516,6 +1530,14 @@ void UWorld::LoadSceneV2(const FString& SceneName)
                 HeightFogComp->SetFogMaxOpacity(CompData.FogMaxOpacity);
                 HeightFogComp->SetFogInscatteringColor(CompData.FogInscatteringColor);
                 HeightFogComp->SetEnabled(CompData.bHeightFogEnabled);
+            }
+            else if (UPointLightComponent* PointLightComp = Cast<UPointLightComponent>(NewComp))
+            {
+                // PointLightComponent 속성 복원
+                PointLightComp->SetLightColor(CompData.LightColor);
+                PointLightComp->SetAttenuationRadius(CompData.AttenuationRadius);
+                PointLightComp->SetIntensity(CompData.Intensity);
+                PointLightComp->SetFalloff(CompData.LightFalloffExponent);
             }
 
             // Owner Actor 설정
@@ -1630,6 +1652,26 @@ void UWorld::LoadSceneV2(const FString& SceneName)
                     break;
                 }
             }
+
+            // FireBallActor 전용 포인터 재설정
+        if (AFireBallActor* FireBallActor = Cast<AFireBallActor>(Actor))
+        {
+            // PointLightComponent 찾기
+            for (UActorComponent* Comp : FireBallActor->OwnedComponents)
+            {
+                if (UPointLightComponent* PointLightComp = Cast<UPointLightComponent>(Comp))
+                {
+                    FireBallActor->SetPointLightComponent(PointLightComp);
+                    break;
+                }
+            }
+
+            // Fireball 머티리얼 재설정
+            if (UStaticMeshComponent* SMC = FireBallActor->GetStaticMeshComponent())
+            {
+                SMC->SetMaterial("Fireball.hlsl");
+            }
+        }
         }
         // DecalActor 전용 포인터 재설정
         else if (ADecalActor* DecalActor = Cast<ADecalActor>(Actor))

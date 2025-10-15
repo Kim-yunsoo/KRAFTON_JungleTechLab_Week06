@@ -89,6 +89,12 @@ struct FComponentData
     float FogMaxOpacity = 1.0f;
     FVector4 FogInscatteringColor{ 0.447f, 0.639f, 1.0f, 1.0f };
     bool bHeightFogEnabled = true;
+
+    // PointLightComponent 전용 속성 (ULightComponent 기본 속성 포함)
+    FVector4 LightColor{ 1.0f, 1.0f, 1.0f, 1.0f };
+    float AttenuationRadius = 100.0f;
+    float Intensity = 1.0f;
+    float LightFalloffExponent = 0.7f;
 };
 
 struct FActorData

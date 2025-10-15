@@ -382,6 +382,17 @@ void FSceneLoader::SaveV2(const FSceneData& SceneData, const FString& SceneName)
                 << Comp.FogInscatteringColor.W << "],\n";
             oss << "      \"bHeightFogEnabled\" : " << (Comp.bHeightFogEnabled ? "true" : "false");
         }
+        else if (Comp.Type.find("PointLightComponent") != std::string::npos)
+        {
+            // PointLightComponent 전용 속성
+            oss << ",\n";
+            oss << "      \"LightColor\" : [" << Comp.LightColor.X << ", "
+                << Comp.LightColor.Y << ", " << Comp.LightColor.Z << ", "
+                << Comp.LightColor.W << "],\n";
+            oss << "      \"AttenuationRadius\" : " << Comp.AttenuationRadius << ",\n";
+            oss << "      \"Intensity\" : " << Comp.Intensity << ",\n";
+            oss << "      \"LightFalloffExponent\" : " << Comp.LightFalloffExponent;
+        }
 
         oss << "\n";
         oss << "    }" << (i + 1 < SceneData.Components.size() ? "," : "") << "\n";
@@ -699,6 +710,27 @@ FSceneData FSceneLoader::ParseV2(const JSON& Json)
 
             if (CompJson.hasKey("bHeightFogEnabled"))
                 Comp.bHeightFogEnabled = CompJson.at("bHeightFogEnabled").ToBool();
+
+            // PointLightComponent 전용 속성
+            if (CompJson.hasKey("LightColor"))
+            {
+                auto color = CompJson.at("LightColor");
+                Comp.LightColor = FVector4(
+                    (float)color[0].ToFloat(),
+                    (float)color[1].ToFloat(),
+                    (float)color[2].ToFloat(),
+                    (float)color[3].ToFloat()
+                );
+            }
+
+            if (CompJson.hasKey("AttenuationRadius"))
+                Comp.AttenuationRadius = (float)CompJson.at("AttenuationRadius").ToFloat();
+
+            if (CompJson.hasKey("Intensity"))
+                Comp.Intensity = (float)CompJson.at("Intensity").ToFloat();
+
+            if (CompJson.hasKey("LightFalloffExponent"))
+                Comp.LightFalloffExponent = (float)CompJson.at("LightFalloffExponent").ToFloat();
 
             Data.Components.push_back(Comp);
         }

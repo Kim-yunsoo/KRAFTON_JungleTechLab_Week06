@@ -27,6 +27,20 @@ AFireBallActor::~AFireBallActor()
 	PointLightComponent = nullptr;
 }
 
+void AFireBallActor::ClearDefaultComponents()
+{
+	// 부모의 ClearDefaultComponents 호출 (StaticMeshComponent 삭제)
+	Super_t::ClearDefaultComponents();
+
+	// 생성자가 만든 PointLightComponent 삭제
+	if (PointLightComponent)
+	{
+		OwnedComponents.Remove(PointLightComponent);
+		ObjectFactory::DeleteObject(PointLightComponent);
+		PointLightComponent = nullptr;
+	}
+}
+
 UObject* AFireBallActor::Duplicate(FObjectDuplicationParameters Parameters)
 {
 	auto DupActor = static_cast<AFireBallActor*>(Super_t::Duplicate(Parameters));
