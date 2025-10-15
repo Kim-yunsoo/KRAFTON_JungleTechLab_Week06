@@ -91,9 +91,11 @@ public:
 
     int GetFXAAQuality() { return FXAAVersion; }
     void SetFXAAQuality(int Version) { FXAAVersion = Version; }
-
-    void PostProcessing();
-
+     
+    void EnsurePostProcessingShader(); 
+    
+    UShader* GetFXAAShader() { return FXAAShader; }
+    UShader* GetHeatShader() { return HeatShader; }
 private:
     URHIDevice* RHIDevice;
 
@@ -123,8 +125,9 @@ private:
     // Visible Light
     TArray<FLightInfo> WorldLights;
 
-    // Post-process FXAA shader
+    // Post-processing shader
     UShader* FXAAShader = nullptr;
+    UShader* HeatShader = nullptr;
     bool bFXAAEnabled = false;
     int FXAAVersion = 1; 
 };

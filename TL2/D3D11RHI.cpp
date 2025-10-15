@@ -91,6 +91,7 @@ void D3D11RHI::Initialize(HWND hWindow)
     CreateConstantBuffer();
 	CreateDepthStencilState();
 	CreateSamplerState();
+    CreateMirrorSamplerState();
     UResourceManager::GetInstance().Initialize(Device,DeviceContext);
 
     // Initialize Direct2D overlay after device/swapchain ready
@@ -129,6 +130,7 @@ void D3D11RHI::Release()
     if (ViewportCB) { ViewportCB->Release(); ViewportCB = nullptr; }
     if (ConstantBuffer) { ConstantBuffer->Release(); ConstantBuffer = nullptr; }
     if (FXAACB) { FXAACB->Release(); FXAACB = nullptr; }
+    if (HeatCB) { HeatCB->Release(); HeatCB = nullptr; }
     if (DepthVisualizationCB) { DepthVisualizationCB->Release(); DepthVisualizationCB = nullptr; }
 
     // 상태 객체
@@ -157,6 +159,7 @@ void D3D11RHI::ClearBackBuffer()
     float ClearColor[4] = { 0.025f, 0.025f, 0.025f, 1.0f };
     DeviceContext->ClearRenderTargetView(RenderTargetView, ClearColor);
     DeviceContext->ClearRenderTargetView(FXAARTV, ClearColor);
+    DeviceContext->ClearRenderTargetView(HeatRTV, ClearColor);
 }
 
 void D3D11RHI::ClearDepthBuffer(float Depth, UINT Stencil)
@@ -228,6 +231,20 @@ void D3D11RHI::CreateSamplerState()
     SampleDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
 	HRESULT HR = Device->CreateSamplerState(&SampleDesc, &DefaultSamplerState);
+}
+
+void D3D11RHI::CreateMirrorSamplerState()
+{
+    D3D11_SAMPLER_DESC SampleDesc = {};
+    SampleDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    SampleDesc.AddressU = D3D11_TEXTURE_ADDRESS_MIRROR;
+    SampleDesc.AddressV = D3D11_TEXTURE_ADDRESS_MIRROR;
+    SampleDesc.AddressW = D3D11_TEXTURE_ADDRESS_MIRROR;
+    SampleDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    SampleDesc.MinLOD = 0;
+    SampleDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+	HRESULT HR = Device->CreateSamplerState(&SampleDesc, &MirrorSamplerState);
 }
 
 HRESULT D3D11RHI::CreateIndexBuffer(ID3D11Device* device, const FMeshData* meshData, ID3D11Buffer** outBuffer)
@@ -426,6 +443,7 @@ void D3D11RHI::RSSetViewport()
 
 void D3D11RHI::OMSetRenderTargets()
 {
+    //DeviceContext->OMSetRenderTargets(1, &HeatRTV, DepthStencilView);
     if (FXAARTV)
         DeviceContext->OMSetRenderTargets(1, &FXAARTV, DepthStencilView);
     else 
@@ -556,6 +574,27 @@ void D3D11RHI::CreateFrameBuffer()
 
     Device->CreateRenderTargetView(FXAATex, nullptr, &FXAARTV);
     Device->CreateShaderResourceView(FXAATex, nullptr, &FXAASRV);
+
+
+    // FXAA SRV생성
+    D3D11_TEXTURE2D_DESC Heattd = {};
+    Heattd.Width = swapDesc.BufferDesc.Width;
+    Heattd.Height = swapDesc.BufferDesc.Height;
+    Heattd.MipLevels = 1;
+    Heattd.ArraySize = 1;
+    Heattd.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; 
+    Heattd.SampleDesc.Count = 1;
+    Heattd.Usage = D3D11_USAGE_DEFAULT;
+    Heattd.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    Device->CreateTexture2D(&Heattd, nullptr, &HeatTex);
+    
+    // FXAA용 RTV 생성 
+    /*D3D11_RENDER_TARGET_VIEW_DESC FXAARTVdesc = {};
+    FXAARTVdesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    FXAARTVdesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;*/
+
+    Device->CreateRenderTargetView(HeatTex, nullptr, &HeatRTV);
+    Device->CreateShaderResourceView(HeatTex, nullptr, &HeatSRV);
 
 
 
@@ -704,9 +743,7 @@ void D3D11RHI::CreateConstantBuffer()
     fxaaDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     fxaaDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     Device->CreateBuffer(&fxaaDesc, nullptr, &FXAACB);
-
-
-
+     
     // b8
     D3D11_BUFFER_DESC heatDesc = {};
     heatDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -805,11 +842,7 @@ void D3D11RHI::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, f
  
    }
 }
-
-void D3D11RHI::UpdateHeatConstantBuffer(const FHeatInfo& HeatCB)
-{
-
-}
+ 
 
 void D3D11RHI::ReleaseSamplerState()
 {
@@ -818,6 +851,12 @@ void D3D11RHI::ReleaseSamplerState()
         DefaultSamplerState->Release();
         DefaultSamplerState = nullptr;
 	}
+
+    if (MirrorSamplerState)
+    {
+        MirrorSamplerState->Release();
+        MirrorSamplerState = nullptr;
+    }
 }
 
 void D3D11RHI::ReleaseBlendState()
@@ -866,6 +905,11 @@ void D3D11RHI::ReleaseFrameBuffer()
         FXAATex->Release();
         FXAATex = nullptr;
     }
+    if (HeatTex)
+    {
+        HeatTex->Release();
+        HeatTex = nullptr;
+    }
     if (RenderTargetView)
     {
         RenderTargetView->Release();
@@ -874,7 +918,14 @@ void D3D11RHI::ReleaseFrameBuffer()
     if (FXAARTV)
     {
         FXAARTV->Release();
+        FXAARTV = nullptr;
     } 
+    if (HeatRTV)
+    {
+        HeatRTV->Release();
+        HeatRTV = nullptr;
+    }
+
     if (DepthShaderResourceView)
     {
         DepthShaderResourceView->Release();
@@ -884,6 +935,11 @@ void D3D11RHI::ReleaseFrameBuffer()
     {
         FXAASRV->Release();
         FXAASRV = nullptr;
+    }
+    if (HeatSRV)
+    {
+        HeatSRV->Release();
+        HeatSRV = nullptr;
     }
     if (DepthStencilView)
     {
@@ -1114,7 +1170,10 @@ void D3D11RHI::PSSetDefaultSampler(UINT StartSlot)
 {
     DeviceContext->PSSetSamplers(StartSlot, 1, &DefaultSamplerState);
 }
-
+void D3D11RHI::PSSetMirrorSampler(UINT StartSlot)
+{
+    DeviceContext->PSSetSamplers(StartSlot, 1, &MirrorSamplerState);
+} 
 void D3D11RHI::OMSetBackBufferNoDepth()
 {
     DeviceContext->OMSetRenderTargets(1, &RenderTargetView, nullptr);
@@ -1154,6 +1213,7 @@ void D3D11RHI::RefreshFXAAConstantsFromSwapchain()
     }
 
     UpdateFXAAConstantBuffers(info);
+     
 }
 
 void D3D11RHI::UpdateLightConstantBuffers(const TArray<FLightInfo>& InLights)
@@ -1212,5 +1272,3 @@ void D3D11RHI::UpdateHeatConstantBuffer(const FHeatInfo& HeatInfo)
         DeviceContext->PSSetConstantBuffers(8, 1, &HeatCB);
     }
 }
-
-\

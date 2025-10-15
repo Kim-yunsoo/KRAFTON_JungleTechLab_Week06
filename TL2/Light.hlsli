@@ -26,7 +26,7 @@ struct FLightInfo
 
 
 cbuffer LightBuffer : register(b7)
-{
+{\
     FLightInfo Lights[MAX_LIGHTS];
 }
 

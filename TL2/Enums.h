@@ -439,8 +439,8 @@ struct FLinearColor
 struct FLightInfo
 {
     ELighType Type;
-    
     FVector LightPos;
+
     FLinearColor Color; 
 
     //Point Light

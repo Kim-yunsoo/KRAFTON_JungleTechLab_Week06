@@ -493,40 +493,17 @@ void URenderer::SetFXAAParams(float SpanMax, float ReduceMul, float ReduceMin)
 
     RHI->UpdateFXAAConstantBuffers(info);
 }
-
-void URenderer::PostProcessing()
-{
  
-    /// Post-process: FXAA  
+void URenderer::EnsurePostProcessingShader()
+{
+    if (!HeatShader)
+    {
+        HeatShader = UResourceManager::GetInstance().Load<UShader>("HeatDistortion.hlsl");
+    }
     if (!FXAAShader)
     {
         FXAAShader = UResourceManager::GetInstance().Load<UShader>("FXAA.hlsl");
     }
-
-    // Update viewport CB (b6) and bind backbuffer for FXAA
-    static_cast<D3D11RHI*>(RHIDevice)->UpdateViewportCBFromCurrent();
-    // Bind backbuffer as target (no depth) for FXAA output
-    static_cast<D3D11RHI*>(RHIDevice)->OMSetBackBufferNoDepth();
-
-    // Set FXAA shader (uses SV_VertexID, no input layout)
-    RHIDevice->GetDeviceContext()->VSSetShader(FXAAShader->GetVertexShader(), nullptr, 0);
-    RHIDevice->GetDeviceContext()->PSSetShader(FXAAShader->GetPixelShader(), nullptr, 0);
-    RHIDevice->GetDeviceContext()->IASetInputLayout(FXAAShader->GetInputLayout());
-    RHIDevice->IASetPrimitiveTopology();
-    // Ensure no blending for fullscreen resolve
-    RHIDevice->OMSetBlendState(false);
-
-    // Bind source color as t0
-    ID3D11ShaderResourceView* srcSRV = static_cast<D3D11RHI*>(RHIDevice)->GetFXAASRV();
-    RHIDevice->PSSetDefaultSampler(0);
-    RHIDevice->GetDeviceContext()->PSSetShaderResources(0, 1, &srcSRV);
-
-    // Draw fullscreen triangle
-    RHIDevice->GetDeviceContext()->Draw(3, 0);
-
-    // Unbind SRV to avoid warnings on next frame when rebinding as RTV
-    ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
-    RHIDevice->GetDeviceContext()->PSSetShaderResources(0, 1, nullSRV);
 }
 
 void URenderer::InitializeLineBatch()

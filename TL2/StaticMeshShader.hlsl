@@ -158,7 +158,7 @@ float4 mainPS(PS_INPUT input) : SV_TARGET
         lighting += Calculate_PointLight_Diffuse(Lights[i], worldPos, N);    
     } 
     
-    finalColor.rgb = saturate(finalColor.rgb * lighting);
+    finalColor.rgb = saturate(finalColor.rgb * lighting); 
     
     return finalColor;
 }

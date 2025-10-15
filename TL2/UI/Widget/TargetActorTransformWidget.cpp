@@ -1138,8 +1138,9 @@ void UTargetActorTransformWidget::RenderWidget()
 			}
 			else if (UPointLightComponent* PointLightComp = Cast<UPointLightComponent>(SelectedComponent))
 			{
-				FLinearColor Color = PointLightComp->GetLightColor();
-				if (ImGui::ColorEdit3("Light Color", &Color.R))
+				//FLinearColor Color = PointLightComp->GetLightColor();
+				FVector4 Color = PointLightComp->GetLightColor();
+				if (ImGui::ColorEdit3("Light Color", &Color.X))
 				{
 					PointLightComp->SetLightColor(Color);
 				}

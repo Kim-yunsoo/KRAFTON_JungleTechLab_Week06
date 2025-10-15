@@ -27,6 +27,7 @@
 #include "ProjectileMovementComponent.h"
 #include "LightComponent.h"
 #include "PointLightComponent.h"
+#include "D3D11RHI.h"
 
 extern float CLIENTWIDTH;
 extern float CLIENTHEIGHT;
@@ -45,6 +46,45 @@ static inline FString GetBaseNameNoExt(const FString& Path)
     if (start <= end) return Path.substr(start, end - start);
     return Path;
 }
+
+static inline FVector2D WorldToScreen01(const FVector& P, const FMatrix& View, const FMatrix& Proj)
+{
+    FVector4 clip =  FVector4(P.X, P.Y, P.Z , 1.0f) * View * Proj; // (row-major 행 연산 흐름 유지)
+    float w = FMath::Max((float)1e-6, (float)clip.W); // CORRECTED: Should be W
+    FVector2D ndc = FVector2D(clip.X / w, clip.Y / w); // [-1,1]
+    return FVector2D(ndc.X * 0.5f + 0.5f, -ndc.Y * 0.5f + 0.5f); // (0,0) 좌상 → (1,1) 우하
+}
+
+static float WorldRadiusToPixelRadius_Persp(
+    float WorldRadius,
+    float ViewZ,
+    float FovYRadians,
+    int   ScreenHeightPx)
+{
+    const float fy = 1.0f / std::tan(FovYRadians * 0.5f);
+    return WorldRadius * (float(ScreenHeightPx) * 0.5f)  / FMath::Max(ViewZ, 1e-3f) * fy;
+}
+
+static inline bool WorldToScreenOutViewZ(
+    const FVector& P,
+    const FMatrix& View,
+    const FMatrix& Proj,
+    FVector2D& OutUV,
+    float& OutViewZ)
+{
+    const FVector4 ViewSpace= FVector4(P.X, P.Y, P.Z, 1.0f) * View;
+    OutViewZ = ViewSpace.Z;
+    const FVector4 ClipSpace = ViewSpace * Proj;
+
+    if (ClipSpace.W <= 1e-6f) return false;
+
+    const float PerspDiv= 1.0f / ClipSpace.W;
+    const FVector2D ndc(ClipSpace.X * PerspDiv, ClipSpace.Y * PerspDiv); // [-1,1] 
+    OutUV = FVector2D(ndc.X * 0.5f + 0.5f, -ndc.Y * 0.5f + 0.5f);
+    return true;
+}
+ 
+
 
 
 UWorld::UWorld() : ResourceManager(UResourceManager::GetInstance())
@@ -308,6 +348,17 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
     {
         TArray<FLightInfo> VisibleFrameLights;
 
+        FHeatInfo HeatCB; // 새로 추가: 이 뷰포트용 HeatCB
+        D3D11RHI* RHI = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
+        IDXGISwapChain* SwapChain = RHI->GetSwapChain();
+        DXGI_SWAP_CHAIN_DESC swapDesc;
+        SwapChain->GetDesc(&swapDesc);
+        HeatCB.InvRes = FVector2D(1.0f / swapDesc.BufferDesc.Width, 1.0f / swapDesc.BufferDesc.Height);
+        HeatCB.FalloffExp = 2.2f;   // 시작값
+        HeatCB.DistortionPx = 0.8f;   // 시작값
+        HeatCB.EmissiveMul = 0.12f;  // 시작값
+        HeatCB.TimeSec =  GetTimeSeconds(); /*엔진 시간 전달*/ // UTime::NowSeconds(); //TODO
+
         const TArray<AActor*>& Actors = Level ? Level->GetActors() : TArray<AActor*>();
 
         for (AActor* Actor : Actors)
@@ -334,12 +385,43 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
                     {
                         VisibleFrameLights.Add(LightInfo);
                     }
+
+
+                    if (HeatCB.NumSpots < 8)
+                    {
+                        FVector2D OutUV;
+                        float OutViewZ = 0.0f;
+                        if (!WorldToScreenOutViewZ(LightInfo.LightPos, ViewMatrix, ProjectionMatrix, OutUV, OutViewZ))
+                            continue; // clip.W<=0 혹은 기타 예외
+
+                        // 화면 밖이면 스킵(선택): uv clamp해서 낮은 strength로 처리하는 옵션도 가능
+                        if (OutUV.X < 0.f || OutUV.X > 1.f || OutUV.Y < 0.f || OutUV.Y > 1.f)
+                            continue;
+
+                        float RadiusPx = 0.0f;
+
+                        UCameraComponent* Cam = MainCameraActor->GetCameraComponent();
+                        RadiusPx = WorldRadiusToPixelRadius_Persp(LightInfo.Radius, OutViewZ, Cam->GetFOV() * PI/ 180 , MainViewport->GetHeight());
+
+                        //float RadiusPx = 120.0f;
+                        float Strength = FMath::Clamp(LightInfo.Intensity * 0.5f, 0.0f, 1.0f);
+                        
+                        FHeatSpot Heat{};
+                        Heat.UV = OutUV;
+                        Heat.RadiusPx = RadiusPx;
+                        Heat.Strength = Strength;
+                        HeatCB.Spots[HeatCB.NumSpots++] = Heat;
+
+                    }
+
                 }
+            
             }
         }
 
         Renderer->SetWorldLights(VisibleFrameLights);
         Renderer->UpdateLightBuffer();
+        Renderer->UpdateHeatConstantBuffer(HeatCB); //TODO 
     }
 
 
@@ -499,7 +581,7 @@ void UWorld::RenderEngineActors(const FMatrix& ViewMatrix, const FMatrix& Projec
 
 void UWorld::ApplyFXAA(FViewport* vt)
 {
-
+    // rtv는 backbuffer로 설정되어있음 
     UShader* FXAAShader = UResourceManager::GetInstance().Load<UShader>("FXAA.hlsl");
 
     // Update viewport CB (b6) and bind backbuffer for FXAA 
@@ -519,9 +601,10 @@ void UWorld::ApplyFXAA(FViewport* vt)
     Renderer->OMSetBlendState(false);
 
     // Bind source color as t0
-    ID3D11ShaderResourceView* srcSRV = static_cast<D3D11RHI*>(Renderer->GetRHIDevice())->GetFXAASRV();
+    ID3D11ShaderResourceView* HeatSRV = static_cast<D3D11RHI*>(Renderer->GetRHIDevice())->GetHeatSRV();
+  
     Renderer->GetRHIDevice()->PSSetDefaultSampler(0);
-    DevieContext->PSSetShaderResources(0, 1, &srcSRV);
+    DevieContext->PSSetShaderResources(0, 1, &HeatSRV);
 
     // Draw fullscreen triangle
     DevieContext->Draw(3, 0);
@@ -532,8 +615,47 @@ void UWorld::ApplyFXAA(FViewport* vt)
     DevieContext->PSSetShaderResources(0, 1, nullSRV); 
 }
 
+void UWorld::ApplyHeat(FViewport* vt)
+{
+    Renderer->EnsurePostProcessingShader(); 
+    UShader* HeatShader = Renderer->GetHeatShader();
+
+    // Update viewport CB (b6)
+    Renderer->UpdateViewportBuffer(vt->GetStartX(), vt->GetStartY(), vt->GetSizeX(), vt->GetSizeY());
+
+    Renderer->PrepareShader(HeatShader);
+    Renderer->OMSetDepthStencilState(EComparisonFunc::Always); // Post-processing doesn't need depth test.
+
+    ID3D11DeviceContext* DeviceContext = Renderer->GetRHIDevice()->GetDeviceContext();
+
+    ID3D11RenderTargetView* HeatRTV = static_cast<D3D11RHI*>(Renderer->GetRHIDevice())->GetHeatRTV();
+    DeviceContext->OMSetRenderTargets(1, &HeatRTV, nullptr);
+    
+    DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    Renderer->OMSetBlendState(false);
+
+    // Input scene texture from previous pass
+    ID3D11ShaderResourceView* SceneSRV = static_cast<D3D11RHI*>(Renderer->GetRHIDevice())->GetFXAASRV();
+    DeviceContext->PSSetShaderResources(0, 1, &SceneSRV);
+
+    // Noise texture for distortion
+    //FTextureData* NoiseTexData = UResourceManager::GetInstance().CreateOrGetTextureData("./Data/WorleyNoise.jpg");
+    FTextureData* NoiseTexData = UResourceManager::GetInstance().CreateOrGetTextureData("./Data/PerlinNoise.png");
+    DeviceContext->PSSetShaderResources(1, 1, &NoiseTexData->TextureSRV);
+
+    Renderer->GetRHIDevice()->PSSetMirrorSampler(0);
+
+    DeviceContext->Draw(3, 0);
+
+    // Unbind SRVs
+    ID3D11ShaderResourceView* NullSRV[2] = { nullptr, nullptr };
+    DeviceContext->PSSetShaderResources(0, 2, NullSRV);
+}
+
 void UWorld::Tick(float DeltaSeconds)
 {
+    TimeSeconds += DeltaSeconds;
+
     // Level의 Actors Tick
     if (Level)
     {
@@ -588,7 +710,7 @@ void UWorld::Tick(float DeltaSeconds)
 
 float UWorld::GetTimeSeconds() const
 {
-    return 0.0f;
+    return TimeSeconds;
 }
 
 bool UWorld::FrustumCullActors(const FFrustum& ViewFrustum, const AActor* Actor, int & FrustumCullCount)
@@ -1779,12 +1901,17 @@ void UWorld::PostProcessing()
 {  
     if (!MultiViewport) return;
 
+    // Store original viewport to restore it later
+    D3D11_VIEWPORT OldViewport;
+    UINT NumViewports = 1;
+    Renderer->GetRHIDevice()->GetDeviceContext()->RSGetViewports(&NumViewports, &OldViewport);
+
     auto* Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
 
-    auto ApplyOne = [&](FViewport* vp) {
+    auto ApplyFXAAOnVP = [&](FViewport* vp) {
         if (!vp) return;
 
-        // 이 뷰 사각형만 쓰도록 RS Viewport 고정
+        // Set the D3D viewport to match the logical viewport for this pass
         D3D11_VIEWPORT v{};
         v.TopLeftX = (float)vp->GetStartX();
         v.TopLeftY = (float)vp->GetStartY();
@@ -1793,21 +1920,36 @@ void UWorld::PostProcessing()
         v.MinDepth = 0.0f; v.MaxDepth = 1.0f;
         Renderer->GetRHIDevice()->GetDeviceContext()->RSSetViewports(1, &v);
            
-        // Postprocessing 이후에 backbuffer에 그리기 위한 RTV 세팅
-        Device->OMSetBackBufferNoDepth();      
+        // Set the render target to the backbuffer for the final FXAA pass
+        Device->OMSetBackBufferNoDepth();     
+        
         ApplyFXAA(vp);
-        };
+    };
 
     if (MultiViewport->GetCurrentLayoutMode() == EViewportLayoutMode::FourSplit) {
         auto** Viewports = MultiViewport->GetViewports();
         for (int i = 0; i < 4; ++i)
         { 
-            ApplyOne(Viewports[i]->GetViewport());
+            ApplyFXAAOnVP(Viewports[i]->GetViewport());
         }
     }
     else 
     {
-         ApplyOne(MultiViewport->GetMainViewport()->GetViewport()); 
+        FViewport* viewport = MultiViewport->GetMainViewport()->GetViewport();
+
+        // Set the viewport for the Heat pass
+        D3D11_VIEWPORT v{};
+        v.TopLeftX = (float)viewport->GetStartX();
+        v.TopLeftY = (float)viewport->GetStartY();
+        v.Width = (float)viewport->GetSizeX();
+        v.Height = (float)viewport->GetSizeY();
+        v.MinDepth = 0.0f; v.MaxDepth = 1.0f;
+        Renderer->GetRHIDevice()->GetDeviceContext()->RSSetViewports(1, &v);
+
+        ApplyHeat(viewport);
+        ApplyFXAAOnVP(viewport);
     } 
 
+    // Restore the original viewport so UI and other rendering is not affected
+    Renderer->GetRHIDevice()->GetDeviceContext()->RSSetViewports(1, &OldViewport);
 }

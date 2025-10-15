@@ -405,6 +405,7 @@ void UResourceManager::InitShaderILMap()
     // FXAA fullscreen pass uses SV_VertexID (no inputs). Keep layout empty and
     // handle null input layout at bind time.
     ShaderToInputLayoutMap["FXAA.hlsl"] = layout; // empty layout
+    ShaderToInputLayoutMap["HeatDistortion.hlsl"] = layout; // empty layout
 }
 
 TArray<D3D11_INPUT_ELEMENT_DESC>& UResourceManager::GetProperInputLayout(const FString& InShaderName)
