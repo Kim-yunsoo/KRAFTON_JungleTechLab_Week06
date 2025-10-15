@@ -568,6 +568,26 @@ void D3D11RHI::CreateFrameBuffer()
 
     Device->CreateRenderTargetView(FXAATex, nullptr, &FXAARTV);
     Device->CreateShaderResourceView(FXAATex, nullptr, &FXAASRV);
+
+    // Heat SRV생성
+    D3D11_TEXTURE2D_DESC Heattd = {};
+    Heattd.Width = swapDesc.BufferDesc.Width;
+    Heattd.Height = swapDesc.BufferDesc.Height;
+    Heattd.MipLevels = 1;
+    Heattd.ArraySize = 1;
+    Heattd.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    Heattd.SampleDesc.Count = 1;
+    Heattd.Usage = D3D11_USAGE_DEFAULT;
+    Heattd.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    Device->CreateTexture2D(&Heattd, nullptr, &HeatTex);
+
+    // FXAA용 RTV 생성 
+    /*D3D11_RENDER_TARGET_VIEW_DESC FXAARTVdesc = {};
+    FXAARTVdesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    FXAARTVdesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;*/
+
+    Device->CreateRenderTargetView(HeatTex, nullptr, &HeatRTV);
+    Device->CreateShaderResourceView(HeatTex, nullptr, &HeatSRV);
 }
 
 void D3D11RHI::CreateDepthBuffer()

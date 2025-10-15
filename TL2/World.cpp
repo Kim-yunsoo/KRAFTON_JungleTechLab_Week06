@@ -682,7 +682,7 @@ void UWorld::ApplyHeat(FViewport* vt)
     Renderer->OMSetBlendState(false);
 
     // Input scene texture from previous pass
-    ID3D11ShaderResourceView* SceneSRV = static_cast<D3D11RHI*>(Renderer->GetRHIDevice())->GetFXAASRV();
+    ID3D11ShaderResourceView* SceneSRV = static_cast<D3D11RHI*>(Renderer->GetRHIDevice())->GetSceneShaderResourceView();
     DeviceContext->PSSetShaderResources(0, 1, &SceneSRV);
 
     // Noise texture for distortion
@@ -1952,10 +1952,10 @@ void UWorld::RenderExponentialHeightFogPass(const FMatrix& ViewMatrix, const FMa
     // ============================================================
     // 3. Scene SRV와 Depth SRV 가져오기
     // ============================================================
-    ID3D11ShaderResourceView* SceneSRV = D3D11Device->GetSceneShaderResourceView();
+    ID3D11ShaderResourceView* HeatSRC = D3D11Device->GetHeatSRV();
     ID3D11ShaderResourceView* DepthSRV = D3D11Device->GetDepthShaderResourceView();
 
-    if (!SceneSRV || !DepthSRV)
+    if (!HeatSRC || !DepthSRV)
     {
         UE_LOG("ERROR: SceneSRV or DepthSRV is nullptr!");
         D3D11Device->OMSetRenderTargets();
@@ -1968,7 +1968,7 @@ void UWorld::RenderExponentialHeightFogPass(const FMatrix& ViewMatrix, const FMa
     D3D11Device->OMSetFXAARenderTarget();
 
     // SRV 바인딩
-    ID3D11ShaderResourceView* SRVs[2] = { SceneSRV, DepthSRV };
+    ID3D11ShaderResourceView* SRVs[2] = { HeatSRC , DepthSRV };
     DeviceContext->PSSetShaderResources(0, 2, SRVs);
 
     // ============================================================
@@ -2074,11 +2074,11 @@ void UWorld::CopySceneToFXAARenderTarget(FViewport* Viewport)
     // ============================================================
     DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 
-    ID3D11ShaderResourceView* SceneSRV = D3D11Device->GetSceneShaderResourceView();
+    ID3D11ShaderResourceView* HeatSRV = D3D11Device->GetHeatSRV();
 
-    if (!SceneSRV)
+    if (!HeatSRV)
     {
-        UE_LOG("ERROR: SceneSRV is nullptr!");
+        UE_LOG("ERROR: HeatSRV is nullptr!");
         D3D11Device->OMSetRenderTargets();
         return;
     }
@@ -2089,7 +2089,7 @@ void UWorld::CopySceneToFXAARenderTarget(FViewport* Viewport)
     D3D11Device->OMSetFXAARenderTarget();
 
     // SRV 바인딩
-    DeviceContext->PSSetShaderResources(0, 1, &SceneSRV);
+    DeviceContext->PSSetShaderResources(0, 1, &HeatSRV);
 
     // 렌더링 상태 설정
     Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
@@ -2219,24 +2219,22 @@ void UWorld::PostProcessing()
     };
 
     auto ApplySceneEffect = [&](FViewport* vp)
-        {
-            ///vp->
-            
+        { 
+            FMatrix ViewMatrix = MainCameraActor->GetViewMatrix();
+            FMatrix ProjectionMatrix = MainCameraActor->GetProjectionMatrix();
             if (ViewModeIndex == EViewModeIndex::VMI_SceneDepth)
             {
                 // Depth 시각화
                 RenderSceneDepthPass(ViewMatrix, ProjectionMatrix, vp);
             }
-            else if (HasActiveFog() && Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Fog))
+            else if (HasActiveFog() && vp->IsShowFlagEnabled(EEngineShowFlags::SF_Fog))
             {
                 // Fog 적용
                 RenderExponentialHeightFogPass(ViewMatrix, ProjectionMatrix, vp);
             }
             else
             {
-                CopySceneToFXAARenderTarget(vp);
-
-
+                CopySceneToFXAARenderTarget(vp); 
             }
 
         };
@@ -2262,6 +2260,7 @@ void UWorld::PostProcessing()
         Renderer->GetRHIDevice()->GetDeviceContext()->RSSetViewports(1, &v);
 
         ApplyHeat(viewport);
+        ApplySceneEffect(viewport);
         ApplyFXAAOnVP(viewport);
     } 
 
