@@ -1,7 +1,7 @@
 ﻿#include "pch.h"
 #include "LightComponent.h"
 
-ULightComponent::ULightComponent()
+ULightComponent::ULightComponent() : LightColor(1,0,0), AttenuationRadius(1.7f), Intensity(1.0f)
 {
 }
 

@@ -1,7 +1,7 @@
 ﻿#include "pch.h"
 #include "PointLightComponent.h"
 
-UPointLightComponent::UPointLightComponent()
+UPointLightComponent::UPointLightComponent() :LightFalloffExponent(0.7)
 {
 }
 
@@ -17,3 +17,4 @@ UObject* UPointLightComponent::Duplicate(FObjectDuplicationParameters Parameters
 UPointLightComponent::~UPointLightComponent()
 {
 }
+	

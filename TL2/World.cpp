@@ -354,10 +354,10 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
         DXGI_SWAP_CHAIN_DESC swapDesc;
         SwapChain->GetDesc(&swapDesc);
         HeatCB.InvRes = FVector2D(1.0f / swapDesc.BufferDesc.Width, 1.0f / swapDesc.BufferDesc.Height);
-        HeatCB.FalloffExp = 2.2f;   // 시작값
-        HeatCB.DistortionPx = 0.8f;   // 시작값
-        HeatCB.EmissiveMul = 0.12f;  // 시작값
-        HeatCB.TimeSec =  GetTimeSeconds(); /*엔진 시간 전달*/ // UTime::NowSeconds(); //TODO
+        HeatCB.FalloffExp = 2.2f;       // 시작값
+        HeatCB.DistortionPx = 0.8f;     // 시작값
+        HeatCB.EmissiveMul = 0.12f;     // 시작값
+        HeatCB.TimeSec =  GetTimeSeconds(); /*엔진 시간 전달*/ 
 
         const TArray<AActor*>& Actors = Level ? Level->GetActors() : TArray<AActor*>();
 
@@ -383,12 +383,8 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
                     
                     if (VisibleFrameLights.size() < 8)
                     {
-                        VisibleFrameLights.Add(LightInfo);
-                    }
+                        VisibleFrameLights.Add(LightInfo); 
 
-
-                    if (HeatCB.NumSpots < 8)
-                    {
                         FVector2D OutUV;
                         float OutViewZ = 0.0f;
                         if (!WorldToScreenOutViewZ(LightInfo.LightPos, ViewMatrix, ProjectionMatrix, OutUV, OutViewZ))
