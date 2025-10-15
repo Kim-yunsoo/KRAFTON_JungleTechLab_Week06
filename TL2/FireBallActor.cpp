@@ -50,8 +50,25 @@ UObject* AFireBallActor::Duplicate(FObjectDuplicationParameters Parameters)
 		}
 	}
 	   
+
+	TArray<UActorComponent*> ToRemove;
+	for (UActorComponent* Comp : DupActor->OwnedComponents)
+	{
+		if (auto* PL = Cast<UPointLightComponent>(Comp))
+		{
+			if (PL != NewPointLight)
+			{
+				ToRemove.Add(PL);
+			}
+		}
+	}
+	for (UActorComponent* Comp : ToRemove)
+	{
+		DupActor->OwnedComponents.Remove(Comp);
+		ObjectFactory::DeleteObject(Comp);
+	}
+
 	DupActor->PointLightComponent = NewPointLight;
-	 
 	//TODO 부모 설정 
 
 	return DupActor;
