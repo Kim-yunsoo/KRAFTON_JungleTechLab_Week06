@@ -25,6 +25,8 @@
 #include "MovementComponent.h"
 #include "RotatingMovementComponent.h"
 #include "ProjectileMovementComponent.h"
+#include "ExponentialHeightFogActor.h"
+#include "HeightFogComponent.h"
 #include "LightComponent.h"
 #include "PointLightComponent.h"
 #include "D3D11RHI.h"
@@ -421,6 +423,8 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
     }
 
 
+	Renderer->BeginSceneRendering();
+
     const TArray<AActor*>& LevelActors = Level ? Level->GetActors() : TArray<AActor*>();
 
     // ====================================================================
@@ -472,6 +476,12 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
                 continue;
             }
 
+            if (UHeightFogComponent* HeightFogComponent = Cast<UHeightFogComponent>(Component))
+            {
+                HeightFogComponent->Render(Renderer, ViewMatrix, ProjectionMatrix);
+                continue;
+            }
+
             if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
             {
                 bool bIsSelected = SelectionManager.IsActorSelected(Actor);
@@ -520,13 +530,25 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
     }
 
     Renderer->EndLineBatch(FMatrix::Identity(), ViewMatrix, ProjectionMatrix);
+	Renderer->EndSceneRendering();
 
     // ====================================================================
-    // Pass 3: Post-Process - Scene Depth 시각화 (VMI_SceneDepth 모드일 때만)
+    // ✅ Pass 3/4: Post-Process (FXAA Render Target 출력)
     // ====================================================================
+
     if (ViewModeIndex == EViewModeIndex::VMI_SceneDepth)
     {
+        // Depth 시각화
         RenderSceneDepthPass(ViewMatrix, ProjectionMatrix, Viewport);
+    }
+	else if (HasActiveFog() && Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Fog))
+    {
+        // Fog 적용
+        RenderExponentialHeightFogPass(ViewMatrix, ProjectionMatrix, Viewport);
+    }
+    else
+    {
+		CopySceneToFXAARenderTarget(Viewport);
     }
 }
 
@@ -577,38 +599,67 @@ void UWorld::RenderEngineActors(const FMatrix& ViewMatrix, const FMatrix& Projec
 
 void UWorld::ApplyFXAA(FViewport* vt)
 {
-    // rtv는 backbuffer로 설정되어있음 
     UShader* FXAAShader = UResourceManager::GetInstance().Load<UShader>("FXAA.hlsl");
 
-    // Update viewport CB (b6) and bind backbuffer for FXAA 
-    Renderer->UpdateViewportBuffer(vt->GetStartX(), vt->GetStartY(), vt->GetSizeX(), vt->GetSizeY());
+    D3D11RHI* D3D11Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
+    ID3D11DeviceContext* DeviceContext = D3D11Device->GetDeviceContext();
 
+    // ============================================================
+    // 1. 이전 Constant Buffer 클리어 (선택사항)
+    // ============================================================
+    ID3D11Buffer* NullCBs[8] = { nullptr };
+    DeviceContext->PSSetConstantBuffers(0, 8, NullCBs);
 
+    // ============================================================
+    // 2. 캐싱된 FXAA 파라미터로 b0 업데이트
+    // ============================================================
+    Renderer->BindCurrentFXAAParams(); // ← UI 설정 유지하면서 b0 바인딩
+
+    // ============================================================
+    // 3. Viewport Buffer 업데이트 (b6)
+    // ============================================================
+    Renderer->UpdateViewportBuffer(
+        static_cast<float>(vt->GetStartX()),
+        static_cast<float>(vt->GetStartY()),
+        static_cast<float>(vt->GetSizeX()),
+        static_cast<float>(vt->GetSizeY())
+    );
+
+    // ============================================================
+    // 4. Shader 바인딩
+    // ============================================================
     Renderer->PrepareShader(FXAAShader);
     Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqualReadOnly);
 
-    ID3D11DeviceContext* DevieContext = Renderer->GetRHIDevice()->GetDeviceContext();
-    // Set FXAA shader (uses SV_VertexID, no input layout)
-    DevieContext->VSSetShader(FXAAShader->GetVertexShader(), nullptr, 0);
-    DevieContext->PSSetShader(FXAAShader->GetPixelShader(), nullptr, 0);
-    DevieContext->IASetInputLayout(FXAAShader->GetInputLayout());
-    DevieContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    // Ensure no blending for fullscreen resolve
+    DeviceContext->VSSetShader(FXAAShader->GetVertexShader(), nullptr, 0);
+    DeviceContext->PSSetShader(FXAAShader->GetPixelShader(), nullptr, 0);
+    DeviceContext->IASetInputLayout(FXAAShader->GetInputLayout());
+    DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
     Renderer->OMSetBlendState(false);
 
+    // ============================================================
+    // 5. FXAA SRV 바인딩 (t0)
+    // ============================================================
+    ID3D11ShaderResourceView* srcSRV = D3D11Device->GetFXAASRV();
+    D3D11Device->PSSetDefaultSampler(0);
+    DeviceContext->PSSetShaderResources(0, 1, &srcSRV);
+
     // Bind source color as t0
-    ID3D11ShaderResourceView* HeatSRV = static_cast<D3D11RHI*>(Renderer->GetRHIDevice())->GetHeatSRV();
-  
-    Renderer->GetRHIDevice()->PSSetDefaultSampler(0);
-    DevieContext->PSSetShaderResources(0, 1, &HeatSRV);
+    //ID3D11ShaderResourceView* HeatSRV = static_cast<D3D11RHI*>(Renderer->GetRHIDevice())->GetHeatSRV();
+    //Renderer->GetRHIDevice()->PSSetDefaultSampler(0);
+    //DevieContext->PSSetShaderResources(0, 1, &HeatSRV);
 
-    // Draw fullscreen triangle
-    DevieContext->Draw(3, 0);
+    // ============================================================
+    // 6. Draw
+    // ============================================================
+    DeviceContext->Draw(3, 0);
 
-    // Unbind SRV to avoid warnings on next frame when rebinding as RTV
+    // ============================================================
+    // 정리
+    // ============================================================
     ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
-
-    DevieContext->PSSetShaderResources(0, 1, nullSRV); 
+    DeviceContext->PSSetShaderResources(0, 1, nullSRV);
 }
 
 void UWorld::ApplyHeat(FViewport* vt)
@@ -1243,6 +1294,17 @@ void UWorld::SaveSceneV2(const FString& SceneName)
                     CompData.bIsScreenSizeScaled = BillboardComp->IsScreenSizeScaled();
                     CompData.ScreenSize = BillboardComp->GetScreenSize();
                 }
+                else if (UHeightFogComponent* HeightFogComp = Cast<UHeightFogComponent>(Comp))
+                {
+                    // HeightFogComponent 속성 저장
+                    CompData.FogDensity = HeightFogComp->GetFogDensity();
+                    CompData.FogHeightFalloff = HeightFogComp->GetFogHeightFalloff();
+                    CompData.StartDistance = HeightFogComp->GetStartDistance();
+                    CompData.FogCutoffDistance = HeightFogComp->GetFogCutoffDistance();
+                    CompData.FogMaxOpacity = HeightFogComp->GetFogMaxOpacity();
+                    CompData.FogInscatteringColor = HeightFogComp->GetFogInscatteringColor();
+                    CompData.bHeightFogEnabled = HeightFogComp->IsEnabled();
+                }
             }
             else
             {
@@ -1371,6 +1433,11 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         {
             StaticMeshActor->ClearDefaultComponents();
         }
+        // ExponentialHeightFogActor의 경우 생성자가 만든 HeightFogComponent를 삭제
+        else if (AExponentialHeightFogActor* FogActor = Cast<AExponentialHeightFogActor>(NewActor))
+        {
+            FogActor->ClearDefaultComponents();
+        }
 
         ActorMap.Add(ActorData.UUID, NewActor);
     }
@@ -1436,6 +1503,17 @@ void UWorld::LoadSceneV2(const FString& SceneName)
                 BillboardComp->SetUVCoords(CompData.UCoord, CompData.VCoord, CompData.ULength, CompData.VLength);
                 BillboardComp->SetScreenSizeScaled(CompData.bIsScreenSizeScaled);
                 BillboardComp->SetScreenSize(CompData.ScreenSize);
+            }
+            else if (UHeightFogComponent* HeightFogComp = Cast<UHeightFogComponent>(NewComp))
+            {
+                // HeightFogComponent 속성 복원
+                HeightFogComp->SetFogDensity(CompData.FogDensity);
+                HeightFogComp->SetFogHeightFalloff(CompData.FogHeightFalloff);
+                HeightFogComp->SetStartDistance(CompData.StartDistance);
+                HeightFogComp->SetFogCutoffDistance(CompData.FogCutoffDistance);
+                HeightFogComp->SetFogMaxOpacity(CompData.FogMaxOpacity);
+                HeightFogComp->SetFogInscatteringColor(CompData.FogInscatteringColor);
+                HeightFogComp->SetEnabled(CompData.bHeightFogEnabled);
             }
 
             // Owner Actor 설정
@@ -1556,6 +1634,12 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         {
             // RootComponent를 DecalComponent로 재설정
             DecalActor->SetDecalComponent(Cast<UDecalComponent>(DecalActor->RootComponent));
+        }
+        // ExponentialHeightFogActor 전용 포인터 재설정
+        else if (AExponentialHeightFogActor* FogActor = Cast<AExponentialHeightFogActor>(Actor))
+        {
+            // RootComponent를 HeightFogComponent로 재설정
+            FogActor->SetHeightFogComponent(Cast<UHeightFogComponent>(FogActor->RootComponent));
         }
 
         // MovementComponent의 UpdatedComponent를 RootComponent로 설정
@@ -1697,15 +1781,29 @@ void UWorld::CleanupWorld()
 
 void UWorld::InitializeFullscreenQuad()
 {
-    SceneDepthShader = ResourceManager.Load<UShader>("SceneDepthShader.hlsl");
+    UShader* SceneDepthShader = ResourceManager.Load<UShader>("SceneDepthShader.hlsl");
     if (!SceneDepthShader)
     {
         UE_LOG("ERROR: Failed to load SceneDepthShader.hlsl");
+    }
+
+    UShader* ExponentialHeightFogShader = ResourceManager.Load<UShader>("ExponentialHeightFogShader.hlsl");
+    if (!ExponentialHeightFogShader)
+    {
+        UE_LOG("ERROR: Failed to load ExponentialHeightFogShader.hlsl");
+    }
+
+    // ✅ CopyShader 로드
+    UShader* CopyShader = ResourceManager.Load<UShader>("CopyShader.hlsl");
+    if (!CopyShader)
+    {
+        UE_LOG("ERROR: Failed to load CopyShader.hlsl");
     }
 }
 
 void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport)
 {
+    UShader* SceneDepthShader = ResourceManager.Load<UShader>("SceneDepthShader.hlsl");
     if (!SceneDepthShader || !Renderer)
     {
         UE_LOG("ERROR: SceneDepthPass skipped - shader or renderer is null");
@@ -1715,9 +1813,7 @@ void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& Proj
     D3D11RHI* D3D11Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
     ID3D11DeviceContext* DeviceContext = D3D11Device->GetDeviceContext();
 
-    // ============================================================
-    // 0. 카메라 Near/Far Plane 및 Viewport 정보 가져오기
-    // ============================================================
+    // 카메라 및 Viewport 정보
     float NearPlane = 0.1f;
     float FarPlane = 1000.0f;
 
@@ -1728,65 +1824,44 @@ void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& Proj
         FarPlane = CameraComp->GetFarClip();
     }
 
-    // ✅ Viewport 정보 가져오기
-    float ViewportX = 0.0f;
-    float ViewportY = 0.0f;
-    float ViewportWidth = 1920.0f;  // 기본값
-    float ViewportHeight = 1080.0f; // 기본값
-
-    if (Viewport)
-    {
-        ViewportX = static_cast<float>(Viewport->GetStartX());
-        ViewportY = static_cast<float>(Viewport->GetStartY());
-        ViewportWidth = static_cast<float>(Viewport->GetSizeX());
-        ViewportHeight = static_cast<float>(Viewport->GetSizeY());
-    }
-
-    // ✅ 전체 화면 크기 (메인 윈도우 크기)
-    float ScreenWidth = CLIENTWIDTH;   // 외부에서 정의된 전역 변수
-    float ScreenHeight = CLIENTHEIGHT; // 외부에서 정의된 전역 변수
+    float ViewportX = static_cast<float>(Viewport->GetStartX());
+    float ViewportY = static_cast<float>(Viewport->GetStartY());
+    float ViewportWidth = static_cast<float>(Viewport->GetSizeX());
+    float ViewportHeight = static_cast<float>(Viewport->GetSizeY());
+    float ScreenWidth = CLIENTWIDTH;
+    float ScreenHeight = CLIENTHEIGHT;
 
     // ============================================================
-    // 1. 현재 Viewport 정보 저장
+    // 1. 모든 RTV/DSV 언바인딩
     // ============================================================
-    UINT NumViewports = 1;
-    D3D11_VIEWPORT OldViewport;
-    DeviceContext->RSGetViewports(&NumViewports, &OldViewport);
+    DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 
     // ============================================================
-    // 2. Depth buffer를 SRV로 읽기 위해 DSV 언바인딩
+    // 2. Depth SRV 가져오기
     // ============================================================
-    ID3D11RenderTargetView* pRTV = nullptr;
-    ID3D11DepthStencilView* pDSV = nullptr;
-    DeviceContext->OMGetRenderTargets(1, &pRTV, &pDSV);
-
-    DeviceContext->OMSetRenderTargets(1, &pRTV, nullptr);
-
-    if (pRTV) pRTV->Release();
-    if (pDSV) pDSV->Release();
-
-    // ============================================================
-    // 3. 렌더링 상태 설정
-    // ============================================================
-
-    Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
-
-    // ✅ 메인 윈도우의 Depth SRV 사용 (전체 화면)
     ID3D11ShaderResourceView* DepthSRV = D3D11Device->GetDepthShaderResourceView();
 
     if (!DepthSRV)
     {
         UE_LOG("ERROR: DepthSRV is nullptr!");
         D3D11Device->OMSetRenderTargets();
-        DeviceContext->RSSetViewports(1, &OldViewport);
         return;
     }
 
+    // ============================================================
+    // ✅ 3. FXAA RTV로 바인딩 (BackBuffer 대신)
+    // ============================================================
+    D3D11Device->OMSetFXAARenderTarget();
+
+    // SRV 바인딩
     DeviceContext->PSSetShaderResources(0, 1, &DepthSRV);
 
+    // 렌더링 상태 설정
+    Renderer->OMSetBlendState(false);
+    Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
     Renderer->PrepareShader(SceneDepthShader);
 
-    // ✅ Viewport 정보를 포함한 Constant Buffer 업데이트
+    // Constant Buffer 업데이트
     Renderer->UpdateDepthVisualizationBuffer(
         NearPlane, FarPlane,
         ViewportX, ViewportY,
@@ -1796,31 +1871,252 @@ void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& Proj
 
     D3D11Device->PSSetDefaultSampler(0);
 
-    // ============================================================
-    // 4. Viewport 설정
-    // ============================================================
-    DeviceContext->RSSetViewports(1, &OldViewport);
-
-    // ============================================================
-    // 5. Fullscreen Triangle 렌더링
-    // ============================================================
-
+    // Fullscreen Triangle 렌더링
     DeviceContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
     DeviceContext->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
     DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
     DeviceContext->Draw(3, 0);
 
     // ============================================================
-    // 6. 정리 및 복원
+    // 정리
     // ============================================================
-
     ID3D11ShaderResourceView* NullSRV = nullptr;
     DeviceContext->PSSetShaderResources(0, 1, &NullSRV);
 
-    D3D11Device->OMSetRenderTargets();
+    // ✅ 상태 복원 (BackBuffer로 복구하지 않음 - PostProcessing에서 처리)
     Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
-    DeviceContext->RSSetViewports(1, &OldViewport);
+}
+
+void UWorld::RenderExponentialHeightFogPass(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport)
+{
+    UShader* ExponentialHeightFogShader = ResourceManager.Load<UShader>("ExponentialHeightFogShader.hlsl");
+    if (!ExponentialHeightFogShader || !Renderer)
+    {
+        return;
+    }
+
+    // Fog Component 찾기
+    UHeightFogComponent* FogComponent = nullptr;
+    const TArray<AActor*>& LevelActors = Level ? Level->GetActors() : TArray<AActor*>();
+
+    for (AActor* Actor : LevelActors)
+    {
+        if (AExponentialHeightFogActor* FogActor = Cast<AExponentialHeightFogActor>(Actor))
+        {
+            FogComponent = FogActor->GetHeightFogComponent();
+            if (FogComponent && FogComponent->IsEnabled())
+            {
+                break;
+            }
+        }
+    }
+
+    if (!FogComponent || !FogComponent->IsEnabled())
+    {
+        return;
+    }
+
+    D3D11RHI* D3D11Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
+    ID3D11DeviceContext* DeviceContext = D3D11Device->GetDeviceContext();
+
+    // 카메라 정보
+    float NearPlane = 0.1f;
+    float FarPlane = 1000.0f;
+
+    if (MainCameraActor && MainCameraActor->GetCameraComponent())
+    {
+        UCameraComponent* CameraComp = MainCameraActor->GetCameraComponent();
+        NearPlane = CameraComp->GetNearClip();
+        FarPlane = CameraComp->GetFarClip();
+    }
+
+    // Viewport 정보
+    float ViewportX = static_cast<float>(Viewport->GetStartX());
+    float ViewportY = static_cast<float>(Viewport->GetStartY());
+    float ViewportWidth = static_cast<float>(Viewport->GetSizeX());
+    float ViewportHeight = static_cast<float>(Viewport->GetSizeY());
+    float ScreenWidth = CLIENTWIDTH;
+    float ScreenHeight = CLIENTHEIGHT;
+
+    // ============================================================
+    // ✅ 1. 모든 Constant Buffer를 NULLPTR로 클리어 (이전 상태 제거)
+    // ============================================================
+    ID3D11Buffer* NullCBs[8] = { nullptr };
+    DeviceContext->PSSetConstantBuffers(0, 8, NullCBs);
+
+    // ============================================================
+    // 2. 모든 RTV/DSV 언바인딩
+    // ============================================================
+    DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+
+    // ============================================================
+    // 3. Scene SRV와 Depth SRV 가져오기
+    // ============================================================
+    ID3D11ShaderResourceView* SceneSRV = D3D11Device->GetSceneShaderResourceView();
+    ID3D11ShaderResourceView* DepthSRV = D3D11Device->GetDepthShaderResourceView();
+
+    if (!SceneSRV || !DepthSRV)
+    {
+        UE_LOG("ERROR: SceneSRV or DepthSRV is nullptr!");
+        D3D11Device->OMSetRenderTargets();
+        return;
+    }
+
+    // ============================================================
+    // 4. FXAA RTV로 바인딩
+    // ============================================================
+    D3D11Device->OMSetFXAARenderTarget();
+
+    // SRV 바인딩
+    ID3D11ShaderResourceView* SRVs[2] = { SceneSRV, DepthSRV };
+    DeviceContext->PSSetShaderResources(0, 2, SRVs);
+
+    // ============================================================
+    // ✅ 5. Constant Buffer 업데이트 (SHADER 바인딩 전에!)
+    // ============================================================
+
+    // b0: Camera Buffer (Near/Far Plane)
+    Renderer->UpdateCameraNearFarBuffer(NearPlane, FarPlane);
+
+    // b1: Fog Parameter Buffer
+    Renderer->UpdateFogParameterBuffer(
+        FogComponent->GetFogDensity(),
+        FogComponent->GetFogHeightFalloff(),
+        FogComponent->GetStartDistance(),
+        FogComponent->GetFogCutoffDistance(),
+        FogComponent->GetFogMaxOpacity(),
+        FogComponent->GetFogInscatteringColor(),
+        FogComponent->GetWorldLocation()
+    );
+
+    // b2: Inverse Matrix Buffer
+    Renderer->UpdateInverseViewProjMatrixBuffer(
+        ViewMatrix.InverseAffine(),
+        ProjectionMatrix.Inverse()
+    );
+
+    // b3: Viewport Buffer
+    Renderer->UpdateViewportBuffer(
+        ViewportX, ViewportY,
+        ViewportWidth, ViewportHeight,
+        ScreenWidth, ScreenHeight
+    );
+
+    // ============================================================
+    // ✅ 6. Shader 바인딩 (Constant Buffer 이후)
+    // ============================================================
+    Renderer->PrepareShader(ExponentialHeightFogShader);
+
+    // 렌더링 상태 설정
+    Renderer->OMSetBlendState(false);
+    Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
+    D3D11Device->PSSetDefaultSampler(0);
+
+    // ============================================================
+    // 7. Fullscreen Triangle 렌더링
+    // ============================================================
+    DeviceContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+    DeviceContext->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
+    DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    DeviceContext->Draw(3, 0);
+
+    // ============================================================
+    // 정리
+    // ============================================================
+    ID3D11ShaderResourceView* NullSRVs[2] = { nullptr, nullptr };
+    DeviceContext->PSSetShaderResources(0, 2, NullSRVs);
+
+    // ✅ 상태 복원
+    Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
+}
+
+bool UWorld::HasActiveFog() const
+{
+    if (!Level) return false;
+
+    const TArray<AActor*>& LevelActors = Level->GetActors();
+    for (AActor* Actor : LevelActors)
+    {
+        if (AExponentialHeightFogActor* FogActor = Cast<AExponentialHeightFogActor>(Actor))
+        {
+            UHeightFogComponent* FogComponent = FogActor->GetHeightFogComponent();
+            if (FogComponent && FogComponent->IsEnabled())
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void UWorld::CopySceneToFXAARenderTarget(FViewport* Viewport)
+{
+    UShader* CopyShader = ResourceManager.Load<UShader>("CopyShader.hlsl");
+    if (!CopyShader || !Renderer)
+    {
+        UE_LOG("ERROR: CopyShader or Renderer is nullptr!");
+        return;
+    }
+
+    D3D11RHI* D3D11Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
+    ID3D11DeviceContext* DeviceContext = D3D11Device->GetDeviceContext();
+
+    // Viewport 정보
+    float ViewportX = static_cast<float>(Viewport->GetStartX());
+    float ViewportY = static_cast<float>(Viewport->GetStartY());
+    float ViewportWidth = static_cast<float>(Viewport->GetSizeX());
+    float ViewportHeight = static_cast<float>(Viewport->GetSizeY());
+    float ScreenWidth = CLIENTWIDTH;
+    float ScreenHeight = CLIENTHEIGHT;
+
+    // ============================================================
+    // Scene RTV 언바인딩
+    // ============================================================
+    DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+
+    ID3D11ShaderResourceView* SceneSRV = D3D11Device->GetSceneShaderResourceView();
+
+    if (!SceneSRV)
+    {
+        UE_LOG("ERROR: SceneSRV is nullptr!");
+        D3D11Device->OMSetRenderTargets();
+        return;
+    }
+
+    // ============================================================
+    // ✅ FXAA RTV로 바인딩 (BackBuffer 대신)
+    // ============================================================
+    D3D11Device->OMSetFXAARenderTarget();
+
+    // SRV 바인딩
+    DeviceContext->PSSetShaderResources(0, 1, &SceneSRV);
+
+    // 렌더링 상태 설정
+    Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
+    Renderer->OMSetBlendState(false);
+    Renderer->PrepareShader(CopyShader);
+
+    // Viewport Constant Buffer 업데이트
+    Renderer->UpdateCopyShaderViewportBuffer(
+        ViewportX, ViewportY,
+        ViewportWidth, ViewportHeight,
+        ScreenWidth, ScreenHeight
+    );
+
+    D3D11Device->PSSetDefaultSampler(0);
+
+    // Fullscreen Triangle 렌더링
+    DeviceContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+    DeviceContext->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
+    DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    DeviceContext->Draw(3, 0);
+
+    // 정리
+    ID3D11ShaderResourceView* NullSRV = nullptr;
+    DeviceContext->PSSetShaderResources(0, 1, &NullSRV);
+
+    // ✅ 상태 복원 (BackBuffer로 복구하지 않음)
+    Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
 }
 
 /**

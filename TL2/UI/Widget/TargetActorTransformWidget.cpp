@@ -18,6 +18,8 @@
 #include "MovementComponent.h"
 #include "RotatingMovementComponent.h"
 #include "ProjectileMovementComponent.h"
+#include "HeightFogComponent.h"
+
 #include <filesystem>
 #include <vector>
 #include "PointLightComponent.h"
@@ -416,13 +418,13 @@ void UTargetActorTransformWidget::RenderWidget()
 				ResetChangeFlags();
 			}
 		}
-		
+
 		// TODO(KHJ): 테스트용, 완료 후 지울 것
 		if (ImGui::Button("Duplicate Test Button"))
 		{
 			DuplicateTarget();
 		}
-		
+
 		ImGui::Spacing();
 		ImGui::Separator();
 
@@ -581,20 +583,20 @@ void UTargetActorTransformWidget::RenderWidget()
 							ImGui::PopID();
 						}
 					}
+				}
 			}
-		}
 			// Billboard Component가 선택된 경우 Sprite UI
 			else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(SelectedComponent))
 			{
 				ImGui::Separator();
 				ImGui::Text("Decal Component Settings");
-				
+
 				float FadeIn = DecalComp->GetFadeInDuration();
 				float StartDelay = DecalComp->GetFadeStartDelay();
 				float FadeOut = DecalComp->GetFadeDuration();
 				float MaxAlpha = DecalComp->GetMaxAlpha();
 
-				bool bChanged = false; 
+				bool bChanged = false;
 
 				if (ImGui::DragFloat("Max Alpha", &MaxAlpha, 0.05f, 0.0f, 1.0f, "%.2f"))
 				{
@@ -704,22 +706,22 @@ void UTargetActorTransformWidget::RenderWidget()
 			{
 				ImGui::Separator();
 				ImGui::Text("Billboard Component Settings");
-				
+
 				// Sprite 텍스처 경로 표시 및 변경
 				FString CurrentTexture = BBC->GetTexturePath();
 				ImGui::Text("Current Sprite: %s", CurrentTexture.c_str());
-				
+
 				// Editor/Icon 폴더에서 동적으로 스프라이트 옵션 로드
 				static TArray<FString> SpriteOptions;
 				static bool bSpriteOptionsLoaded = false;
 				static int currentSpriteIndex = 0; // 현재 선택된 스프라이트 인덱스
-				
+
 				if (!bSpriteOptionsLoaded)
 				{
-                // Editor/Icon 폴더에서 스프라이트 파일(.dds/.png/.jpg) 로드
-                SpriteOptions = GetIconFiles();
+					// Editor/Icon 폴더에서 스프라이트 파일(.dds/.png/.jpg) 로드
+					SpriteOptions = GetIconFiles();
 					bSpriteOptionsLoaded = true;
-					
+
 					// 현재 텍스처와 일치하는 인덱스 찾기
 					FString currentTexturePath = BBC->GetTexturePath();
 					for (int i = 0; i < SpriteOptions.size(); ++i)
@@ -731,33 +733,33 @@ void UTargetActorTransformWidget::RenderWidget()
 						}
 					}
 				}
-				
+
 				// 스프라이트 선택 드롭다운 메뉴
 				ImGui::Text("Sprite Texture:");
-				FString currentDisplayName = (currentSpriteIndex >= 0 && currentSpriteIndex < SpriteOptions.size()) 
-					? GetBaseNameNoExt(SpriteOptions[currentSpriteIndex]) 
+				FString currentDisplayName = (currentSpriteIndex >= 0 && currentSpriteIndex < SpriteOptions.size())
+					? GetBaseNameNoExt(SpriteOptions[currentSpriteIndex])
 					: "Select Sprite";
-				
+
 				if (ImGui::BeginCombo("##SpriteCombo", currentDisplayName.c_str()))
 				{
 					for (int i = 0; i < SpriteOptions.size(); ++i)
 					{
 						FString displayName = GetBaseNameNoExt(SpriteOptions[i]);
 						bool isSelected = (currentSpriteIndex == i);
-						
+
 						if (ImGui::Selectable(displayName.c_str(), isSelected))
 						{
 							currentSpriteIndex = i;
 							BBC->SetTexture(SpriteOptions[i]);
 						}
-						
+
 						// 현재 선택된 항목에 포커스 설정
 						if (isSelected)
 							ImGui::SetItemDefaultFocus();
 					}
 					ImGui::EndCombo();
 				}
-				
+
 				// 새로고침 버튼 (같은 줄에)
 				ImGui::SameLine();
 				if (ImGui::Button("Refresh"))
@@ -765,16 +767,16 @@ void UTargetActorTransformWidget::RenderWidget()
 					bSpriteOptionsLoaded = false; // 다음에 다시 로드하도록
 					currentSpriteIndex = 0; // 인덱스 리셋
 				}
-				
+
 				ImGui::Spacing();
-				
+
 				// Screen Size Scaled 체크박스
 				// bool bIsScreenSizeScaled = BBC->IsScreenSizeScaled();
 				// if (ImGui::Checkbox("Is Screen Size Scaled", &bIsScreenSizeScaled))
 				// {
 				// 	BBC->SetScreenSizeScaled(bIsScreenSizeScaled);
 				// }
-				
+
 				// Screen Size (Is Screen Size Scaled가 true일 때만 활성화)
 				if (false) // (bIsScreenSizeScaled)
 				{
@@ -789,42 +791,42 @@ void UTargetActorTransformWidget::RenderWidget()
 					// Billboard Size (Is Screen Size Scaled가 false일 때)
 					float billboardWidth = BBC->GetBillboardWidth();
 					float billboardHeight = BBC->GetBillboardHeight();
-					
+
 					if (ImGui::DragFloat("Width", &billboardWidth, 0.1f, 0.1f, 100.0f))
 					{
 						BBC->SetBillboardSize(billboardWidth, billboardHeight);
 					}
-					
+
 					if (ImGui::DragFloat("Height", &billboardHeight, 0.1f, 0.1f, 100.0f))
 					{
 						BBC->SetBillboardSize(billboardWidth, billboardHeight);
 					}
 				}
-				
+
 				ImGui::Spacing();
-				
+
 				// UV 좌표 설정
 				ImGui::Text("UV Coordinates");
-				
+
 				float u = BBC->GetU();
 				float v = BBC->GetV();
 				float ul = BBC->GetUL();
 				float vl = BBC->GetVL();
-				
+
 				bool uvChanged = false;
-				
+
 				if (ImGui::DragFloat("U", &u, 0.01f))
 					uvChanged = true;
-					
+
 				if (ImGui::DragFloat("V", &v, 0.01f))
 					uvChanged = true;
-					
+
 				if (ImGui::DragFloat("UL", &ul, 0.01f))
 					uvChanged = true;
-					
+
 				if (ImGui::DragFloat("VL", &vl, 0.01f))
 					uvChanged = true;
-				
+
 				if (uvChanged)
 				{
 					BBC->SetUVCoords(u, v, ul, vl);
@@ -1136,6 +1138,193 @@ void UTargetActorTransformWidget::RenderWidget()
 					}
 				}
 			}
+			else if (UHeightFogComponent* HeightFogComp = Cast<UHeightFogComponent>(SelectedComponent))
+			{
+				ImGui::Separator();
+				ImGui::Text("Height Fog Component Settings");
+
+				// ============================================================
+				// Fog Density Settings
+				// ============================================================
+				ImGui::Spacing();
+				ImGui::Text("Fog Density");
+
+				float fogDensity = HeightFogComp->GetFogDensity();
+				if (ImGui::DragFloat("Fog Density", &fogDensity, 0.001f, 0.0f, 1.0f, "%.3f"))
+				{
+					HeightFogComp->SetFogDensity(fogDensity);
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("안개의 전역 밀도 계수입니다.\n값이 클수록 짙은 안개가 생성됩니다.");
+				}
+
+				float fogHeightFalloff = HeightFogComp->GetFogHeightFalloff();
+				if (ImGui::DragFloat("Height Falloff", &fogHeightFalloff, 0.01f, 0.0f, 10.0f, "%.2f"))
+				{
+					HeightFogComp->SetFogHeightFalloff(fogHeightFalloff);
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("높이에 따른 안개 밀도 감소율입니다.\n값이 클수록 높이에 따라 급격히 감소합니다.");
+				}
+
+				// ============================================================
+				// Fog Distance Settings
+				// ============================================================
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Text("Distance Settings");
+
+				float startDistance = HeightFogComp->GetStartDistance();
+				if (ImGui::DragFloat("Start Distance", &startDistance, 1.0f, 0.0f, 10000.0f, "%.1f"))
+				{
+					HeightFogComp->SetStartDistance(startDistance);
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("안개가 시작되는 카메라로부터의 거리입니다.");
+				}
+
+				float cutoffDistance = HeightFogComp->GetFogCutoffDistance();
+				if (ImGui::DragFloat("Cutoff Distance", &cutoffDistance, 10.0f, 0.0f, 50000.0f, "%.1f"))
+				{
+					HeightFogComp->SetFogCutoffDistance(cutoffDistance);
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("안개가 최대 불투명도에 도달하는 거리입니다.");
+				}
+
+				// ============================================================
+				// Fog Appearance Settings
+				// ============================================================
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Text("Appearance Settings");
+
+				float maxOpacity = HeightFogComp->GetFogMaxOpacity();
+				if (ImGui::SliderFloat("Max Opacity", &maxOpacity, 0.0f, 1.0f, "%.2f"))
+				{
+					HeightFogComp->SetFogMaxOpacity(maxOpacity);
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("안개의 최대 불투명도입니다 (0 = 투명, 1 = 불투명).");
+				}
+
+				// Fog Inscattering Color (Color Picker)
+				FVector4 fogColor = HeightFogComp->GetFogInscatteringColor();
+				float color[4] = { fogColor.X, fogColor.Y, fogColor.Z, fogColor.W };
+
+				ImGui::Text("Inscattering Color");
+				if (ImGui::ColorEdit4("##FogColor", color, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_Float))
+				{
+					HeightFogComp->SetFogInscatteringColor(FVector4(color[0], color[1], color[2], color[3]));
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("안개의 산란 색상입니다.\n빛이 안개를 통과할 때 보이는 색상입니다.");
+				}
+
+				// ============================================================
+				// Component State
+				// ============================================================
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Text("Component State");
+
+				bool bEnabled = HeightFogComp->IsEnabled();
+				if (ImGui::Checkbox("Enabled", &bEnabled))
+				{
+					HeightFogComp->SetEnabled(bEnabled);
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("안개 효과 활성화 여부입니다.");
+				}
+
+				// ============================================================
+				// Presets (선택적)
+				// ============================================================
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Text("Fog Presets");
+
+				if (ImGui::Button("Light Fog", ImVec2(100, 0)))
+				{
+					HeightFogComp->SetFogDensity(0.01f);
+					HeightFogComp->SetFogHeightFalloff(0.1f);
+					HeightFogComp->SetFogMaxOpacity(0.5f);
+					HeightFogComp->SetFogInscatteringColor(FVector4(0.7f, 0.8f, 0.9f, 1.0f));
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("가벼운 안개 프리셋을 적용합니다.");
+				}
+
+				ImGui::SameLine();
+				if (ImGui::Button("Heavy Fog", ImVec2(100, 0)))
+				{
+					HeightFogComp->SetFogDensity(0.05f);
+					HeightFogComp->SetFogHeightFalloff(0.3f);
+					HeightFogComp->SetFogMaxOpacity(1.0f);
+					HeightFogComp->SetFogInscatteringColor(FVector4(0.5f, 0.6f, 0.7f, 1.0f));
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("짙은 안개 프리셋을 적용합니다.");
+				}
+
+				if (ImGui::Button("Desert Haze", ImVec2(100, 0)))
+				{
+					HeightFogComp->SetFogDensity(0.015f);
+					HeightFogComp->SetFogHeightFalloff(0.05f);
+					HeightFogComp->SetFogMaxOpacity(0.7f);
+					HeightFogComp->SetFogInscatteringColor(FVector4(0.9f, 0.8f, 0.6f, 1.0f));
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("사막 아지랑이 효과를 적용합니다.");
+				}
+
+				ImGui::SameLine();
+				if (ImGui::Button("Ocean Mist", ImVec2(100, 0)))
+				{
+					HeightFogComp->SetFogDensity(0.025f);
+					HeightFogComp->SetFogHeightFalloff(0.2f);
+					HeightFogComp->SetFogMaxOpacity(0.8f);
+					HeightFogComp->SetFogInscatteringColor(FVector4(0.4f, 0.6f, 0.8f, 1.0f));
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("바다 안개 프리셋을 적용합니다.");
+				}
+
+				// ============================================================
+				// Debug Info (읽기 전용)
+				// ============================================================
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Text("Debug Information");
+
+				FVector fogPosition = HeightFogComp->GetWorldLocation();
+				ImGui::Text("Fog Height: %.2f", fogPosition.Z);
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("안개의 기준 높이입니다.\n이 높이를 기준으로 밀도가 지수 함수적으로 감소합니다.");
+				}
+
+				// 현재 카메라 위치에서의 안개 밀도 계산 (예시)
+				if (SelectedActor && SelectedActor->GetWorld())
+				{
+					UWorld* World = SelectedActor->GetWorld();
+					// MainCameraActor에서 카메라 위치 가져오기 (임시)
+					// 실제로는 UIManager를 통해 카메라를 가져와야 함
+					// float currentDensity = HeightFogComp->CalculateFogDensityAtHeight(CameraPosition.Z);
+					// ImGui::Text("Current Density: %.3f", currentDensity);
+				}
+			}
 			else if (UPointLightComponent* PointLightComp = Cast<UPointLightComponent>(SelectedComponent))
 			{
 				//FLinearColor Color = PointLightComp->GetLightColor();
@@ -1163,10 +1352,10 @@ void UTargetActorTransformWidget::RenderWidget()
 					PointLightComp->SetIntensity(Intensity);
 				}
 			}
-		else
-		{
-			ImGui::Text("Selected component is not a supported type.");
-		}
+			else
+			{
+				ImGui::Text("Selected component is not a supported type.");
+			}
 		}
 	}
 	else

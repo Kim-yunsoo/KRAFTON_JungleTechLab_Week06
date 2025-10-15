@@ -86,6 +86,8 @@ void D3D11RHI::Initialize(HWND hWindow)
     // 이곳에서 Device, DeviceContext, viewport, swapchain를 초기화한다
     CreateDeviceAndSwapChain(hWindow);
     CreateFrameBuffer();
+	CreateDepthBuffer();
+	CreateSceneRenderTarget();
     CreateRasterizerState();
     CreateBlendState();
     CreateConstantBuffer();
@@ -132,6 +134,11 @@ void D3D11RHI::Release()
     if (FXAACB) { FXAACB->Release(); FXAACB = nullptr; }
     if (HeatCB) { HeatCB->Release(); HeatCB = nullptr; }
     if (DepthVisualizationCB) { DepthVisualizationCB->Release(); DepthVisualizationCB = nullptr; }
+	if (CameraNearFarCB) { CameraNearFarCB->Release(); CameraNearFarCB = nullptr; }
+	if (FogParameterCB) { FogParameterCB->Release(); FogParameterCB = nullptr; }
+	if (InvViewProjCB) { InvViewProjCB->Release(); InvViewProjCB = nullptr; }
+	if (ViewportFogCB) { ViewportFogCB->Release(); ViewportFogCB = nullptr; }
+	if (CopyShaderViewportCB) { CopyShaderViewportCB->Release(); CopyShaderViewportCB = nullptr; }
 
     // 상태 객체
     if (DepthStencilState) { DepthStencilState->Release(); DepthStencilState = nullptr; }
@@ -149,6 +156,8 @@ void D3D11RHI::Release()
 
     // RTV/DSV/FrameBuffer
     ReleaseFrameBuffer();
+	ReleaseDepthBuffer();
+	ReleaseSceneRenderTarget();
 
     // Device + SwapChain
     ReleaseDeviceAndSwapChain();
@@ -166,6 +175,12 @@ void D3D11RHI::ClearDepthBuffer(float Depth, UINT Stencil)
 {
     DeviceContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, Depth, Stencil);
 
+}
+
+void D3D11RHI::ClearSceneRenderTarget()
+{
+    float ClearColor[4] = { 0.025f, 0.025f, 0.025f, 1.0f };
+	DeviceContext->ClearRenderTargetView(SceneRenderTargetView, ClearColor);
 }
 
 void D3D11RHI::CreateBlendState()
@@ -450,6 +465,21 @@ void D3D11RHI::OMSetRenderTargets()
         DeviceContext->OMSetRenderTargets(1, &RenderTargetView, DepthStencilView);
 }
 
+void D3D11RHI::OMSetSceneRenderTarget()
+{
+    DeviceContext->OMSetRenderTargets(1, &SceneRenderTargetView, DepthStencilView);
+}
+
+void D3D11RHI::OMSetFXAARenderTarget()
+{
+	DeviceContext->OMSetRenderTargets(1, &FXAARTV, nullptr);
+}
+
+void D3D11RHI::OMSetBackBufferOnly()
+{
+    DeviceContext->OMSetRenderTargets(1, &RenderTargetView, nullptr);
+}
+
 void D3D11RHI::OMSetBlendState(bool bIsBlendMode)
 {
     if (bIsBlendMode == true)
@@ -516,9 +546,32 @@ void D3D11RHI::CreateFrameBuffer()
 
     Device->CreateRenderTargetView(FrameBuffer, &framebufferRTVdesc, &RenderTargetView);
 
-    // =====================================
-    // 깊이/스텐실 버퍼 생성
-    // =====================================
+    DXGI_SWAP_CHAIN_DESC swapDesc;
+    SwapChain->GetDesc(&swapDesc);
+
+    // FXAA SRV생성
+    D3D11_TEXTURE2D_DESC FXAAtd = {};
+    FXAAtd.Width = swapDesc.BufferDesc.Width;
+    FXAAtd.Height = swapDesc.BufferDesc.Height;
+    FXAAtd.MipLevels = 1;
+    FXAAtd.ArraySize = 1;
+    FXAAtd.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    FXAAtd.SampleDesc.Count = 1;
+    FXAAtd.Usage = D3D11_USAGE_DEFAULT;
+    FXAAtd.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    Device->CreateTexture2D(&FXAAtd, nullptr, &FXAATex);
+
+    // FXAA용 RTV 생성 
+    /*D3D11_RENDER_TARGET_VIEW_DESC FXAARTVdesc = {};
+    FXAARTVdesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    FXAARTVdesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;*/
+
+    Device->CreateRenderTargetView(FXAATex, nullptr, &FXAARTV);
+    Device->CreateShaderResourceView(FXAATex, nullptr, &FXAASRV);
+}
+
+void D3D11RHI::CreateDepthBuffer()
+{
     DXGI_SWAP_CHAIN_DESC swapDesc;
     SwapChain->GetDesc(&swapDesc);
 
@@ -543,7 +596,7 @@ void D3D11RHI::CreateFrameBuffer()
 
     Device->CreateDepthStencilView(depthTexture, &dsvDesc, &DepthStencilView);
 
-	// ShaderResourceView 생성 (쉐이더에서 깊이값 읽기용)
+    // ShaderResourceView 생성 (쉐이더에서 깊이값 읽기용)
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // SRV는 R24_UNORM_X8_TYPELESS 포맷
     srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
@@ -553,51 +606,60 @@ void D3D11RHI::CreateFrameBuffer()
     Device->CreateShaderResourceView(depthTexture, &srvDesc, &DepthShaderResourceView);
 
     depthTexture->Release(); // 뷰만 참조 유지
-    
+}
 
-    // FXAA SRV생성
-    D3D11_TEXTURE2D_DESC FXAAtd = {};
-    FXAAtd.Width = swapDesc.BufferDesc.Width;
-    FXAAtd.Height = swapDesc.BufferDesc.Height;
-    FXAAtd.MipLevels = 1;
-    FXAAtd.ArraySize = 1;
-    FXAAtd.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; 
-    FXAAtd.SampleDesc.Count = 1;
-    FXAAtd.Usage = D3D11_USAGE_DEFAULT;
-    FXAAtd.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-    Device->CreateTexture2D(&FXAAtd, nullptr, &FXAATex);
-    
-    // FXAA용 RTV 생성 
-    /*D3D11_RENDER_TARGET_VIEW_DESC FXAARTVdesc = {};
-    FXAARTVdesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-    FXAARTVdesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;*/
+void D3D11RHI::CreateSceneRenderTarget()
+{
+    // BackBuffer와 동일한 크기/포맷으로 Scene Texture 생성
+    D3D11_TEXTURE2D_DESC backBufferDesc;
+    FrameBuffer->GetDesc(&backBufferDesc);
 
-    Device->CreateRenderTargetView(FXAATex, nullptr, &FXAARTV);
-    Device->CreateShaderResourceView(FXAATex, nullptr, &FXAASRV);
+    D3D11_TEXTURE2D_DESC sceneTextureDesc = {};
+    sceneTextureDesc.Width = backBufferDesc.Width;
+    sceneTextureDesc.Height = backBufferDesc.Height;
+    sceneTextureDesc.MipLevels = 1;
+    sceneTextureDesc.ArraySize = 1;
+    sceneTextureDesc.Format = backBufferDesc.Format; // 동일한 포맷 사용
+    sceneTextureDesc.SampleDesc.Count = 1;
+    sceneTextureDesc.SampleDesc.Quality = 0;
+    sceneTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+    sceneTextureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    sceneTextureDesc.CPUAccessFlags = 0;
+    sceneTextureDesc.MiscFlags = 0;
 
+	ID3D11Texture2D* SceneTexture = nullptr;
+    HRESULT hr = Device->CreateTexture2D(&sceneTextureDesc, nullptr, &SceneTexture);
+    if (FAILED(hr))
+    {
+        UE_LOG("ERROR: Failed to create Scene Texture");
+        return;
+    }
 
-    // FXAA SRV생성
-    D3D11_TEXTURE2D_DESC Heattd = {};
-    Heattd.Width = swapDesc.BufferDesc.Width;
-    Heattd.Height = swapDesc.BufferDesc.Height;
-    Heattd.MipLevels = 1;
-    Heattd.ArraySize = 1;
-    Heattd.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; 
-    Heattd.SampleDesc.Count = 1;
-    Heattd.Usage = D3D11_USAGE_DEFAULT;
-    Heattd.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-    Device->CreateTexture2D(&Heattd, nullptr, &HeatTex);
-    
-    // FXAA용 RTV 생성 
-    /*D3D11_RENDER_TARGET_VIEW_DESC FXAARTVdesc = {};
-    FXAARTVdesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-    FXAARTVdesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;*/
+    // Scene RenderTargetView 생성
+    hr = Device->CreateRenderTargetView(SceneTexture, nullptr, &SceneRenderTargetView);
+    if (FAILED(hr))
+    {
+        UE_LOG("ERROR: Failed to create Scene RenderTargetView");
+        return;
+    }
 
-    Device->CreateRenderTargetView(HeatTex, nullptr, &HeatRTV);
-    Device->CreateShaderResourceView(HeatTex, nullptr, &HeatSRV);
+    // Scene ShaderResourceView 생성
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = sceneTextureDesc.Format;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = 1;
+    srvDesc.Texture2D.MostDetailedMip = 0;
 
+    hr = Device->CreateShaderResourceView(SceneTexture, &srvDesc, &SceneShaderResourceView);
+    if (FAILED(hr))
+    {
+        UE_LOG("ERROR: Failed to create Scene ShaderResourceView");
+        return;
+    }
 
+    UE_LOG("SUCCESS: Scene RenderTarget created (%ux%u)", sceneTextureDesc.Width, sceneTextureDesc.Height);
 
+	SceneTexture->Release(); // 뷰만 참조 유지
 }
 
 void D3D11RHI::CreateRasterizerState()
@@ -720,14 +782,6 @@ void D3D11RHI::CreateConstantBuffer()
     viewportDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     Device->CreateBuffer(&viewportDesc, nullptr, &ViewportCB);
 
-    // b6 : DepthVisualizationBuffer (Scene Depth 시각화용)
-    D3D11_BUFFER_DESC depthVisDesc = {};
-    depthVisDesc.Usage = D3D11_USAGE_DYNAMIC;
-    depthVisDesc.ByteWidth = sizeof(float) * 8; // 8개의 float (32 bytes)
-    depthVisDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    depthVisDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    Device->CreateBuffer(&depthVisDesc, nullptr, &DepthVisualizationCB);
-
     // b7 : Light array (FLightGPU[MAX_LIGHTS])
     D3D11_BUFFER_DESC lightDesc = {};
     lightDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -751,6 +805,55 @@ void D3D11RHI::CreateConstantBuffer()
     heatDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     heatDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; 
     Device->CreateBuffer(&heatDesc, nullptr, &HeatCB);
+
+
+    // b6 : DepthVisualizationBuffer (Scene Depth 시각화용)
+    D3D11_BUFFER_DESC depthVisDesc = {};
+    depthVisDesc.Usage = D3D11_USAGE_DYNAMIC;
+    depthVisDesc.ByteWidth = sizeof(float) * 8; // 8개의 float (32 bytes)
+    depthVisDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    depthVisDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&depthVisDesc, nullptr, &DepthVisualizationCB);
+
+    // b0: Camera Buffer (Fog용 - Near/Far Plane)
+    D3D11_BUFFER_DESC cameraFogDesc = {};
+    cameraFogDesc.Usage = D3D11_USAGE_DYNAMIC;
+    cameraFogDesc.ByteWidth = sizeof(float) * 4; // NearPlane, FarPlane, Padding[2]
+    cameraFogDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cameraFogDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&cameraFogDesc, nullptr, &CameraNearFarCB);
+
+    // b1: Fog Parameter Buffer
+    D3D11_BUFFER_DESC fogParamDesc = {};
+    fogParamDesc.Usage = D3D11_USAGE_DYNAMIC;
+    fogParamDesc.ByteWidth = sizeof(float) * 16; // 64 bytes (4 float4)
+    fogParamDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    fogParamDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&fogParamDesc, nullptr, &FogParameterCB);
+
+    // b2: Inverse Matrix Buffer
+    D3D11_BUFFER_DESC invMatrixDesc = {};
+    invMatrixDesc.Usage = D3D11_USAGE_DYNAMIC;
+    invMatrixDesc.ByteWidth = sizeof(FMatrix) * 2; // InvView + InvProj
+    invMatrixDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    invMatrixDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&invMatrixDesc, nullptr, &InvViewProjCB);
+
+    // b3: Viewport Buffer (Fog용)
+    D3D11_BUFFER_DESC viewportFogDesc = {};
+    viewportFogDesc.Usage = D3D11_USAGE_DYNAMIC;
+    viewportFogDesc.ByteWidth = sizeof(float) * 8; // 32 bytes (2 float4)
+    viewportFogDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    viewportFogDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&viewportFogDesc, nullptr, &ViewportFogCB);
+
+    // b7: CopyShader Viewport Buffer
+    D3D11_BUFFER_DESC copyViewportDesc = {};
+    copyViewportDesc.Usage = D3D11_USAGE_DYNAMIC;
+    copyViewportDesc.ByteWidth = sizeof(float) * 8; // 32 bytes (2 float4)
+    copyViewportDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    copyViewportDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&copyViewportDesc, nullptr, &CopyShaderViewportCB);
 }
 
 void D3D11RHI::UpdateUVScrollConstantBuffers(const FVector2D& Speed, float TimeSec)
@@ -807,6 +910,35 @@ void D3D11RHI::UpdateViewportConstantBuffer(float StartX, float StartY, float Si
     }
 }
 
+void D3D11RHI::UpdateViewportConstantBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
+{
+    if (!ViewportFogCB) return;
+
+    struct ViewportBufferType {
+        float ViewportPos[2];
+        float ViewportSize[2];
+        float ScreenSize[2];
+        float Padding[2];
+    };
+
+    ViewportBufferType data;
+    data.ViewportPos[0] = ViewportX;
+    data.ViewportPos[1] = ViewportY;
+    data.ViewportSize[0] = ViewportWidth;
+    data.ViewportSize[1] = ViewportHeight;
+    data.ScreenSize[0] = ScreenWidth;
+    data.ScreenSize[1] = ScreenHeight;
+    data.Padding[0] = data.Padding[1] = 0.0f;
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(ViewportFogCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(ViewportBufferType));
+        DeviceContext->Unmap(ViewportFogCB, 0);
+        DeviceContext->PSSetConstantBuffers(3, 1, &ViewportFogCB);
+    }
+}
+
 void D3D11RHI::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
 {
     if (!DepthVisualizationCB) return;
@@ -843,6 +975,122 @@ void D3D11RHI::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, f
    }
 }
  
+
+void D3D11RHI::UpdateCameraNearFarConstantBuffer(float NearPlane, float FarPlane)
+{
+    if (!CameraNearFarCB) return;
+
+    struct CameraBufferType {
+        float NearPlane;
+        float FarPlane;
+        float Padding[2];
+    };
+
+    CameraBufferType data;
+    data.NearPlane = NearPlane;
+    data.FarPlane = FarPlane;
+    data.Padding[0] = 0.0f;
+    data.Padding[1] = 0.0f;
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(CameraNearFarCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(CameraBufferType));
+        DeviceContext->Unmap(CameraNearFarCB, 0);
+        DeviceContext->PSSetConstantBuffers(0, 1, &CameraNearFarCB);
+    }
+}
+
+void D3D11RHI::UpdateFogParameterConstantBuffer(float FogDensity, float FogHeightFalloff, float FogStartDistance, float FogCutoffDistance, float FogMaxOpacity, const FVector4& FogInscatteringColor, const FVector& FogComponentPosition)
+{
+    if (!FogParameterCB) return;
+
+    struct FogParameterBufferType {
+        float FogDensity;
+        float FogHeightFalloff;
+        float FogStartDistance;
+        float FogCutoffDistance;
+
+        float FogMaxOpacity;
+        float Padding1[3];
+
+        FVector4 FogInscatteringColor;
+
+        FVector FogComponentPosition;
+        float Padding2;
+    };
+
+    FogParameterBufferType data;
+    data.FogDensity = FogDensity;
+    data.FogHeightFalloff = FogHeightFalloff;
+    data.FogStartDistance = FogStartDistance;
+    data.FogCutoffDistance = FogCutoffDistance;
+    data.FogMaxOpacity = FogMaxOpacity;
+    data.Padding1[0] = data.Padding1[1] = data.Padding1[2] = 0.0f;
+    data.FogInscatteringColor = FogInscatteringColor;
+    data.FogComponentPosition = FogComponentPosition;
+    data.Padding2 = 0.0f;
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(FogParameterCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(FogParameterBufferType));
+        DeviceContext->Unmap(FogParameterCB, 0);
+        DeviceContext->PSSetConstantBuffers(1, 1, &FogParameterCB);
+    }
+}
+
+void D3D11RHI::UpdateInverseViewProjMatrixConstantBuffer(const FMatrix& InvViewMatrix, const FMatrix& InvProjectionMatrix)
+{
+    if (!InvViewProjCB) return;
+
+    struct InverseMatrixBufferType {
+        FMatrix InvView;
+        FMatrix InvProjection;
+    };
+
+    InverseMatrixBufferType data;
+    data.InvView = InvViewMatrix;
+    data.InvProjection = InvProjectionMatrix;
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(InvViewProjCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(InverseMatrixBufferType));
+        DeviceContext->Unmap(InvViewProjCB, 0);
+        DeviceContext->PSSetConstantBuffers(2, 1, &InvViewProjCB);
+    }
+}
+
+void D3D11RHI::UpdateCopyShaderViewportBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
+{
+    if (!CopyShaderViewportCB) return;
+
+    struct CopyViewportBufferType {
+        float ViewportPos[2];    // g_ViewportPos
+        float ViewportSize[2];   // g_ViewportSize
+        float ScreenSize[2];     // g_ScreenSize
+        float Padding[2];        // 16바이트 정렬
+    };
+
+    CopyViewportBufferType data;
+    data.ViewportPos[0] = ViewportX;
+    data.ViewportPos[1] = ViewportY;
+    data.ViewportSize[0] = ViewportWidth;
+    data.ViewportSize[1] = ViewportHeight;
+    data.ScreenSize[0] = ScreenWidth;
+    data.ScreenSize[1] = ScreenHeight;
+    data.Padding[0] = 0.0f;
+    data.Padding[1] = 0.0f;
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (SUCCEEDED(DeviceContext->Map(CopyShaderViewportCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, &data, sizeof(CopyViewportBufferType));
+        DeviceContext->Unmap(CopyShaderViewportCB, 0);
+        DeviceContext->PSSetConstantBuffers(7, 1, &CopyShaderViewportCB); // b7 슬롯
+    }
+}
 
 void D3D11RHI::ReleaseSamplerState()
 {
@@ -918,34 +1166,47 @@ void D3D11RHI::ReleaseFrameBuffer()
     if (FXAARTV)
     {
         FXAARTV->Release();
-        FXAARTV = nullptr;
-    } 
-    if (HeatRTV)
-    {
-        HeatRTV->Release();
-        HeatRTV = nullptr;
-    }
-
-    if (DepthShaderResourceView)
-    {
-        DepthShaderResourceView->Release();
-        DepthShaderResourceView = nullptr;
     }
     if (FXAASRV)
     {
         FXAASRV->Release();
         FXAASRV = nullptr;
     }
-    if (HeatSRV)
+    if (HeatRTV)
     {
-        HeatSRV->Release();
-        HeatSRV = nullptr;
+        HeatRTV->Release();
+        HeatRTV = nullptr;
     }
+}
+
+void D3D11RHI::ReleaseDepthBuffer()
+{
     if (DepthStencilView)
     {
         DepthStencilView->Release();
         DepthStencilView = nullptr;
     }
+
+    if (DepthShaderResourceView)
+    {
+        DepthShaderResourceView->Release();
+        DepthShaderResourceView = nullptr;
+	}
+}
+
+void D3D11RHI::ReleaseSceneRenderTarget()
+{
+    if (SceneRenderTargetView)
+    {
+        SceneRenderTargetView->Release();
+        SceneRenderTargetView = nullptr;
+    }
+
+    if (SceneShaderResourceView)
+    {
+        SceneShaderResourceView->Release();
+        SceneShaderResourceView = nullptr;
+	}
 }
 
 void D3D11RHI::ReleaseDeviceAndSwapChain()
@@ -1052,68 +1313,6 @@ void D3D11RHI::OnResize(UINT NewWidth, UINT NewHeight)
     RefreshFXAAConstantsFromSwapchain();
 
 }
-void D3D11RHI::CreateBackBufferAndDepthStencil(UINT width, UINT height)
-{
-    // 기존 바인딩 해제 후 뷰 해제
-    if (RenderTargetView) { DeviceContext->OMSetRenderTargets(0, nullptr, nullptr); RenderTargetView->Release(); RenderTargetView = nullptr; }
-    if (DepthStencilView) { DepthStencilView->Release(); DepthStencilView = nullptr; }
-    \
-    // 1) 백버퍼에서 RTV 생성
-    ID3D11Texture2D* backBuffer = nullptr;
-    HRESULT hr = SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
-    if (FAILED(hr) || !backBuffer) {
-        UE_LOG("GetBuffer(0) failed.\n");
-        return;
-    }
-
-    D3D11_RENDER_TARGET_VIEW_DESC framebufferRTVdesc = {};
-    framebufferRTVdesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
-    framebufferRTVdesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-    hr = Device->CreateRenderTargetView(backBuffer, &framebufferRTVdesc, &RenderTargetView);
-    backBuffer->Release();
-    if (FAILED(hr) || !RenderTargetView) {
-        UE_LOG("CreateRenderTargetView failed.\n");
-        return;
-    }
-
-    // 2) DepthStencil 텍스처/뷰 생성
-    ID3D11Texture2D* depthTex = nullptr;
-    D3D11_TEXTURE2D_DESC depthDesc{};
-    depthDesc.Width = width;
-    depthDesc.Height = height;
-    depthDesc.MipLevels = 1;
-    depthDesc.ArraySize = 1;
-    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthDesc.SampleDesc.Count = 1;               // 멀티샘플링 끄는 경우
-    depthDesc.SampleDesc.Quality = 0;
-    depthDesc.Usage = D3D11_USAGE_DEFAULT;
-    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-
-    hr = Device->CreateTexture2D(&depthDesc, nullptr, &depthTex);
-    if (FAILED(hr) || !depthTex) {
-        UE_LOG("CreateTexture2D(depth) failed.\n");
-        return;
-    }
-
-    D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
-    dsvDesc.Format = depthDesc.Format;
-    dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-    dsvDesc.Texture2D.MipSlice = 0;
-
-    hr = Device->CreateDepthStencilView(depthTex, &dsvDesc, &DepthStencilView);
-    depthTex->Release();
-    if (FAILED(hr) || !DepthStencilView) {
-        UE_LOG("CreateDepthStencilView failed.\n");
-        return;
-    }
-
-    // 3) OM 바인딩
-    DeviceContext->OMSetRenderTargets(1, &RenderTargetView, DepthStencilView);
-
-    // 4) 뷰포트 갱신
-    SetViewport(width, height);
-}
-
 // ──────────────────────────────────────────────────────
 // Helper: Viewport 갱신
 // ──────────────────────────────────────────────────────
@@ -1136,34 +1335,55 @@ void D3D11RHI::setviewort(UINT width, UINT height)
 {
     SetViewport(width, height);
 }
+
 void D3D11RHI::ResizeSwapChain(UINT width, UINT height)
 {
     if (!SwapChain) return;
 
-    // 렌더링 완료까지 대기 (중요!)
-    if (DeviceContext) {
+    // ============================================================
+    // 1. GPU 작업 완료 대기 및 파이프라인 언바인딩
+    // ============================================================
+    if (DeviceContext)
+    {
+        DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
         DeviceContext->Flush();
     }
 
-    // 현재 렌더 타겟 언바인딩
-    if (DeviceContext) {
-        DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+    // ============================================================
+    // 2. 기존 리소스 해제 (역순)
+    // ============================================================
+    ReleaseSceneRenderTarget(); // Scene RenderTarget 먼저 해제
+    ReleaseDepthBuffer();        // Depth Buffer 해제
+    ReleaseFrameBuffer();        // BackBuffer 해제 (마지막)
+
+    // ============================================================
+    // 3. SwapChain 크기 조정
+    // ============================================================
+    HRESULT hr = SwapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0);
+    if (FAILED(hr))
+    {
+        UE_LOG("ERROR: SwapChain->ResizeBuffers failed! (HRESULT: 0x%X)", hr);
+        return;
     }
 
-    // 기존 뷰 해제
-    if (RenderTargetView) { RenderTargetView->Release(); RenderTargetView = nullptr; }
-    if (DepthStencilView) { DepthStencilView->Release(); DepthStencilView = nullptr; }
-    if (FrameBuffer) { FrameBuffer->Release(); FrameBuffer = nullptr; }
+    // ============================================================
+    // 4. 새 리소스 생성 (정순)
+    // ============================================================
+    CreateFrameBuffer();         // BackBuffer RTV 생성
+    CreateDepthBuffer();         // Depth Buffer + SRV 생성 (새 크기)
+    CreateSceneRenderTarget();   // Scene RenderTarget + SRV 생성 (새 크기)
 
-    // 스왑체인 버퍼 리사이즈
-    HRESULT hr = SwapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0);
-    if (FAILED(hr)) { UE_LOG("ResizeBuffers failed!\n"); return; }
+    // ============================================================
+    // 5. Viewport 갱신
+    // ============================================================
+    SetViewport(width, height);
 
-    // 다시 RTV/DSV 만들기
-    CreateBackBufferAndDepthStencil(width, height);
+    // ============================================================
+    // 6. 초기 상태 설정
+    // ============================================================
+    DeviceContext->OMSetRenderTargets(1, &RenderTargetView, DepthStencilView);
 
-    // 뷰포트도 갱신
-    setviewort(width, height);
+    UE_LOG("SUCCESS: ResizeSwapChain completed (%ux%u)", width, height);
 }
 
 void D3D11RHI::PSSetDefaultSampler(UINT StartSlot)

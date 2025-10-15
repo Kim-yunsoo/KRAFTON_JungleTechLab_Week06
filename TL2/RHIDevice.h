@@ -35,6 +35,8 @@ public:
     // create
     virtual void CreateDeviceAndSwapChain(HWND hWindow) = 0;;
     virtual void CreateFrameBuffer() = 0;
+	virtual void CreateDepthBuffer() = 0;
+	virtual void CreateSceneRenderTarget() = 0;
     virtual void CreateRasterizerState() = 0;
     virtual void CreateConstantBuffer() = 0;
     virtual void CreateBlendState() = 0;
@@ -57,6 +59,7 @@ public:
     // clear
     virtual void ClearBackBuffer() = 0;
     virtual void ClearDepthBuffer(float Depth, UINT Stenci) = 0;
+    virtual void ClearSceneRenderTarget() = 0;
 
     virtual void IASetPrimitiveTopology() = 0;
     virtual void RSSetViewport() = 0;
@@ -65,6 +68,8 @@ public:
     virtual void RSSetNoCullState() = 0;
     virtual void RSSetDefaultState() = 0;
     virtual void OMSetRenderTargets() = 0;
+	virtual void OMSetSceneRenderTarget() = 0;
+	virtual void OMSetBackBufferOnly() = 0;
     virtual void OMSetBlendState(bool bIsBlendMode) = 0;
     virtual void OmSetDepthStencilState(EComparisonFunc Func) = 0;
     virtual void Present() = 0;

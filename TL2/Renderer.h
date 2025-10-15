@@ -51,7 +51,17 @@ public:
 
     void UpdateViewportBuffer(float StartX, float StartY, float SizeX, float SizeY);
 
+    void UpdateViewportBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
+
     void UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
+
+    void UpdateCameraNearFarBuffer(float NearPlane, float FarPlane);
+
+    void UpdateFogParameterBuffer(float FogDensity, float FogHeightFalloff, float FogStartDistance, float FogCutoffDistance, float FogMaxOpacity, const FVector4& FogInscatteringColor, const FVector& FogComponentPosition);
+
+    void UpdateInverseViewProjMatrixBuffer(const FMatrix& InvViewMatrix, const FMatrix& InvProjectionMatrix);
+
+    void UpdateCopyShaderViewportBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
 
     void DrawIndexedPrimitiveComponent(UStaticMesh* InMesh, D3D11_PRIMITIVE_TOPOLOGY InTopology, const TArray<FMaterialSlot>& InComponentMaterialSlots);
 
@@ -87,6 +97,9 @@ public:
     void SetFXAAEnabled(bool bEnabled);
     void SetFXAAParams(float SpanMax, float ReduceMul, float ReduceMin);
 
+    // 현재 FXAA 파라미터를 Constant Buffer에 바인딩
+	void BindCurrentFXAAParams();
+
     bool IsFXAAEnabled() const { return bFXAAEnabled; }
 
     int GetFXAAQuality() { return FXAAVersion; }
@@ -96,6 +109,11 @@ public:
     
     UShader* GetFXAAShader() { return FXAAShader; }
     UShader* GetHeatShader() { return HeatShader; }
+    
+    // ✅ Scene RenderTarget 관리
+    void BeginSceneRendering();
+    void EndSceneRendering();
+
 private:
     URHIDevice* RHIDevice;
 
@@ -125,6 +143,15 @@ private:
     // Visible Light
     TArray<FLightInfo> WorldLights;
 
+    // 마지막 설정된 FXAA 파라미터 캐싱
+    struct FFXAAParams
+    {
+        float SpanMax = 8.0f;
+        float ReduceMul = 1.0f / 8.0f;
+        float ReduceMin = 1.0f / 128.0f;
+    } CachedFXAAParams;
+
+    // Post-process FXAA shader
     // Post-processing shader
     UShader* FXAAShader = nullptr;
     UShader* HeatShader = nullptr;

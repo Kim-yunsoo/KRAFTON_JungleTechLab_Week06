@@ -55,7 +55,9 @@
 #include "FireBallActor.h"
 #include "LightComponent.h"
 #include "PointLightComponent.h"
- 
+#include "ExponentialHeightFogActor.h"
+#include "HeightFogComponent.h"
+
 #include"MovementComponent.h"
 #include"RotatingMovementComponent.h"
 #include"ProjectileMovementComponent.h"
@@ -76,14 +78,16 @@ IMPLEMENT_CLASS(UOBoundingBoxComponent)
 IMPLEMENT_CLASS(UShapeComponent)
 IMPLEMENT_CLASS(ULightComponent)
 IMPLEMENT_CLASS(UPointLightComponent)
+IMPLEMENT_CLASS(UHeightFogComponent)
 
 IMPLEMENT_CLASS(AActor)
 IMPLEMENT_CLASS(ACameraActor)
 IMPLEMENT_CLASS(AStaticMeshActor)
 IMPLEMENT_CLASS(AGizmoActor)
 IMPLEMENT_CLASS(AGridActor)
-IMPLEMENT_CLASS(ADecalActor) 
-IMPLEMENT_CLASS(AFireBallActor) 
+IMPLEMENT_CLASS(ADecalActor)
+IMPLEMENT_CLASS(AFireBallActor)
+IMPLEMENT_CLASS(AExponentialHeightFogActor) 
 
 IMPLEMENT_CLASS(UGizmoArrowComponent)
 IMPLEMENT_CLASS(UGizmoScaleComponent)

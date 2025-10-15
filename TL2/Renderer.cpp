@@ -139,6 +139,13 @@ void URenderer::UpdateViewportBuffer(float StartX, float StartY, float SizeX, fl
     static_cast<D3D11RHI*>(RHIDevice)->UpdateViewportConstantBuffer(StartX, StartY, SizeX, SizeY);
 }
 
+void URenderer::UpdateViewportBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
+{
+    static_cast<D3D11RHI*>(RHIDevice)->UpdateViewportConstantBuffer(
+        ViewportX, ViewportY, ViewportWidth, ViewportHeight, ScreenWidth, ScreenHeight
+    );
+}
+
 void URenderer::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
 {
     static_cast<D3D11RHI*>(RHIDevice)->UpdateDepthVisualizationBuffer(
@@ -146,6 +153,31 @@ void URenderer::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, 
         ViewportX, ViewportY,
         ViewportWidth, ViewportHeight,
         ScreenWidth, ScreenHeight
+    );
+}
+
+void URenderer::UpdateCameraNearFarBuffer(float NearPlane, float FarPlane)
+{
+    static_cast<D3D11RHI*>(RHIDevice)->UpdateCameraNearFarConstantBuffer(NearPlane, FarPlane);
+}
+
+void URenderer::UpdateFogParameterBuffer(float FogDensity, float FogHeightFalloff, float FogStartDistance, float FogCutoffDistance, float FogMaxOpacity, const FVector4& FogInscatteringColor, const FVector& FogComponentPosition)
+{
+    static_cast<D3D11RHI*>(RHIDevice)->UpdateFogParameterConstantBuffer(
+        FogDensity, FogHeightFalloff, FogStartDistance, FogCutoffDistance,
+        FogMaxOpacity, FogInscatteringColor, FogComponentPosition
+    );
+}
+
+void URenderer::UpdateInverseViewProjMatrixBuffer(const FMatrix& InvViewMatrix, const FMatrix& InvProjectionMatrix)
+{
+	static_cast<D3D11RHI*>(RHIDevice)->UpdateInverseViewProjMatrixConstantBuffer(InvViewMatrix, InvProjectionMatrix);
+}
+
+void URenderer::UpdateCopyShaderViewportBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
+{
+    static_cast<D3D11RHI*>(RHIDevice)->UpdateCopyShaderViewportBuffer(
+        ViewportX, ViewportY, ViewportWidth, ViewportHeight, ScreenWidth, ScreenHeight
     );
 }
 
@@ -470,6 +502,12 @@ void URenderer::SetFXAAEnabled(bool bEnabled)
 
 void URenderer::SetFXAAParams(float SpanMax, float ReduceMul, float ReduceMin)
 {
+    // 파라미터 캐싱
+    CachedFXAAParams.SpanMax = SpanMax;
+    CachedFXAAParams.ReduceMul = ReduceMul;
+    CachedFXAAParams.ReduceMin = ReduceMin;
+
+    // 기존 로직 (Constant Buffer 업데이트)
     D3D11RHI* RHI = static_cast<D3D11RHI*>(RHIDevice);
     if (!RHI) return;
 
@@ -493,7 +531,6 @@ void URenderer::SetFXAAParams(float SpanMax, float ReduceMul, float ReduceMin)
 
     RHI->UpdateFXAAConstantBuffers(info);
 }
- 
 void URenderer::EnsurePostProcessingShader()
 {
     if (!HeatShader)
@@ -504,6 +541,27 @@ void URenderer::EnsurePostProcessingShader()
     {
         FXAAShader = UResourceManager::GetInstance().Load<UShader>("FXAA.hlsl");
     }
+}
+
+void URenderer::BindCurrentFXAAParams()
+{
+    SetFXAAParams(
+        CachedFXAAParams.SpanMax,
+        CachedFXAAParams.ReduceMul,
+        CachedFXAAParams.ReduceMin
+    );
+} 
+
+void URenderer::BeginSceneRendering()
+{
+	RHIDevice->OMSetSceneRenderTarget();
+	RHIDevice->ClearSceneRenderTarget();
+    RHIDevice->ClearDepthBuffer(1.0f, 0);
+}
+
+void URenderer::EndSceneRendering()
+{
+    // TODO: DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 }
 
 void URenderer::InitializeLineBatch()

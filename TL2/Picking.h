@@ -126,4 +126,5 @@ private:
     static bool CheckGizmoComponentPicking(const UStaticMeshComponent* Component, const FRay& Ray, float& OutDistance);
     static bool CheckBillboardComponentPicking(const class UBillboardComponent* Component, const FRay& Ray, float& OutDistance);
     static bool CheckDecalComponentPicking(const class UDecalComponent* Component, const FRay& Ray, float& OutDistance);
+    static bool CheckHeightFogComponentPicking(const class UHeightFogComponent* Component, const FRay& Ray, float& OutDistance);
 };
