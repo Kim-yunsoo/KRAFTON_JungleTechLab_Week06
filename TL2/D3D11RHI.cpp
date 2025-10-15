@@ -1193,67 +1193,6 @@ void D3D11RHI::OnResize(UINT NewWidth, UINT NewHeight)
 
     DeviceContext->RSSetViewports(1, &ViewportInfo);
 }
-void D3D11RHI::CreateBackBufferAndDepthStencil(UINT width, UINT height)
-{
-    // 기존 바인딩 해제 후 뷰 해제
-    if (RenderTargetView) { DeviceContext->OMSetRenderTargets(0, nullptr, nullptr); RenderTargetView->Release(); RenderTargetView = nullptr; }
-    if (DepthStencilView) { DepthStencilView->Release(); DepthStencilView = nullptr; }
-
-    // 1) 백버퍼에서 RTV 생성
-    ID3D11Texture2D* backBuffer = nullptr;
-    HRESULT hr = SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
-    if (FAILED(hr) || !backBuffer) {
-        UE_LOG("GetBuffer(0) failed.\n");
-        return;
-    }
-
-    D3D11_RENDER_TARGET_VIEW_DESC framebufferRTVdesc = {};
-    framebufferRTVdesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
-    framebufferRTVdesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-    hr = Device->CreateRenderTargetView(backBuffer, &framebufferRTVdesc, &RenderTargetView);
-    backBuffer->Release();
-    if (FAILED(hr) || !RenderTargetView) {
-        UE_LOG("CreateRenderTargetView failed.\n");
-        return;
-    }
-
-    // 2) DepthStencil 텍스처/뷰 생성
-    ID3D11Texture2D* depthTex = nullptr;
-    D3D11_TEXTURE2D_DESC depthDesc{};
-    depthDesc.Width = width;
-    depthDesc.Height = height;
-    depthDesc.MipLevels = 1;
-    depthDesc.ArraySize = 1;
-    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthDesc.SampleDesc.Count = 1;               // 멀티샘플링 끄는 경우
-    depthDesc.SampleDesc.Quality = 0;
-    depthDesc.Usage = D3D11_USAGE_DEFAULT;
-    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-
-    hr = Device->CreateTexture2D(&depthDesc, nullptr, &depthTex);
-    if (FAILED(hr) || !depthTex) {
-        UE_LOG("CreateTexture2D(depth) failed.\n");
-        return;
-    }
-
-    D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
-    dsvDesc.Format = depthDesc.Format;
-    dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-    dsvDesc.Texture2D.MipSlice = 0;
-
-    hr = Device->CreateDepthStencilView(depthTex, &dsvDesc, &DepthStencilView);
-    depthTex->Release();
-    if (FAILED(hr) || !DepthStencilView) {
-        UE_LOG("CreateDepthStencilView failed.\n");
-        return;
-    }
-
-    // 3) OM 바인딩
-    DeviceContext->OMSetRenderTargets(1, &RenderTargetView, DepthStencilView);
-
-    // 4) 뷰포트 갱신
-    SetViewport(width, height);
-}
 
 // ──────────────────────────────────────────────────────
 // Helper: Viewport 갱신
@@ -1277,34 +1216,55 @@ void D3D11RHI::setviewort(UINT width, UINT height)
 {
     SetViewport(width, height);
 }
+
 void D3D11RHI::ResizeSwapChain(UINT width, UINT height)
 {
     if (!SwapChain) return;
 
-    // 렌더링 완료까지 대기 (중요!)
-    if (DeviceContext) {
+    // ============================================================
+    // 1. GPU 작업 완료 대기 및 파이프라인 언바인딩
+    // ============================================================
+    if (DeviceContext)
+    {
+        DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
         DeviceContext->Flush();
     }
 
-    // 현재 렌더 타겟 언바인딩
-    if (DeviceContext) {
-        DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+    // ============================================================
+    // 2. 기존 리소스 해제 (역순)
+    // ============================================================
+    ReleaseSceneRenderTarget(); // Scene RenderTarget 먼저 해제
+    ReleaseDepthBuffer();        // Depth Buffer 해제
+    ReleaseFrameBuffer();        // BackBuffer 해제 (마지막)
+
+    // ============================================================
+    // 3. SwapChain 크기 조정
+    // ============================================================
+    HRESULT hr = SwapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0);
+    if (FAILED(hr))
+    {
+        UE_LOG("ERROR: SwapChain->ResizeBuffers failed! (HRESULT: 0x%X)", hr);
+        return;
     }
 
-    // 기존 뷰 해제
-    if (RenderTargetView) { RenderTargetView->Release(); RenderTargetView = nullptr; }
-    if (DepthStencilView) { DepthStencilView->Release(); DepthStencilView = nullptr; }
-    if (FrameBuffer) { FrameBuffer->Release(); FrameBuffer = nullptr; }
+    // ============================================================
+    // 4. 새 리소스 생성 (정순)
+    // ============================================================
+    CreateFrameBuffer();         // BackBuffer RTV 생성
+    CreateDepthBuffer();         // Depth Buffer + SRV 생성 (새 크기)
+    CreateSceneRenderTarget();   // Scene RenderTarget + SRV 생성 (새 크기)
 
-    // 스왑체인 버퍼 리사이즈
-    HRESULT hr = SwapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0);
-    if (FAILED(hr)) { UE_LOG("ResizeBuffers failed!\n"); return; }
+    // ============================================================
+    // 5. Viewport 갱신
+    // ============================================================
+    SetViewport(width, height);
 
-    // 다시 RTV/DSV 만들기
-    CreateBackBufferAndDepthStencil(width, height);
+    // ============================================================
+    // 6. 초기 상태 설정
+    // ============================================================
+    DeviceContext->OMSetRenderTargets(1, &RenderTargetView, DepthStencilView);
 
-    // 뷰포트도 갱신
-    setviewort(width, height);
+    UE_LOG("SUCCESS: ResizeSwapChain completed (%ux%u)", width, height);
 }
 
 void D3D11RHI::PSSetDefaultSampler(UINT StartSlot)

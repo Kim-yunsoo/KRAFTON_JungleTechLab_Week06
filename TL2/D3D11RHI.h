@@ -78,8 +78,6 @@ public:
 
     void OnResize(UINT NewWidth, UINT NewHeight);
 
-    void CreateBackBufferAndDepthStencil(UINT width, UINT height);
-
     void SetViewport(UINT width, UINT height);
 
     void setviewort(UINT width, UINT height);

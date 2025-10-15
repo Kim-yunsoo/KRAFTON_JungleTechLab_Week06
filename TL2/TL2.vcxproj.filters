@@ -470,6 +470,12 @@
     <ClCompile Include="RotatingMovementComponent.cpp">
       <Filter>Components\Movement</Filter>
     </ClCompile>
+    <ClCompile Include="ExponentialHeightFogActor.cpp" />
+    <ClCompile Include="ProjectileMovementComponent.cpp" />
+    <ClCompile Include="HeightFogComponent.cpp" />
+    <ClCompile Include="ExponentialHeightFogShader.hlsl">
+      <Filter>Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <!-- ==================== 헤더 파일 (.h) ==================== -->
   <ItemGroup>
@@ -855,6 +861,9 @@
     <ClInclude Include="RotatingMovementComponent.h">
       <Filter>Components\Movement</Filter>
     </ClInclude>
+    <ClInclude Include="ExponentialHeightFogActor.h" />
+    <ClInclude Include="ProjectileMovementComponent.h" />
+    <ClInclude Include="HeightFogComponent.h" />
   </ItemGroup>
   <!-- ==================== 셰이더 파일 (.hlsl) ==================== -->
   <ItemGroup>
@@ -884,6 +893,9 @@
     </FxCompile>
     <FxCompile Include="ProjectionDecal.hlsl" />
     <FxCompile Include="SceneDepthShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="CopyShader.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
