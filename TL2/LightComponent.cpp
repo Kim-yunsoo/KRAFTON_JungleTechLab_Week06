@@ -5,15 +5,15 @@ ULightComponent::ULightComponent() : LightColor(1,0,0), AttenuationRadius(1.7f),
 {
 }
 
-UObject* ULightComponent::Duplication(FObjectDuplicationParameters Parameters)
+UObject* ULightComponent::Duplicate(FObjectDuplicationParameters Parameters)
 {
-	ULightComponent* DupComp = static_cast<ULightComponent*>(Super_t::Duplicate(Parameters));
+    ULightComponent* DupComp = static_cast<ULightComponent*>(Super_t::Duplicate(Parameters));
 
-	DupComp->LightColor = LightColor;
-	DupComp->AttenuationRadius = AttenuationRadius;
-	DupComp->Intensity = Intensity;
+    DupComp->LightColor = LightColor;
+    DupComp->AttenuationRadius = AttenuationRadius;
+    DupComp->Intensity = Intensity;
 
-	return DupComp;
+    return DupComp;
 }
 
 ULightComponent::~ULightComponent()

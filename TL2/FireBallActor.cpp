@@ -45,26 +45,30 @@ UObject* AFireBallActor::Duplicate(FObjectDuplicationParameters Parameters)
 {
 	auto DupActor = static_cast<AFireBallActor*>(Super_t::Duplicate(Parameters));
 
-	//TODO
-	for (UActorComponent* Component : DupActor->OwnedComponents)
+	UPointLightComponent* NewPointLight = nullptr;
+	if (PointLightComponent)
 	{
-
-		if (auto It = Parameters.DuplicationSeed.find(Component); It != Parameters.DuplicationSeed.end())
+		if (auto It = Parameters.CreatedObjects.find(PointLightComponent);  It != Parameters.CreatedObjects.end())
 		{
-			DupActor->OwnedComponents.emplace(static_cast<UActorComponent*>(It->second));
-		}
-		else
-		{
-			auto Params = InitStaticDuplicateObjectParams(Component, DupActor, FName::GetNone(), Parameters.DuplicationSeed, Parameters.CreatedObjects);
-			auto DupComponent = static_cast<UActorComponent*>(Component->Duplicate(Params));
-
-			DupActor->OwnedComponents.emplace(DupComponent);
+			NewPointLight = Cast<UPointLightComponent>(It->second);
 		}
 	}
-	
+	if (!NewPointLight)
+	{
+		for (UActorComponent* Comp : DupActor->OwnedComponents)
+		{
+			if (auto* PointLightComp = Cast<UPointLightComponent>(Comp))
+			{
+				NewPointLight = PointLightComp;
+			}
+		}
+	}
+	   
+	DupActor->PointLightComponent = NewPointLight;
+	 
+	//TODO 부모 설정 
 
-
-    return DupActor;
+	return DupActor;
 }
 
 void AFireBallActor::Tick(float DeltaTime)
