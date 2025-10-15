@@ -154,6 +154,8 @@ public:
 	// ✅ Scene → BackBuffer 복사 함수 추가
 	void CopySceneToBackBuffer(FViewport* Viewport);
 
+	void CopySceneToFXAARenderTarget(FViewport* Viewport);
+
 	// ✅ Fog 활성화 여부 확인 함수
 	bool HasActiveFog() const;
 

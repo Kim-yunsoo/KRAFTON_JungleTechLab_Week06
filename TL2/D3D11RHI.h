@@ -71,6 +71,7 @@ public:
     // Bind backbuffer RTV with no depth for post-process
     void OMSetBackBufferNoDepth();
 	void OMSetSceneRenderTarget() override;
+    void OMSetFXAARenderTarget();
 	void OMSetBackBufferOnly() override;
     void OMSetBlendState(bool bIsBlendMode) override;
     void Present() override;

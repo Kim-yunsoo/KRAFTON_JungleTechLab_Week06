@@ -451,6 +451,11 @@ void D3D11RHI::OMSetSceneRenderTarget()
     DeviceContext->OMSetRenderTargets(1, &SceneRenderTargetView, DepthStencilView);
 }
 
+void D3D11RHI::OMSetFXAARenderTarget()
+{
+	DeviceContext->OMSetRenderTargets(1, &FXAARTV, nullptr);
+}
+
 void D3D11RHI::OMSetBackBufferOnly()
 {
     DeviceContext->OMSetRenderTargets(1, &RenderTargetView, nullptr);

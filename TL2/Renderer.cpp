@@ -497,6 +497,12 @@ void URenderer::SetFXAAEnabled(bool bEnabled)
 
 void URenderer::SetFXAAParams(float SpanMax, float ReduceMul, float ReduceMin)
 {
+    // 파라미터 캐싱
+    CachedFXAAParams.SpanMax = SpanMax;
+    CachedFXAAParams.ReduceMul = ReduceMul;
+    CachedFXAAParams.ReduceMin = ReduceMin;
+
+    // 기존 로직 (Constant Buffer 업데이트)
     D3D11RHI* RHI = static_cast<D3D11RHI*>(RHIDevice);
     if (!RHI) return;
 
@@ -519,6 +525,15 @@ void URenderer::SetFXAAParams(float SpanMax, float ReduceMul, float ReduceMin)
     }
 
     RHI->UpdateFXAAConstantBuffers(info);
+}
+
+void URenderer::BindCurrentFXAAParams()
+{
+    SetFXAAParams(
+        CachedFXAAParams.SpanMax,
+        CachedFXAAParams.ReduceMul,
+        CachedFXAAParams.ReduceMin
+    );
 }
 
 void URenderer::PostProcessing()
@@ -565,7 +580,7 @@ void URenderer::BeginSceneRendering()
 
 void URenderer::EndSceneRendering()
 {
-    // RHIDevice->OMSetRenderTargets();
+    // TODO: DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 }
 
 void URenderer::InitializeLineBatch()
