@@ -41,9 +41,7 @@ public:
     static HRESULT CreateIndexBuffer(ID3D11Device* device, const FMeshData* meshData, ID3D11Buffer** outBuffer);
 
     static HRESULT CreateIndexBuffer(ID3D11Device* device, const FStaticMesh* mesh, ID3D11Buffer** outBuffer);
-
-
-
+     
     void UpdateConstantBuffers(const FMatrix& ModelMatrix, const FMatrix& ViewMatrix, const FMatrix& ProjMatrix) override;
     void UpdateViewConstantBuffers( const FMatrix& ViewMatrix, const FMatrix& ProjMatrix) ;
     void UpdateModelConstantBuffers(const FMatrix& ModelMatrix) ;
@@ -54,6 +52,8 @@ public:
     void UpdateUVScrollConstantBuffers(const FVector2D& Speed, float TimeSec) override;
     void UpdateInvWorldConstantBuffer(const FMatrix& InvWorldMatrix, const FMatrix& InvViewProjMatrix) override;
     void UpdateViewportConstantBuffer(float StartX, float StartY, float SizeX, float SizeY);
+    void UpdateLightConstantBuffers(const TArray<FLightInfo>& InLights) override;
+    void UpdateFXAAConstantBuffers(const FXAAInfo& InFXAAInfo) override;
     void UpdateViewportConstantBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
     void UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
     void UpdateCameraNearFarConstantBuffer(float NearPlane, float FarPlane);
@@ -68,6 +68,8 @@ public:
     void RSSetDefaultState() override;
     void RSSetViewport() override;
     void OMSetRenderTargets() override;
+    // Bind backbuffer RTV with no depth for post-process
+    void OMSetBackBufferNoDepth();
 	void OMSetSceneRenderTarget() override;
 	void OMSetBackBufferOnly() override;
     void OMSetBlendState(bool bIsBlendMode) override;
@@ -83,6 +85,13 @@ public:
     void setviewort(UINT width, UINT height);
 
     void ResizeSwapChain(UINT width, UINT height);
+
+    void SetFXAAEnabledFlag(bool bEnabled) { bFXAAEnabledFlag = bEnabled; }
+    // Allow overriding FXAA params from UI
+    void SetFXAAParams(float SubPix, float EdgeThreshold, float EdgeThresholdMin);
+private:
+    // Compute and upload default FXAA constants from current swapchain size
+    void RefreshFXAAConstantsFromSwapchain();
 
 public:
     // getter
@@ -107,6 +116,13 @@ public:
     {
         return DepthShaderResourceView;
     }
+    inline ID3D11ShaderResourceView* GetFXAASRV()
+    {
+        return FXAASRV;
+    }
+
+    // Update viewport CB (b6) from current RS viewport
+    void UpdateViewportCBFromCurrent();
 
 private:
     void CreateDeviceAndSwapChain(HWND hWindow)override; // 여기서 디바이스, 디바이스 컨택스트, 스왑체인, 뷰포트를 초기화한다
@@ -165,6 +181,11 @@ private:
     ID3D11DepthStencilView* DepthStencilView{};
     ID3D11ShaderResourceView* DepthShaderResourceView{};
 
+    //FXAA 
+    ID3D11Texture2D* FXAATex = nullptr;
+    ID3D11RenderTargetView* FXAARTV = nullptr;
+    ID3D11ShaderResourceView* FXAASRV = nullptr;
+
     // 버퍼 핸들
     ID3D11Buffer* ModelCB{};
     ID3D11Buffer* ViewProjCB{};
@@ -176,6 +197,8 @@ private:
     ID3D11Buffer* InvWorldCB{};
     ID3D11Buffer* ViewportCB{};
     ID3D11Buffer* DepthVisualizationCB{};
+    ID3D11Buffer* LightCB{}; 
+    ID3D11Buffer* FXAACB{};
 
     // ✅ Fog Pass용 Constant Buffers
     ID3D11Buffer* CameraNearFarCB = nullptr;          // b0: Camera Info
@@ -190,6 +213,12 @@ private:
 
     ID3D11SamplerState* DefaultSamplerState = nullptr;
 
+    bool bFXAAEnabledFlag = true;
+    // User override for FXAA parameters (optional)
+    bool bFXAAUserParams = false;
+    float FXAA_SubPix_User = 0.75f;
+    float FXAA_EdgeThreshold_User = 0.125f;
+    float FXAA_EdgeThresholdMin_User = 0.0312f;
     
 };
 

@@ -51,6 +51,7 @@ float4 mainPS(PS_INPUT input) : SV_TARGET
         finalColor.rgb *= g_DiffuseTexColor.Sample(g_Sample, input.texCoord);
     }
     
+    
     return finalColor;
 }
 

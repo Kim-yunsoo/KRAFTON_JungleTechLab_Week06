@@ -16,7 +16,8 @@ void UShader::Load(const FString& InShaderPath, ID3D11Device* InDevice)
 
     HRESULT hr;
     ID3DBlob* errorBlob = nullptr;
-    hr = D3DCompileFromFile(WFilePath.c_str(), nullptr, nullptr, "mainVS", "vs_5_0", 0, 0, &VSBlob, &errorBlob);
+    // Enable standard include handling so that #include (e.g., Light.hlsli) works at runtime
+    hr = D3DCompileFromFile(WFilePath.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "mainVS", "vs_5_0", 0, 0, &VSBlob, &errorBlob);
     if (FAILED(hr))
     {
         char* msg = (char*)errorBlob->GetBufferPointer();
@@ -27,7 +28,7 @@ void UShader::Load(const FString& InShaderPath, ID3D11Device* InDevice)
 
     hr = InDevice->CreateVertexShader(VSBlob->GetBufferPointer(), VSBlob->GetBufferSize(), nullptr, &VertexShader);
 
-    hr = D3DCompileFromFile(WFilePath.c_str(), nullptr, nullptr, "mainPS", "ps_5_0", 0, 0, &PSBlob, nullptr);
+    hr = D3DCompileFromFile(WFilePath.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "mainPS", "ps_5_0", 0, 0, &PSBlob, nullptr);
 
     hr = InDevice->CreatePixelShader(PSBlob->GetBufferPointer(), PSBlob->GetBufferSize(), nullptr, &PixelShader);
 
@@ -40,11 +41,13 @@ void UShader::CreateInputLayout(ID3D11Device* Device, const FString& InShaderPat
     const D3D11_INPUT_ELEMENT_DESC* layout = descArray.data();
     uint32 layoutCount = static_cast<uint32>(descArray.size());
 
+    // For shaders using SV_VertexID (e.g., fullscreen triangle), the input signature is empty.
+    // In that case, skip creating an input layout and use IASetInputLayout(nullptr).
     if (layoutCount == 0)
     {
-		// 레이아웃 정보가 없으면 생성하지 않음
+        InputLayout = nullptr;
         return;
-	}
+    }
 
     HRESULT hr = Device->CreateInputLayout(
         layout,

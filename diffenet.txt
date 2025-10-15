@@ -1,0 +1,33 @@
+FXAA.hlsl 와 newFXAAShader.hlsl 차이점 요약
+
+1) 상수 버퍼/파라미터
+- FXAA.hlsl: 엔진에서 이미 사용하는 PS `b0` 레이아웃 유지(`rcpFrame`, `FXAASubPix`, `FXAA_Edge_Threshhold*`). 뷰포트용 `b6`(ViewportRect)도 사용.
+- newFXAAShader.hlsl: `b0`에 `FXAAParams`(InvResolution, FXAASpanMax, FXAAReduceMul, FXAAReduceMin).
+- 포트된 FXAA.hlsl은 new 스타일의 `FXAASpanMax/Reduce*`를 상수로 하드코딩(8.0, 1/8, 1/128)하여 동일 로직 구현.
+
+2) 텍스처/샘플러 네이밍과 바인딩
+- 둘 다 `t0/s0` 사용. 포트 과정에서 FXAA.hlsl 자원명을 `SceneColor/SceneSampler`로 통일.
+- D3D11 바인딩은 슬롯 기반이므로 이름 변경으로 엔진 코드는 영향 없음.
+
+3) 버텍스 단계와 입력 레이아웃
+- FXAA.hlsl: 엔진 요구에 맞춰 `SV_VertexID` 풀스크린 삼각형 사용(입력 레이아웃 비움). VS: `VS_FullScreen` → `mainVS`.
+- newFXAAShader.hlsl: POSITION/TEXCOORD 입력을 받아 패스스루.
+
+4) UV 계산 방식
+- FXAA.hlsl: PS에서 `ViewportRect(b6)`와 `rcpFrame`을 이용해 픽셀 좌표 → UV 재계산(여러 뷰포트/리사이즈 대응).
+- newFXAAShader.hlsl: VS에서 전달된 `TexCoord` 그대로 사용.
+
+5) 알고리즘 코어(에지 방향/두 지점 샘플링/클램프)
+- 공통: 4방향 이웃(NW/NE/SW/SE)로 루마 도출 → 방향 벡터 산출 → `FXAAReduceMul/Min` 기반 정규화 → 방향으로 2개 샘플 → 평균과 원본 사이 보간, 결과 루마 범위 밖이면 원본 유지.
+- FXAA.hlsl: 위 로직을 그대로 사용하되, `InvResolution = rcpFrame`을 사용. `FXAASpanMax=8`, `FXAAReduceMul=1/8`, `FXAAReduceMin=1/128` 고정값.
+
+6) 알파 처리
+- 둘 다 원본의 알파 유지(`SceneColor.a`).
+
+7) 토글/임계값
+- FXAA.hlsl: 엔진 토글을 위해 `FXAASubPix < 0` 시 바이패스(원본 반환). newFXAAShader.hlsl에는 없는 엔진 연동용 로직.
+- FXAA_Edge_Threshold* 값은 간단화된 new 스타일에선 사용하지 않음(보존만 함).
+
+8) 엔트리 포인트
+- 둘 다 `mainVS`, `mainPS` 제공. FXAA.hlsl은 엔진이 기대하는 시그니처(SV_VertexID)를 유지.
+

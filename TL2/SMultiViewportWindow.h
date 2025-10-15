@@ -28,8 +28,9 @@ public:
     virtual void OnMouseUp(FVector2D MousePos, uint32 Button) override;
 
     void SetMainViewPort();
-
-
+    EViewportLayoutMode GetCurrentLayoutMode() { return CurrentMode; }
+    SViewportWindow** GetViewports() { return Viewports; }
+    SViewportWindow* GetMainViewport() { return MainViewport; }
     void OnShutdown();
 
     static SViewportWindow* ActiveViewport; // 현재 드래그 중인 뷰포트

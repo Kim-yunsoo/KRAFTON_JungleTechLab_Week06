@@ -107,11 +107,12 @@ public:
                 std::stringstream wss(line.substr(3));
                 float nx, ny, nz;
                 wss >> nx >> ny >> nz;
-
+                 
                 if (bIsRHCoordSys)
-                    OutObjInfo->Normals.push_back(FVector(nx, -ny, nz));
+                    OutObjInfo->Normals.push_back(FVector(nz, -ny, nx));
                 else
                     OutObjInfo->Normals.push_back(FVector(nx, ny, nz));
+                 
 
                 bHasNormal = true;
             }

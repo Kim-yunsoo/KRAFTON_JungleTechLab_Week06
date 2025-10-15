@@ -176,11 +176,14 @@
     <ClCompile Include="EditorClipboard.cpp" />
     <ClCompile Include="EditorEngine.cpp" />
     <ClCompile Include="Engine.cpp" />
+    <ClCompile Include="FireBallActor.cpp" />
+    <ClCompile Include="FireBallComponent.cpp" />
     <ClCompile Include="ExponentialHeightFogActor.cpp" />
     <ClCompile Include="GameEngine.cpp" />
     <ClCompile Include="Frustum.cpp" />
     <ClCompile Include="FViewportClient.cpp" />
     <ClCompile Include="Level.cpp" />
+    <ClCompile Include="LightComponent.cpp" />
     <ClCompile Include="MenuBarWidget.cpp" />
     <ClCompile Include="MovementComponent.cpp" />
     <ClCompile Include="Name.cpp" />
@@ -214,6 +217,7 @@
     <ClCompile Include="MeshComponent.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="PickingTimer.cpp" />
+    <ClCompile Include="PointLightComponent.cpp" />
     <ClCompile Include="PrimitiveComponent.cpp" />
     <ClCompile Include="ProjectileMovementComponent.cpp" />
     <ClCompile Include="RenderingStats.cpp" />
@@ -329,6 +333,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
+    <FxCompile Include="FXAA.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="Primitive.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -387,11 +395,14 @@
     <ClInclude Include="EditorClipboard.h" />
     <ClInclude Include="EditorEngine.h" />
     <ClInclude Include="Engine.h" />
+    <ClInclude Include="FireBallActor.h" />
+    <ClInclude Include="FireBallComponent.h" />
     <ClInclude Include="ExponentialHeightFogActor.h" />
     <ClInclude Include="Frustum.h" />
     <ClInclude Include="FViewportClient.h" />
     <ClInclude Include="GameEngine.h" />
     <ClInclude Include="Level.h" />
+    <ClInclude Include="LightComponent.h" />
     <ClInclude Include="MenuBarWidget.h" />
     <ClInclude Include="MovementComponent.h" />
     <ClInclude Include="ObjManager.h" />
@@ -420,6 +431,7 @@
     <ClInclude Include="Material.h" />
     <ClInclude Include="MeshComponent.h" />
     <ClInclude Include="Object.h" />
+    <ClInclude Include="PointLightComponent.h" />
     <ClInclude Include="PrimitiveComponent.h" />
     <ClInclude Include="ProjectileMovementComponent.h" />
     <ClInclude Include="PropertyFlag.h" />
@@ -502,6 +514,12 @@
     <Content Include="Editor\Icon\Pawn_64x.dds" />
     <Content Include="Editor\Icon\PointLight_64x.dds" />
     <Content Include="Editor\Icon\SpotLight_64x.dds" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Light.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

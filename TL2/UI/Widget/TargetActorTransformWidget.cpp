@@ -22,6 +22,7 @@
 
 #include <filesystem>
 #include <vector>
+#include "PointLightComponent.h"
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -220,7 +221,8 @@ void UTargetActorTransformWidget::RenderWidget()
 			{ "Billboard Component", UBillboardComponent::StaticClass() },
 			{ "Decal Component", UDecalComponent::StaticClass() },
 			{ "Rotating Movement Component", URotatingMovementComponent::StaticClass() },
-			{ "Projectile Movement Component", UProjectileMovementComponent::StaticClass() }
+			{ "Projectile Movement Component", UProjectileMovementComponent::StaticClass() },
+			{ "PointLight Component", UPointLightComponent::StaticClass() }
 		};
 
 		// 컴포넌트 추가 메뉴
@@ -1321,6 +1323,32 @@ void UTargetActorTransformWidget::RenderWidget()
 					// 실제로는 UIManager를 통해 카메라를 가져와야 함
 					// float currentDensity = HeightFogComp->CalculateFogDensityAtHeight(CameraPosition.Z);
 					// ImGui::Text("Current Density: %.3f", currentDensity);
+				}
+			}
+			else if (UPointLightComponent* PointLightComp = Cast<UPointLightComponent>(SelectedComponent))
+			{
+				FLinearColor Color = PointLightComp->GetLightColor();
+				if (ImGui::ColorEdit3("Light Color", &Color.R))
+				{
+					PointLightComp->SetLightColor(Color);
+				}
+
+				float AttenuationRadius = PointLightComp->GetAttenuationRadius();
+				if (ImGui::DragFloat("Attenuation Radius", &AttenuationRadius, 0.1f))
+				{
+					PointLightComp->SetAttenuationRadius(AttenuationRadius);
+				}
+
+				float Falloff = PointLightComp->GetFalloff();
+				if (ImGui::DragFloat("Light Falloff Exponent", &Falloff, 0.1f))
+				{
+					PointLightComp->SetFalloff(Falloff);
+				}
+
+				float Intensity = PointLightComp->GetIntensity();
+				if (ImGui::DragFloat("Light Intensity", &Intensity))
+				{
+					PointLightComp->SetIntensity(Intensity);
 				}
 			}
 			else

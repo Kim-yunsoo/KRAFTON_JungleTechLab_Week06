@@ -9,6 +9,7 @@ class UMeshComponent;
 class URHIDevice;
 class UShader;
 class UStaticMesh;
+class D3D11RHI;
 struct FMaterialSlot;
 
 class URenderer
@@ -83,12 +84,30 @@ public:
 
     URHIDevice* GetRHIDevice() { return RHIDevice; }
 
+    // Lighting: per-frame visible lights cache and upload
+    void SetWorldLights(const TArray<FLightInfo>& InLights);
+    const TArray<FLightInfo>& GetWorldLights() const;
+    void UpdateLightBuffer();
+    void UpdateLightBuffer(const TArray<FLightInfo>& InLights);
+     
+    // Anti-aliasing toggles
+    void SetFXAAEnabled(bool bEnabled);
+    void SetFXAAParams(float SpanMax, float ReduceMul, float ReduceMin);
+
+    bool IsFXAAEnabled() const { return bFXAAEnabled; }
+
+    int GetFXAAQuality() { return FXAAVersion; }
+    void SetFXAAQuality(int Version) { FXAAVersion = Version; }
+
+    void PostProcessing();
+
+
     // ✅ Scene RenderTarget 관리
     void BeginSceneRendering();
     void EndSceneRendering();
 
 private:
-	URHIDevice* RHIDevice;
+    URHIDevice* RHIDevice;
 
     // Batch Line Rendering System using UDynamicMesh for efficiency
     ULineDynamicMesh* DynamicLineMesh = nullptr;
@@ -112,5 +131,13 @@ private:
 
     void InitializeLineBatch();
     void ResetRenderStateTracking();
+
+    // Visible Light
+    TArray<FLightInfo> WorldLights;
+
+    // Post-process FXAA shader
+    UShader* FXAAShader = nullptr;
+    bool bFXAAEnabled = false;
+    int FXAAVersion = 1; 
 };
 

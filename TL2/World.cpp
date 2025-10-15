@@ -27,6 +27,8 @@
 #include "ProjectileMovementComponent.h"
 #include "ExponentialHeightFogActor.h"
 #include "HeightFogComponent.h"
+#include "LightComponent.h"
+#include "PointLightComponent.h"
 
 extern float CLIENTWIDTH;
 extern float CLIENTHEIGHT;
@@ -261,10 +263,13 @@ void UWorld::Render()
     {
         MultiViewport->OnRender();
     }
+     
+    PostProcessing(); 
 
     //프레임 종료 
-    UIManager.EndFrame();
     Renderer->EndFrame();
+    UIManager.EndFrame();
+    Renderer->GetRHIDevice()->Present();
 }
 
 void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
@@ -275,7 +280,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
     if (Viewport->GetSizeY() == 0)
     {
         ViewportAspectRatio = 1.0f;
-    }
+    } // 0으로 나누기 방지
 
     FMatrix ViewMatrix = Camera->GetViewMatrix();
     FMatrix ProjectionMatrix = Camera->GetProjectionMatrix(ViewportAspectRatio, Viewport);
@@ -283,7 +288,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
     {
         return;
     }
-    FVector rgb(1.0f, 1.0f, 1.0f);
+   FVector rgb(1.0f, 1.0f, 1.0f);
 
     FFrustum ViewFrustum;
     ViewFrustum.Update(ViewMatrix * ProjectionMatrix);
@@ -295,14 +300,50 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
     // ====================================================================
     Renderer->SetViewModeType(ViewModeIndex);
 
-    // ====================================================================
-    // Depth Write 명시적 활성화
-    // ====================================================================
-    // Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
-
     int AllActorCount = 0;
     int FrustumCullCount = 0;
     int32 TotalDecalCount = 0;
+
+    // ====================================================================
+    // Pass 0: Visible Lights 를 Pruning하는 과정
+    // ====================================================================
+    {
+        TArray<FLightInfo> VisibleFrameLights;
+
+        const TArray<AActor*>& Actors = Level ? Level->GetActors() : TArray<AActor*>();
+
+        for (AActor* Actor : Actors)
+        {
+            if (!Actor || Actor->GetActorHiddenInGame()) continue;
+
+            for (UActorComponent* Comp : Actor->GetComponents())
+            {
+                USceneComponent* SceneComp = Cast<USceneComponent>(Comp);
+                if (SceneComp == nullptr) continue;
+
+                if (UPointLightComponent* PointLightComp = Cast<UPointLightComponent>(SceneComp))
+                {
+                    FLightInfo LightInfo;
+                    LightInfo.Type = ELighType::Point;
+
+                    LightInfo.LightPos = PointLightComp->GetWorldLocation();
+                    LightInfo.Radius = PointLightComp->GetAttenuationRadius();
+                    LightInfo.RadiusFallOff = PointLightComp->GetFalloff();
+                    LightInfo.Color = PointLightComp->GetLightColor();
+                    LightInfo.Intensity = PointLightComp->GetIntensity();
+                    
+                    if (VisibleFrameLights.size() < 8)
+                    {
+                        VisibleFrameLights.Add(LightInfo);
+                    }
+                }
+            }
+        }
+
+        Renderer->SetWorldLights(VisibleFrameLights);
+        Renderer->UpdateLightBuffer();
+    }
+
 
 	Renderer->BeginSceneRendering();
 
@@ -471,6 +512,41 @@ void UWorld::RenderEngineActors(const FMatrix& ViewMatrix, const FMatrix& Projec
         }
         Renderer->OMSetBlendState(false);
     }
+}
+
+void UWorld::ApplyFXAA(FViewport* vt)
+{
+
+    UShader* FXAAShader = UResourceManager::GetInstance().Load<UShader>("FXAA.hlsl");
+
+    // Update viewport CB (b6) and bind backbuffer for FXAA 
+    Renderer->UpdateViewportBuffer(static_cast<float>(vt->GetStartX()), static_cast<float>(vt->GetStartY()), static_cast<float>(vt->GetSizeX()), static_cast<float>(vt->GetSizeY()));
+
+
+    Renderer->PrepareShader(FXAAShader);
+    Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqualReadOnly);
+
+    ID3D11DeviceContext* DevieContext = Renderer->GetRHIDevice()->GetDeviceContext();
+    // Set FXAA shader (uses SV_VertexID, no input layout)
+    DevieContext->VSSetShader(FXAAShader->GetVertexShader(), nullptr, 0);
+    DevieContext->PSSetShader(FXAAShader->GetPixelShader(), nullptr, 0);
+    DevieContext->IASetInputLayout(FXAAShader->GetInputLayout());
+    DevieContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // Ensure no blending for fullscreen resolve
+    Renderer->OMSetBlendState(false);
+
+    // Bind source color as t0
+    ID3D11ShaderResourceView* srcSRV = static_cast<D3D11RHI*>(Renderer->GetRHIDevice())->GetFXAASRV();
+    Renderer->GetRHIDevice()->PSSetDefaultSampler(0);
+    DevieContext->PSSetShaderResources(0, 1, &srcSRV);
+
+    // Draw fullscreen triangle
+    DevieContext->Draw(3, 0);
+
+    // Unbind SRV to avoid warnings on next frame when rebinding as RTV
+    ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
+
+    DevieContext->PSSetShaderResources(0, 1, nullSRV); 
 }
 
 void UWorld::Tick(float DeltaSeconds)
@@ -1937,4 +2013,41 @@ void UWorld::UpdateBVHIfNeeded()
     {
         BVH->Build(Level->GetActors()); // Rebuild 대신 Build 사용 (더티 플래그 체크 없이 무조건 빌드)
     }
+}
+
+void UWorld::PostProcessing()
+{  
+    if (!MultiViewport) return;
+
+    auto* Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
+
+    auto ApplyOne = [&](FViewport* vp) {
+        if (!vp) return;
+
+        // 이 뷰 사각형만 쓰도록 RS Viewport 고정
+        D3D11_VIEWPORT v{};
+        v.TopLeftX = (float)vp->GetStartX();
+        v.TopLeftY = (float)vp->GetStartY();
+        v.Width = (float)vp->GetSizeX();
+        v.Height = (float)vp->GetSizeY();
+        v.MinDepth = 0.0f; v.MaxDepth = 1.0f;
+        Renderer->GetRHIDevice()->GetDeviceContext()->RSSetViewports(1, &v);
+           
+        // Postprocessing 이후에 backbuffer에 그리기 위한 RTV 세팅
+        Device->OMSetBackBufferNoDepth();      
+        ApplyFXAA(vp);
+        };
+
+    if (MultiViewport->GetCurrentLayoutMode() == EViewportLayoutMode::FourSplit) {
+        auto** Viewports = MultiViewport->GetViewports();
+        for (int i = 0; i < 4; ++i)
+        { 
+            ApplyOne(Viewports[i]->GetViewport());
+        }
+    }
+    else 
+    {
+         ApplyOne(MultiViewport->GetMainViewport()->GetViewport()); 
+    } 
+
 }

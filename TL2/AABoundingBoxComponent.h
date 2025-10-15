@@ -57,6 +57,18 @@ struct FBound
             Min.Z <= Other.Max.Z && Max.Z >= Other.Min.Z);
     }
 
+    bool SphereInstersects(const FVector& SphereCenter, float Radius)
+    {
+        float StandX = FMath::Clamp(SphereCenter.X, Min.X, Max.X);
+        float StandY = FMath::Clamp(SphereCenter.Y, Min.Y, Max.Y);
+        float StandZ = FMath::Clamp(SphereCenter.Z, Min.Z, Max.Z);
+
+        FVector Dist = SphereCenter - FVector(StandX, StandY, StandZ);
+        float dist2 = Dist.Dot(Dist);
+        
+        return dist2 <= Radius * Radius;
+    }
+
     bool RayIntersects(const FVector& Origin, const FVector& Direction, float& Distance) const
     {
         FVector invDir = FVector(1.0f / Direction.X, 1.0f / Direction.Y, 1.0f / Direction.Z);

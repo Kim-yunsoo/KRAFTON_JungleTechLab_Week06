@@ -398,3 +398,74 @@ namespace EEndPlayReason
 }
 
 //#endif /** UE_ENUMS_H */
+
+
+enum class ELighType : int
+{
+    Point = 0,
+    Spot = 1,
+    Directional = 2,
+};
+
+/**
+ * A linear, 32-bit/component floating point RGBA color.
+ */
+struct FLinearColor
+{
+    FLinearColor(): R(0), G(0), B(0), A(1) {} 
+    FLinearColor(const FVector4& Color)
+    {
+        R = Color.X;
+        G = Color.Y;
+        B = Color.Z;
+        A = Color.W; 
+    }
+
+    union
+    {
+        struct
+        {
+            float R, G, B, A;
+        };
+
+        //Internal use only
+        float RGBA[4];
+    };
+
+
+    // TODO: 각종 operator
+};
+
+struct FLightInfo
+{
+    ELighType Type;
+    
+    FVector LightPos;
+    FLinearColor Color; 
+
+    //Point Light
+    float Intensity;
+    float Radius;
+    float RadiusFallOff;
+    float Padding;
+
+    FVector4 LightDir; 
+};
+
+const int MAX_LIGHT_COUNT = 8;
+ 
+
+struct FXAAInfo
+{
+    float InvResolution[2];
+    float FXAASpanMax;
+    float FXAAReduceMul;
+
+    // --- 16 byte boundary ---
+    float FXAAReduceMin;
+    int   Enabled;
+    float Padding[2];
+     
+};
+
+static_assert(sizeof(FXAAInfo) % 16 == 0, "FXAAInfo must be 16-byte aligned");

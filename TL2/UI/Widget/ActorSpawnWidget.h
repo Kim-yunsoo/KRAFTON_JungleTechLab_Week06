@@ -33,7 +33,8 @@ private:
 		StaticMesh = 1,
 		Decal = 2,
 		PerspectiveDecal = 3,
-		ExponentialHeightFog = 4,
+		FireBall = 4 ,
+		ExponentialHeightFog = 5,
 	};
 
 	int32 SelectedActorType = static_cast<int32>(EActorType::Empty);
@@ -72,5 +73,6 @@ private:
 	void SpawnEmptyActor(UWorld* World) const;
 	void SpawnStaticMeshActor(UWorld* World) const;
 	void SpawnDecalActor(UWorld* World, bool bIsOrtho) const;
+	void SpawnFireBallActor(UWorld* World) const;
 	void SpawnExponentialHeightFogActor(UWorld* World) const;
 };

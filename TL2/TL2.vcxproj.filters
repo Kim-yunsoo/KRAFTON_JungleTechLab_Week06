@@ -472,6 +472,8 @@
     </ClCompile>
     <ClCompile Include="ExponentialHeightFogActor.cpp" />
     <ClCompile Include="ProjectileMovementComponent.cpp" />
+    <ClCompile Include="FireBallComponent.cpp" />
+    <ClCompile Include="FireBallActor.cpp" />
     <ClCompile Include="HeightFogComponent.cpp" />
     <ClCompile Include="ExponentialHeightFogShader.hlsl">
       <Filter>Shaders</Filter>
@@ -863,6 +865,8 @@
     </ClInclude>
     <ClInclude Include="ExponentialHeightFogActor.h" />
     <ClInclude Include="ProjectileMovementComponent.h" />
+    <ClInclude Include="FireBallComponent.h" />
+    <ClInclude Include="FireBallActor.h" />
     <ClInclude Include="HeightFogComponent.h" />
   </ItemGroup>
   <!-- ==================== 셰이더 파일 (.hlsl) ==================== -->
@@ -904,5 +908,10 @@
     <Content Include="Editor\Icon\Pawn_64x.dds" />
     <Content Include="Editor\Icon\PointLight_64x.dds" />
     <Content Include="Editor\Icon\SpotLight_64x.dds" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Light.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

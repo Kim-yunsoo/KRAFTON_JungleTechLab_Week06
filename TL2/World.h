@@ -103,6 +103,9 @@ public:
 	void RenderEngineActors(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport);
 	//void GameRender(ACameraActor* Camera, FViewport* Viewport);
 
+	void ApplyFXAA(FViewport* vt);
+
+	void PostProcessing();
 	  /** === 필요한 엑터 게터 === */
 	const TArray<AActor*>& GetActors() { return Level ? Level->GetActors() : Actors; }
 	const TArray<AActor*>& GetEngineActors() const { return EngineActors; }

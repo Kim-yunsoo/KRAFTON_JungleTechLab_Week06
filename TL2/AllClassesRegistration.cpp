@@ -51,6 +51,11 @@
 #include"Level.h"
 #include"DecalComponent.h"
 #include"DecalActor.h"
+#include "FireBallComponent.h"
+#include "FireBallActor.h"
+#include "LightComponent.h"
+#include "PointLightComponent.h"
+ 
 #include"MovementComponent.h"
 #include"RotatingMovementComponent.h"
 #include"ProjectileMovementComponent.h"
@@ -69,6 +74,8 @@ IMPLEMENT_CLASS(UStaticMeshComponent)
 IMPLEMENT_CLASS(UAABoundingBoxComponent)
 IMPLEMENT_CLASS(UOBoundingBoxComponent)
 IMPLEMENT_CLASS(UShapeComponent)
+IMPLEMENT_CLASS(ULightComponent)
+IMPLEMENT_CLASS(UPointLightComponent)
 
 IMPLEMENT_CLASS(AActor)
 IMPLEMENT_CLASS(ACameraActor)
@@ -76,6 +83,7 @@ IMPLEMENT_CLASS(AStaticMeshActor)
 IMPLEMENT_CLASS(AGizmoActor)
 IMPLEMENT_CLASS(AGridActor)
 IMPLEMENT_CLASS(ADecalActor) 
+IMPLEMENT_CLASS(AFireBallActor) 
 
 IMPLEMENT_CLASS(UGizmoArrowComponent)
 IMPLEMENT_CLASS(UGizmoScaleComponent)
@@ -85,6 +93,8 @@ IMPLEMENT_CLASS(ULine)
 IMPLEMENT_CLASS(UTextRenderComponent)
 IMPLEMENT_CLASS(UBillboardComponent)
 IMPLEMENT_CLASS(UDecalComponent) 
+IMPLEMENT_CLASS(UFireBallComponent)
+
 // Managers / Systems
 IMPLEMENT_CLASS(UInputManager)
 IMPLEMENT_CLASS(UUIManager)

@@ -1,19 +1,20 @@
 ﻿#include "pch.h"
 #include "ActorSpawnWidget.h"
 #include "../UIManager.h"
-#include "../../ImGui/imgui.h"
-#include "../../World.h"
-#include "../../Actor.h"
-#include "../../StaticMeshActor.h"
-#include "../../DecalActor.h"
-#include "../../DecalComponent.h"
-#include "../../ExponentialHeightFogActor.h"
-#include "../../HeightFogComponent.h"
-#include "../../Vector.h"
+#include "ImGui/imgui.h"
+#include "World.h"
+#include "Actor.h"
+#include "StaticMeshActor.h"
+#include "DecalActor.h"
+#include "DecalComponent.h"
+#include "ExponentialHeightFogActor.h"
+#include "HeightFogComponent.h"
+#include "Vector.h"
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
 #include <filesystem>
+#include "FireBallActor.h"
 
 using std::max;
 using std::min;
@@ -150,7 +151,7 @@ void UActorSpawnWidget::RenderWidget()
 	ImGui::Text("Actor Type:");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(220);
-	const char* ActorTypeItems[] = { "Actor (Empty)", "StaticMeshActor", "DecalActor", "PerspectiveDecalActor", "ExponentialHeightFogActor" };
+	const char* ActorTypeItems[] = { "Actor (Empty)", "StaticMeshActor", "DecalActor", "PerspectiveDecalActor", "FireBallActor", "ExponentialHeightFogActor" };
 	ImGui::Combo("##ActorType", &SelectedActorType, ActorTypeItems, IM_ARRAYSIZE(ActorTypeItems));
 
 	ImGui::Spacing();
@@ -278,6 +279,49 @@ void UActorSpawnWidget::RenderWidget()
 		}
 	}
 
+	// FireBall 전용 설정
+	if (SelectedActorType == static_cast<int32>(EActorType::FireBall))
+	{
+		auto& ResourceManager = UResourceManager::GetInstance();
+		CachedMeshFilePaths = ResourceManager.GetAllStaticMeshFilePaths();
+
+		TArray<FString> DisplayNames;
+		DisplayNames.reserve(CachedMeshFilePaths.size());
+		for (const FString& Path : CachedMeshFilePaths)
+		{
+			DisplayNames.push_back(GetBaseNameNoExt(Path));
+		}
+
+		TArray<const char*> Items;
+		Items.reserve(DisplayNames.size());
+		for (const FString& Name : DisplayNames)
+		{
+			Items.push_back(Name.c_str());
+		}
+		 
+		if (SelectedMeshIndex == -1 && !CachedMeshFilePaths.empty())
+		{
+			for (int32 i = 0; i < static_cast<int32>(CachedMeshFilePaths.size()); ++i)
+			{
+				if (GetBaseNameNoExt(CachedMeshFilePaths[i]) == "Sphere")
+				{
+					SelectedMeshIndex = i;
+					break;
+				}
+			}
+		}
+
+		ImGui::Text("Static Mesh:");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(220);
+		ImGui::Combo("##StaticMeshList", &SelectedMeshIndex, Items.data(), static_cast<int>(Items.size()));
+		ImGui::SameLine();
+		if (ImGui::Button("Clear##StaticMesh"))
+		{
+			SelectedMeshIndex = -1;
+		}
+	}
+
 	ImGui::Spacing();
 	ImGui::Separator();
 	ImGui::Spacing();
@@ -374,6 +418,9 @@ void UActorSpawnWidget::SpawnActors() const
 			break;
 		case EActorType::PerspectiveDecal:
 			SpawnDecalActor(World, false);
+			break;
+		case EActorType::FireBall:
+			SpawnFireBallActor(World);
 			break;
 		case EActorType::ExponentialHeightFog:
 			SpawnExponentialHeightFogActor(World);
@@ -479,6 +526,48 @@ void UActorSpawnWidget::SpawnDecalActor(UWorld* World, bool bIsOrtho) const
 
 		UE_LOG("ActorSpawn: Created DecalActor '%s' at (%.2f, %.2f, %.2f)  FadeIn=%.2f Delay=%.2f FadeOut=%.2f",
 			ActorName.c_str(), SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z, FadeInDuration, FadeStartDelay, FadeOutDuration);
+	}
+}
+
+void UActorSpawnWidget::SpawnFireBallActor(UWorld* World) const
+{
+	FVector SpawnLocation = GenerateRandomLocation();
+	FQuat SpawnRotation = GenerateRandomRotation();
+	float SpawnScale = GenerateRandomScale();
+	FVector SpawnScaleVec(SpawnScale, SpawnScale, SpawnScale);
+
+	FTransform SpawnTransform(SpawnLocation, SpawnRotation, SpawnScaleVec);
+
+	AFireBallActor* NewActor = World->SpawnActor<AFireBallActor>(SpawnTransform);
+	if (NewActor)
+	{
+		// 메시 설정
+		FString MeshPath = "Data/Sphere.obj";
+		if (SelectedMeshIndex >= 0 && SelectedMeshIndex < static_cast<int32>(CachedMeshFilePaths.size()))
+		{
+			MeshPath = CachedMeshFilePaths[SelectedMeshIndex];
+		}
+
+		if (auto* StaticMeshComp = NewActor->GetStaticMeshComponent())
+		{
+			StaticMeshComp->SetStaticMesh(MeshPath);
+
+			// 충돌 컴포넌트 설정
+			if (GetBaseNameNoExt(MeshPath) == "Sphere")
+			{
+				NewActor->SetCollisionComponent(EPrimitiveType::Sphere);
+			}
+			else
+			{
+				NewActor->SetCollisionComponent();
+			}
+		}
+
+		FString ActorName = World->GenerateUniqueActorName("FireBallActor");
+		NewActor->SetName(ActorName);
+
+		UE_LOG("ActorSpawn: Created StaticMeshActor '%s' at (%.2f, %.2f, %.2f) with mesh '%s'",
+			ActorName.c_str(), SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z, MeshPath.c_str());
 	}
 }
 
