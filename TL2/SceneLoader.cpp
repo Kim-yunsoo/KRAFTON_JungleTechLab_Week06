@@ -368,6 +368,20 @@ void FSceneLoader::SaveV2(const FSceneData& SceneData, const FString& SceneName)
                 oss << "      \"bIsActive\" : " << (Comp.bIsActive ? "true" : "false");
             }
         }
+        else if (Comp.Type.find("HeightFogComponent") != std::string::npos)
+        {
+            // HeightFogComponent 전용 속성
+            oss << ",\n";
+            oss << "      \"FogDensity\" : " << Comp.FogDensity << ",\n";
+            oss << "      \"FogHeightFalloff\" : " << Comp.FogHeightFalloff << ",\n";
+            oss << "      \"StartDistance\" : " << Comp.StartDistance << ",\n";
+            oss << "      \"FogCutoffDistance\" : " << Comp.FogCutoffDistance << ",\n";
+            oss << "      \"FogMaxOpacity\" : " << Comp.FogMaxOpacity << ",\n";
+            oss << "      \"FogInscatteringColor\" : [" << Comp.FogInscatteringColor.X << ", "
+                << Comp.FogInscatteringColor.Y << ", " << Comp.FogInscatteringColor.Z << ", "
+                << Comp.FogInscatteringColor.W << "],\n";
+            oss << "      \"bHeightFogEnabled\" : " << (Comp.bHeightFogEnabled ? "true" : "false");
+        }
 
         oss << "\n";
         oss << "    }" << (i + 1 < SceneData.Components.size() ? "," : "") << "\n";
@@ -655,6 +669,36 @@ FSceneData FSceneLoader::ParseV2(const JSON& Json)
 
             if (CompJson.hasKey("bIsActive"))
                 Comp.bIsActive = CompJson.at("bIsActive").ToBool();
+
+            // HeightFogComponent 전용 속성
+            if (CompJson.hasKey("FogDensity"))
+                Comp.FogDensity = (float)CompJson.at("FogDensity").ToFloat();
+
+            if (CompJson.hasKey("FogHeightFalloff"))
+                Comp.FogHeightFalloff = (float)CompJson.at("FogHeightFalloff").ToFloat();
+
+            if (CompJson.hasKey("StartDistance"))
+                Comp.StartDistance = (float)CompJson.at("StartDistance").ToFloat();
+
+            if (CompJson.hasKey("FogCutoffDistance"))
+                Comp.FogCutoffDistance = (float)CompJson.at("FogCutoffDistance").ToFloat();
+
+            if (CompJson.hasKey("FogMaxOpacity"))
+                Comp.FogMaxOpacity = (float)CompJson.at("FogMaxOpacity").ToFloat();
+
+            if (CompJson.hasKey("FogInscatteringColor"))
+            {
+                auto color = CompJson.at("FogInscatteringColor");
+                Comp.FogInscatteringColor = FVector4(
+                    (float)color[0].ToFloat(),
+                    (float)color[1].ToFloat(),
+                    (float)color[2].ToFloat(),
+                    (float)color[3].ToFloat()
+                );
+            }
+
+            if (CompJson.hasKey("bHeightFogEnabled"))
+                Comp.bHeightFogEnabled = CompJson.at("bHeightFogEnabled").ToBool();
 
             Data.Components.push_back(Comp);
         }

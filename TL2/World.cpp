@@ -1166,6 +1166,17 @@ void UWorld::SaveSceneV2(const FString& SceneName)
                     CompData.bIsScreenSizeScaled = BillboardComp->IsScreenSizeScaled();
                     CompData.ScreenSize = BillboardComp->GetScreenSize();
                 }
+                else if (UHeightFogComponent* HeightFogComp = Cast<UHeightFogComponent>(Comp))
+                {
+                    // HeightFogComponent 속성 저장
+                    CompData.FogDensity = HeightFogComp->GetFogDensity();
+                    CompData.FogHeightFalloff = HeightFogComp->GetFogHeightFalloff();
+                    CompData.StartDistance = HeightFogComp->GetStartDistance();
+                    CompData.FogCutoffDistance = HeightFogComp->GetFogCutoffDistance();
+                    CompData.FogMaxOpacity = HeightFogComp->GetFogMaxOpacity();
+                    CompData.FogInscatteringColor = HeightFogComp->GetFogInscatteringColor();
+                    CompData.bHeightFogEnabled = HeightFogComp->IsEnabled();
+                }
             }
             else
             {
@@ -1294,6 +1305,11 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         {
             StaticMeshActor->ClearDefaultComponents();
         }
+        // ExponentialHeightFogActor의 경우 생성자가 만든 HeightFogComponent를 삭제
+        else if (AExponentialHeightFogActor* FogActor = Cast<AExponentialHeightFogActor>(NewActor))
+        {
+            FogActor->ClearDefaultComponents();
+        }
 
         ActorMap.Add(ActorData.UUID, NewActor);
     }
@@ -1359,6 +1375,17 @@ void UWorld::LoadSceneV2(const FString& SceneName)
                 BillboardComp->SetUVCoords(CompData.UCoord, CompData.VCoord, CompData.ULength, CompData.VLength);
                 BillboardComp->SetScreenSizeScaled(CompData.bIsScreenSizeScaled);
                 BillboardComp->SetScreenSize(CompData.ScreenSize);
+            }
+            else if (UHeightFogComponent* HeightFogComp = Cast<UHeightFogComponent>(NewComp))
+            {
+                // HeightFogComponent 속성 복원
+                HeightFogComp->SetFogDensity(CompData.FogDensity);
+                HeightFogComp->SetFogHeightFalloff(CompData.FogHeightFalloff);
+                HeightFogComp->SetStartDistance(CompData.StartDistance);
+                HeightFogComp->SetFogCutoffDistance(CompData.FogCutoffDistance);
+                HeightFogComp->SetFogMaxOpacity(CompData.FogMaxOpacity);
+                HeightFogComp->SetFogInscatteringColor(CompData.FogInscatteringColor);
+                HeightFogComp->SetEnabled(CompData.bHeightFogEnabled);
             }
 
             // Owner Actor 설정
@@ -1479,6 +1506,12 @@ void UWorld::LoadSceneV2(const FString& SceneName)
         {
             // RootComponent를 DecalComponent로 재설정
             DecalActor->SetDecalComponent(Cast<UDecalComponent>(DecalActor->RootComponent));
+        }
+        // ExponentialHeightFogActor 전용 포인터 재설정
+        else if (AExponentialHeightFogActor* FogActor = Cast<AExponentialHeightFogActor>(Actor))
+        {
+            // RootComponent를 HeightFogComponent로 재설정
+            FogActor->SetHeightFogComponent(Cast<UHeightFogComponent>(FogActor->RootComponent));
         }
 
         // MovementComponent의 UpdatedComponent를 RootComponent로 설정

@@ -2,8 +2,6 @@
 #include "HeightFogComponent.h"
 #include "ObjectFactory.h"
 
-IMPLEMENT_CLASS(UHeightFogComponent)
-
 UHeightFogComponent::UHeightFogComponent()
 {
     // 기본값 설정 (헤더에서 이미 초기화됨)

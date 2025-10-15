@@ -80,6 +80,15 @@ struct FComponentData
     float ProjectileLifespan = 0.0f;
     bool bAutoDestroyWhenLifespanExceeded = false;
     bool bIsActive = true;
+
+    // HeightFogComponent 전용 속성
+    float FogDensity = 0.02f;
+    float FogHeightFalloff = 0.2f;
+    float StartDistance = 0.0f;
+    float FogCutoffDistance = 10000.0f;
+    float FogMaxOpacity = 1.0f;
+    FVector4 FogInscatteringColor{ 0.447f, 0.639f, 1.0f, 1.0f };
+    bool bHeightFogEnabled = true;
 };
 
 struct FActorData

@@ -3,8 +3,6 @@
 #include "HeightFogComponent.h"
 #include "ObjectFactory.h"
 
-IMPLEMENT_CLASS(AExponentialHeightFogActor)
-
 AExponentialHeightFogActor::AExponentialHeightFogActor()
 {
     // HeightFogComponent 생성 및 RootComponent로 설정
