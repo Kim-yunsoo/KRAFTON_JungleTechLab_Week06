@@ -102,7 +102,7 @@ protected:
     EDecalState DecalCurrentState;
     
     /** Decal이 그려지는 순서, 값이 클 수록 나중에 그려진다. */
-    int32 SortOrder;
+    //int32 SortOrder;
 
     /** Decal이 나타나는데 걸리는 시간 (투명 -> 불투명) */
     float FadeInDuration;
@@ -114,7 +114,7 @@ protected:
     float FadeDuration;
      
     /** Decal Projection 방법 flag */
-    bool bIsOrthoMatrix;
+    bool bIsOrthoMatrix = true;
 
     float CurrentAlpha;
     float CurrentStateElapsedTime[4];

@@ -305,10 +305,10 @@ void FSceneLoader::SaveV2(const FSceneData& SceneData, const FString& SceneName)
             oss << ",\n";
             writeVec3("DecalSize", Comp.DecalSize, 6);
             oss << ",\n";
-            oss << "      \"SortOrder\" : " << Comp.SortOrder << ",\n";
             oss << "      \"FadeInDuration\" : " << Comp.FadeInDuration << ",\n";
             oss << "      \"FadeStartDelay\" : " << Comp.FadeStartDelay << ",\n";
             oss << "      \"FadeDuration\" : " << Comp.FadeDuration << ",\n";
+            oss << "      \"MaxAlpha\" : " << Comp.MaxAlpha << ",\n";
             oss << "      \"bIsOrthoMatrix\" : " << Comp.bIsOrthoMatrix;
         }
         else if (Comp.Type.find("BillboardComponent") != std::string::npos)
@@ -544,9 +544,6 @@ FSceneData FSceneLoader::ParseV2(const JSON& Json)
                 );
             }
 
-            if (CompJson.hasKey("SortOrder"))
-                Comp.SortOrder = static_cast<int32>(CompJson.at("SortOrder").ToInt());
-
             if (CompJson.hasKey("FadeInDuration"))
                 Comp.FadeInDuration = (float)CompJson.at("FadeInDuration").ToFloat();
 
@@ -556,8 +553,11 @@ FSceneData FSceneLoader::ParseV2(const JSON& Json)
             if (CompJson.hasKey("FadeDuration"))
                 Comp.FadeDuration = (float)CompJson.at("FadeDuration").ToFloat();
 
+            if (CompJson.hasKey("MaxAlpha"))
+                Comp.MaxAlpha = (float)CompJson.at("MaxAlpha").ToFloat();
+
             if (CompJson.hasKey("bIsOrthoMatrix"))
-                Comp.bIsOrthoMatrix = (bool)CompJson.at("bIsOrthoMatrix").ToBool();
+                Comp.bIsOrthoMatrix = (uint16)CompJson.at("bIsOrthoMatrix").ToInt();
 
             // BillboardComponent 전용 속성
             if (CompJson.hasKey("BillboardTexturePath"))

@@ -22,7 +22,7 @@ UDecalComponent::UDecalComponent()
     SetDecalTexture("Editor/Decal/DefaultDecalTexture.jpg");
 
     //Decal Stat  Init
-    SortOrder = 0;
+    //SortOrder = 0;
     FadeInDuration = 3;
     FadeStartDelay = 3;
     FadeDuration = 3; 
@@ -601,7 +601,7 @@ UObject* UDecalComponent::Duplicate()
     // DecalComponent 전용 속성 복사
     DuplicatedComponent->DecalTexture = DecalTexture;
     DuplicatedComponent->DecalSize = DecalSize;
-    DuplicatedComponent->SortOrder = SortOrder;
+    //DuplicatedComponent->SortOrder = SortOrder;
 
     DuplicatedComponent->FadeInDuration = FadeInDuration;
     DuplicatedComponent->FadeStartDelay = FadeStartDelay;
@@ -627,7 +627,7 @@ UObject* UDecalComponent::Duplicate(FObjectDuplicationParameters Parameters)
     //얕복
     DupObject->DecalTexture = DecalTexture;
     DupObject->DecalSize = DecalSize;
-    DupObject->SortOrder = SortOrder;
+    //DupObject->SortOrder = SortOrder;
 
     DupObject->FadeInDuration = FadeInDuration;
     DupObject->FadeStartDelay = FadeStartDelay;

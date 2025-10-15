@@ -43,11 +43,11 @@ struct FComponentData
     // DecalComponent 전용 속성
     FString DecalTexture;  // Decal texture path
     FVector DecalSize;  // Decal box size
-    int32 SortOrder = 0;
     float FadeInDuration = 1.0f;
     float FadeStartDelay = 1.0f;
     float FadeDuration = 1.0f;
-    bool bIsOrthoMatrix;
+    float MaxAlpha = 1.0f;
+    uint16 bIsOrthoMatrix = 1;
 
     // BillboardComponent 전용 속성
     FString BillboardTexturePath;  // Billboard texture path

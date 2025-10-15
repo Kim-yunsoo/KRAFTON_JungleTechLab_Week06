@@ -1157,6 +1157,7 @@ void UWorld::SaveSceneV2(const FString& SceneName)
                     CompData.FadeInDuration = DecalComp->GetFadeInDuration();
                     CompData.FadeStartDelay = DecalComp->GetFadeStartDelay();
                     CompData.FadeDuration = DecalComp->GetFadeDuration();
+                    CompData.MaxAlpha = DecalComp->GetMaxAlpha();
                     CompData.bIsOrthoMatrix = DecalComp->GetOrthoMatrixFlag();
                 }
                 else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Comp))
@@ -1368,6 +1369,7 @@ void UWorld::LoadSceneV2(const FString& SceneName)
                 DecalComp->SetFadeInDuration(CompData.FadeInDuration);
                 DecalComp->SetFadeStartDelay(CompData.FadeStartDelay);
                 DecalComp->SetFadeDuration(CompData.FadeDuration);
+                DecalComp->SetMaxAlpha(CompData.MaxAlpha);
                 DecalComp->SetOrthoMatrixFlag(CompData.bIsOrthoMatrix);
             }
             else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(NewComp))
