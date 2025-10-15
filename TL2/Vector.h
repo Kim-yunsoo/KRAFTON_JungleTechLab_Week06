@@ -43,6 +43,10 @@ namespace FMath {
     static T Lerp(T A, T B, float Alpha) {
         return A + (B - A) * Alpha;
     }
+
+    static float Exp(float Value) {
+        return std::exp(Value);
+    }
 }
 // 각도를 -180 ~ 180 범위로 정규화 (모듈러 연산)
 inline float NormalizeAngleDeg(float angleDeg)

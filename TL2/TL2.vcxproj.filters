@@ -463,14 +463,20 @@
     </ClCompile>
     <ClCompile Include="OrientedBox.cpp" />
     <ClCompile Include="Name.cpp" />
-    <ClCompile Include="FireBallComponent.cpp" />
-    <ClCompile Include="FireBallActor.cpp" />
     <ClCompile Include="UI\Widget\ActorSpawnWidget.cpp" />
     <ClCompile Include="MovementComponent.cpp">
       <Filter>Components\Movement</Filter>
     </ClCompile>
     <ClCompile Include="RotatingMovementComponent.cpp">
       <Filter>Components\Movement</Filter>
+    </ClCompile>
+    <ClCompile Include="ExponentialHeightFogActor.cpp" />
+    <ClCompile Include="ProjectileMovementComponent.cpp" />
+    <ClCompile Include="FireBallComponent.cpp" />
+    <ClCompile Include="FireBallActor.cpp" />
+    <ClCompile Include="HeightFogComponent.cpp" />
+    <ClCompile Include="ExponentialHeightFogShader.hlsl">
+      <Filter>Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <!-- ==================== 헤더 파일 (.h) ==================== -->
@@ -852,13 +858,16 @@
     <ClInclude Include="OrientedBox.h" />
     <ClInclude Include="UI\Widget\ActorSpawnWidget.h" />
     <ClInclude Include="MovementComponent.h">
-    <ClInclude Include="FireBallComponent.h" />
-    <ClInclude Include="FireBallActor.h" />
       <Filter>Components\Movement</Filter>
     </ClInclude>
     <ClInclude Include="RotatingMovementComponent.h">
       <Filter>Components\Movement</Filter>
     </ClInclude>
+    <ClInclude Include="ExponentialHeightFogActor.h" />
+    <ClInclude Include="ProjectileMovementComponent.h" />
+    <ClInclude Include="FireBallComponent.h" />
+    <ClInclude Include="FireBallActor.h" />
+    <ClInclude Include="HeightFogComponent.h" />
   </ItemGroup>
   <!-- ==================== 셰이더 파일 (.hlsl) ==================== -->
   <ItemGroup>
@@ -888,6 +897,9 @@
     </FxCompile>
     <FxCompile Include="ProjectionDecal.hlsl" />
     <FxCompile Include="SceneDepthShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="CopyShader.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

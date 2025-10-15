@@ -42,9 +42,6 @@ public:
     uint32 GetStartY() const { return StartY; }
     
     FVector2D GetViewportMousePosition() { return ViewportMousePosition; }
-    ID3D11RenderTargetView* GetRenderTargetView() const { return RenderTargetView; }
-    ID3D11DepthStencilView* GetDepthStencilView() const { return DepthStencilView; }
-    ID3D11ShaderResourceView* GetShaderResourceView() const { return ShaderResourceView; }
 
     // 마우스/키보드 입력 처리
     void ProcessMouseMove(int32 X, int32 Y);
@@ -53,9 +50,6 @@ public:
     void ProcessMouseButtonUp(int32 X, int32 Y, int32 Button);
     void ProcessKeyDown(int32 KeyCode);
     void ProcessKeyUp(int32 KeyCode);
-
-    // 유효성 검사
-    bool IsValid() const { return RenderTargetView != nullptr; }
 
     /** === Show Flag 시스템 === */
     EEngineShowFlags GetShowFlags() const { return ShowFlags; }
@@ -66,9 +60,6 @@ public:
     bool IsShowFlagEnabled(EEngineShowFlags Flag) const;
 
 private:
-    void CreateRenderTargets();
-    void ReleaseRenderTargets();
-
     // 뷰포트 속성
     uint32 SizeX = 0;
     uint32 SizeY = 0;
@@ -78,13 +69,13 @@ private:
     ID3D11Device* D3DDevice = nullptr;
     ID3D11DeviceContext* D3DDeviceContext = nullptr;
 
-    ID3D11Texture2D* RenderTargetTexture = nullptr;
+    /*ID3D11Texture2D* RenderTargetTexture = nullptr;
     ID3D11RenderTargetView* RenderTargetView = nullptr; 
 
     ID3D11Texture2D* DepthStencilTexture = nullptr;
     ID3D11DepthStencilView* DepthStencilView = nullptr;
 
-    ID3D11ShaderResourceView* ShaderResourceView = nullptr;
+    ID3D11ShaderResourceView* ShaderResourceView = nullptr;*/
 
     // ViewportClient
     FViewportClient* ViewportClient = nullptr;
