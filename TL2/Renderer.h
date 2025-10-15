@@ -52,7 +52,7 @@ public:
 
     void UpdateViewportBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
 
-    void UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
+    void UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight, float SceneMinDepth, float SceneMaxDepth);
 
     void UpdateCameraNearFarBuffer(float NearPlane, float FarPlane);
 

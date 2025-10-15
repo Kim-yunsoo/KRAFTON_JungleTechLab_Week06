@@ -55,7 +55,7 @@ public:
     void UpdateLightConstantBuffers(const TArray<FLightInfo>& InLights) override;
     void UpdateFXAAConstantBuffers(const FXAAInfo& InFXAAInfo) override;
     void UpdateViewportConstantBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
-    void UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
+    void UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight, float SceneMinDepth, float SceneMaxDepth);
     void UpdateCameraNearFarConstantBuffer(float NearPlane, float FarPlane);
     void UpdateFogParameterConstantBuffer(float FogDensity, float FogHeightFalloff, float FogStartDistance, float FogCutoffDistance, float FogMaxOpacity, const FVector4& FogInscatteringColor, const FVector& FogComponentPosition);
     void UpdateInverseViewProjMatrixConstantBuffer(const FMatrix& InvViewMatrix, const FMatrix& InvProjectionMatrix);

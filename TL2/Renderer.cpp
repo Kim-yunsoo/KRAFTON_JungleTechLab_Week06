@@ -146,13 +146,14 @@ void URenderer::UpdateViewportBuffer(float ViewportX, float ViewportY, float Vie
     );
 }
 
-void URenderer::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
+void URenderer::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight, float SceneMinDepth, float SceneMaxDepth)
 {
     static_cast<D3D11RHI*>(RHIDevice)->UpdateDepthVisualizationBuffer(
         NearPlane, FarPlane,
         ViewportX, ViewportY,
         ViewportWidth, ViewportHeight,
-        ScreenWidth, ScreenHeight
+        ScreenWidth, ScreenHeight,
+		SceneMinDepth, SceneMaxDepth
     );
 }
 

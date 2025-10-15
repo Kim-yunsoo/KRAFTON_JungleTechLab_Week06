@@ -780,10 +780,10 @@ void D3D11RHI::CreateConstantBuffer()
     Device->CreateBuffer(&fxaaDesc, nullptr, &FXAACB);
 
 
-    // b6 : DepthVisualizationBuffer (Scene Depth 시각화용)
+    // ✅ b6 : DepthVisualizationBuffer (Scene Depth 시각화용)
     D3D11_BUFFER_DESC depthVisDesc = {};
     depthVisDesc.Usage = D3D11_USAGE_DYNAMIC;
-    depthVisDesc.ByteWidth = sizeof(float) * 8; // 8개의 float (32 bytes)
+    depthVisDesc.ByteWidth = sizeof(float) * 12; // ✅ 48 bytes (12개의 float)
     depthVisDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     depthVisDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     Device->CreateBuffer(&depthVisDesc, nullptr, &DepthVisualizationCB);
@@ -912,20 +912,25 @@ void D3D11RHI::UpdateViewportConstantBuffer(float ViewportX, float ViewportY, fl
     }
 }
 
-void D3D11RHI::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight)
+void D3D11RHI::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight, float SceneMinDepth, float SceneMaxDepth)
 {
     if (!DepthVisualizationCB) return;
 
+    // ✅ 셰이더와 동일한 구조로 수정 (48 bytes)
     struct DepthVisualizationBufferType
     {
-        float NearPlane;
-        float FarPlane;
-        float ViewportPosX;
-        float ViewportPosY;
-        float ViewportSizeX;
-        float ViewportSizeY;
-        float ScreenSizeX;
-        float ScreenSizeY;
+        float NearPlane;        // 4 bytes
+        float FarPlane;         // 4 bytes
+        float ViewportPosX;     // 4 bytes
+        float ViewportPosY;     // 4 bytes
+        float ViewportSizeX;    // 4 bytes
+        float ViewportSizeY;    // 4 bytes
+        float ScreenSizeX;      // 4 bytes
+        float ScreenSizeY;      // 4 bytes
+        float SceneMinDepth;    // 4 bytes ✅
+        float SceneMaxDepth;    // 4 bytes ✅
+        float Padding[2];       // 8 bytes (16바이트 정렬)
+        // ✅ 총 48 bytes
     };
 
     DepthVisualizationBufferType data;
@@ -937,6 +942,10 @@ void D3D11RHI::UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, f
     data.ViewportSizeY = ViewportHeight;
     data.ScreenSizeX = ScreenWidth;
     data.ScreenSizeY = ScreenHeight;
+    data.SceneMinDepth = SceneMinDepth;  // ✅ 추가
+    data.SceneMaxDepth = SceneMaxDepth;  // ✅ 추가
+    data.Padding[0] = 0.0f;
+    data.Padding[1] = 0.0f;
 
     D3D11_MAPPED_SUBRESOURCE mapped;
     if (SUCCEEDED(DeviceContext->Map(DepthVisualizationCB, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))

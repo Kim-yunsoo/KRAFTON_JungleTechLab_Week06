@@ -1685,7 +1685,9 @@ void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& Proj
     D3D11RHI* D3D11Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
     ID3D11DeviceContext* DeviceContext = D3D11Device->GetDeviceContext();
 
-    // 카메라 및 Viewport 정보
+    // ============================================================
+    // ✅ 카메라 Near/Far (Depth 선형화용)
+    // ============================================================
     float NearPlane = 0.1f;
     float FarPlane = 1000.0f;
 
@@ -1696,6 +1698,12 @@ void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& Proj
         FarPlane = CameraComp->GetFarClip();
     }
 
+    // ============================================================
+    // ✅ Scene Depth 시각화 범위 (사용자 설정 가능)
+    // ============================================================
+    float SceneMinDepth = Viewport->GetSceneMinDepth();
+    float SceneMaxDepth = Viewport->GetSceneMaxDepth();
+
     float ViewportX = static_cast<float>(Viewport->GetStartX());
     float ViewportY = static_cast<float>(Viewport->GetStartY());
     float ViewportWidth = static_cast<float>(Viewport->GetSizeX());
@@ -1704,13 +1712,10 @@ void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& Proj
     float ScreenHeight = CLIENTHEIGHT;
 
     // ============================================================
-    // 1. 모든 RTV/DSV 언바인딩
+    // RTV/DSV 언바인딩
     // ============================================================
     DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 
-    // ============================================================
-    // 2. Depth SRV 가져오기
-    // ============================================================
     ID3D11ShaderResourceView* DepthSRV = D3D11Device->GetDepthShaderResourceView();
 
     if (!DepthSRV)
@@ -1721,24 +1726,25 @@ void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& Proj
     }
 
     // ============================================================
-    // ✅ 3. FXAA RTV로 바인딩 (BackBuffer 대신)
+    // FXAA RTV로 바인딩
     // ============================================================
     D3D11Device->OMSetFXAARenderTarget();
 
-    // SRV 바인딩
     DeviceContext->PSSetShaderResources(0, 1, &DepthSRV);
 
-    // 렌더링 상태 설정
     Renderer->OMSetBlendState(false);
     Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
     Renderer->PrepareShader(SceneDepthShader);
 
-    // Constant Buffer 업데이트
+    // ============================================================
+    // ✅ Constant Buffer 업데이트 (Scene Depth 범위 추가)
+    // ============================================================
     Renderer->UpdateDepthVisualizationBuffer(
         NearPlane, FarPlane,
         ViewportX, ViewportY,
         ViewportWidth, ViewportHeight,
-        ScreenWidth, ScreenHeight
+        ScreenWidth, ScreenHeight,
+        SceneMinDepth, SceneMaxDepth  // ✅ 추가
     );
 
     D3D11Device->PSSetDefaultSampler(0);
@@ -1749,13 +1755,10 @@ void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& Proj
     DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     DeviceContext->Draw(3, 0);
 
-    // ============================================================
     // 정리
-    // ============================================================
     ID3D11ShaderResourceView* NullSRV = nullptr;
     DeviceContext->PSSetShaderResources(0, 1, &NullSRV);
 
-    // ✅ 상태 복원 (BackBuffer로 복구하지 않음 - PostProcessing에서 처리)
     Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
 }
 

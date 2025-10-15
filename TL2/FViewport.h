@@ -59,12 +59,27 @@ public:
     void ToggleShowFlag(EEngineShowFlags Flag);
     bool IsShowFlagEnabled(EEngineShowFlags Flag) const;
 
+    // ✅ Scene Depth 시각화용 깊이 범위
+    void SetSceneDepthRange(float InMinDepth, float InMaxDepth)
+    {
+        SceneMinDepth = InMinDepth;
+        SceneMaxDepth = InMaxDepth;
+    }
+
+    float GetSceneMinDepth() const { return SceneMinDepth; }
+    float GetSceneMaxDepth() const { return SceneMaxDepth; }
+
 private:
     // 뷰포트 속성
     uint32 SizeX = 0;
     uint32 SizeY = 0;
     uint32 StartX = 0;
     uint32 StartY = 0;
+
+    // ✅ Scene Depth View Mode용 깊이 범위
+    float SceneMinDepth = 1.0f;   // 기본값: 가까운 객체
+    float SceneMaxDepth = 100.0f; // 기본값: 중간 거리 객체
+
     // D3D 리소스들
     ID3D11Device* D3DDevice = nullptr;
     ID3D11DeviceContext* D3DDeviceContext = nullptr;
