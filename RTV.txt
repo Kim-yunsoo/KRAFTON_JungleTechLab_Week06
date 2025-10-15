@@ -1,0 +1,57 @@
+RTV 흐름 정리
+
+개요
+- RTV(Render Target View)는 백버퍼, FXAA 중간 버퍼, Heat(왜곡) 중간 버퍼, 그리고 뷰포트 전용 RTV로 구성됩니다.
+- 기본 씬 렌더링은 FXAA RTV에 기록한 뒤, Heat 패스로 왜곡을 적용(Heat RTV)하고, 마지막에 FXAA 패스로 백버퍼 RTV에 합성합니다.
+
+RTV 생성/보유 위치
+- 백버퍼 RTV: TL2/D3D11RHI.cpp
+  - CreateFrameBuffer(), CreateBackBufferAndDepthStencil()에서 SwapChain 버퍼로부터 RenderTargetView 생성
+- FXAA 중간 버퍼: TL2/D3D11RHI.cpp
+  - FXAATex + FXAARTV(RTV) + FXAASRV(SRV) 생성 (CreateFrameBuffer())
+- Heat 중간 버퍼: TL2/D3D11RHI.cpp
+  - HeatTex + HeatRTV(RTV) + HeatSRV(SRV) 생성 (CreateFrameBuffer())
+- 뷰포트 전용 RTV: TL2/FViewport.cpp
+  - 각 FViewport마다 RenderTargetTexture/RenderTargetView/DepthStencilView/ShaderResourceView 생성 (CreateRenderTargets())
+
+프레임 초반 바인딩 (씬 렌더 대상)
+- URenderer::BeginFrame() (TL2/Renderer.cpp)
+  - ClearBackBuffer(): RenderTargetView/FXAARTV/HeatRTV 모두 Clear
+  - RSSetViewport(): 뷰포트 설정 + FXAA 상수 갱신
+  - OMSetRenderTargets(): FXAARTV가 존재하면 FXAARTV+DSV 바인딩, 아니면 백버퍼 RenderTargetView+DSV 바인딩
+    (TL2/D3D11RHI.cpp의 D3D11RHI::OMSetRenderTargets)
+- 결과: 씬은 기본적으로 FXAARTV(중간 컬러 버퍼)에 렌더링됨
+
+포스트 프로세싱 흐름 (UWorld::PostProcessing, TL2/World.cpp)
+- 단일 뷰포트 모드
+  1) Heat 패스 (ApplyHeat)
+     - 출력: HeatRTV (OMSetRenderTargets(HeatRTV, nullptr))
+     - 입력: FXAASRV(씬 컬러), 노이즈 텍스처(왜곡용)
+     - 풀스크린 트라이앵글 드로우
+  2) FXAA 패스 (ApplyFXAA)
+     - 출력: 백버퍼 RTV (OMSetBackBufferNoDepth)
+     - 입력: HeatSRV(Heat 결과)
+     - 풀스크린 트라이앵글 드로우
+- 4분할 뷰포트 모드
+  - 각 뷰포트에 대해 RS 뷰포트를 설정하고, 백버퍼 RTV를 바인딩한 뒤 ApplyFXAA만 호출
+
+리사이즈/해제
+- OnResize()/ResizeSwapChain(): 기존 RTV/DSV 해제 후 스왑체인 버퍼 리사이즈, CreateBackBufferAndDepthStencil()로 재생성 및 OM 재바인딩
+- ReleaseFrameBuffer(): RenderTargetView/FXAARTV/HeatRTV/DepthStencilView/각종 SRV/텍스처 안전 해제
+
+관련 주요 API 요약
+- D3D11RHI::ClearBackBuffer(): RenderTargetView/FXAARTV/HeatRTV Clear
+- D3D11RHI::OMSetRenderTargets(): FXAARTV 우선, 없으면 백버퍼 RTV 바인딩
+- D3D11RHI::OMSetBackBufferNoDepth(): 백버퍼 RTV를 깊이 없이 바인딩
+- World::ApplyHeat(): 출력 HeatRTV, 입력 FXAASRV
+- World::ApplyFXAA(): 출력 백버퍼 RTV, 입력 HeatSRV
+
+흐름 도식 (단일 뷰포트)
+- 씬 렌더링: Geometry → FXAARTV(+DSV)
+- Heat: FXAASRV → PS → HeatRTV
+- FXAA: HeatSRV → PS → 백버퍼 RenderTargetView
+- Present
+
+참고/주의사항
+- 4분할 모드에서 현재 ApplyFXAA는 HeatSRV를 소스로 사용합니다. Heat 패스를 생략한다면 FXAA 입력 소스를 FXAASRV로 바꾸는 등의 일관성 보정이 필요할 수 있습니다.
+- OMSetRenderTargets()가 기본 씬 타깃을 FXAARTV로 설정하므로, 포스트 프로세싱 단계 전후로 필요한 시점에 명시적으로 타깃 전환(예: OMSetBackBufferNoDepth)을 수행하는 현재 구조가 타당합니다.

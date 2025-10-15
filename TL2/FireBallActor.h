@@ -4,16 +4,18 @@
 class UPointLightComponent;
 
 class AFireBallActor : public AStaticMeshActor
-{	
+{	 
 public:
-	DECLARE_CLASS(AFireBallActor, AStaticMeshActor)
+    DECLARE_CLASS(AFireBallActor, AStaticMeshActor)
 
-	AFireBallActor();
+    AFireBallActor();
 
-	UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
+    UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
+
+    virtual void Tick(float DeltaTime) override;
 
 protected:
-	~AFireBallActor() override;
+    ~AFireBallActor() override;
 
 protected:
 	UPointLightComponent* PointLightComponent;

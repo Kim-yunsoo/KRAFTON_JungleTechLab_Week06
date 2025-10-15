@@ -1,12 +1,21 @@
 ﻿#include "pch.h"
 #include "FireBallActor.h"
 #include "PointLightComponent.h"
+#include "StaticMeshComponent.h"
+#include "World.h"
+#include "Renderer.h"
 
 AFireBallActor::AFireBallActor()
 {
-	// Add Point Light Component
-	PointLightComponent = CreateDefaultSubobject<UPointLightComponent>("PointLight");
-	PointLightComponent->SetupAttachment(RootComponent, EAttachmentRule::KeepRelative);  
+    // Add Point Light Component
+    PointLightComponent = CreateDefaultSubobject<UPointLightComponent>("PointLight");
+    PointLightComponent->SetupAttachment(RootComponent, EAttachmentRule::KeepRelative);  
+
+    // Apply procedural fireball surface shader to the mesh
+    if (UStaticMeshComponent* SMC = GetStaticMeshComponent())
+    {
+        SMC->SetMaterial("Fireball.hlsl");
+    } 
 }
 
 AFireBallActor::~AFireBallActor()
@@ -41,5 +50,17 @@ UObject* AFireBallActor::Duplicate(FObjectDuplicationParameters Parameters)
 	
 
 
-	return DupActor;
+    return DupActor;
+}
+
+void AFireBallActor::Tick(float DeltaTime)
+{
+    Super_t::Tick(DeltaTime);
+
+    // Feed time to shaders using the existing UV scroll CB (b5)
+    if (World && World->GetRenderer())
+    {
+        // Speed zero so other materials with UVScrollSpeed=(0,0) remain unaffected
+        World->GetRenderer()->UpdateUVScroll({0.0f, 0.0f}, World->GetTimeSeconds());
+    }
 }

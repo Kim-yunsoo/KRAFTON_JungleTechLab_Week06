@@ -11,6 +11,7 @@ class UShader;
 class UStaticMesh;
 class D3D11RHI;
 struct FMaterialSlot;
+struct FHeatInfo;
 
 class URenderer
 {
@@ -66,6 +67,8 @@ public:
 
     void UpdateUVScroll(const FVector2D& Speed, float TimeSec);
 
+    void UpdateHeatConstantBuffer(const FHeatInfo& HeatCB);
+
     void DrawIndexedPrimitiveComponent(UTextRenderComponent* Comp, D3D11_PRIMITIVE_TOPOLOGY InTopology);
     void DrawIndexedPrimitiveComponent(UBillboardComponent* Comp,
                                        D3D11_PRIMITIVE_TOPOLOGY InTopology);
@@ -101,10 +104,12 @@ public:
 
     int GetFXAAQuality() { return FXAAVersion; }
     void SetFXAAQuality(int Version) { FXAAVersion = Version; }
-
-    void PostProcessing();
-
-
+     
+    void EnsurePostProcessingShader(); 
+    
+    UShader* GetFXAAShader() { return FXAAShader; }
+    UShader* GetHeatShader() { return HeatShader; }
+    
     // ✅ Scene RenderTarget 관리
     void BeginSceneRendering();
     void EndSceneRendering();
@@ -147,7 +152,9 @@ private:
     } CachedFXAAParams;
 
     // Post-process FXAA shader
+    // Post-processing shader
     UShader* FXAAShader = nullptr;
+    UShader* HeatShader = nullptr;
     bool bFXAAEnabled = false;
     int FXAAVersion = 1; 
 };

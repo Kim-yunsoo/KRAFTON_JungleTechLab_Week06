@@ -54,6 +54,7 @@ public:
     // Lighting
     virtual void UpdateLightConstantBuffers(const TArray<FLightInfo>& InLights) = 0;
     virtual void UpdateFXAAConstantBuffers(const FXAAInfo& InFXAA) = 0;
+    virtual void UpdateHeatConstantBuffer(const FHeatInfo& HeatCB) = 0;
 
     // clear
     virtual void ClearBackBuffer() = 0;
@@ -72,6 +73,7 @@ public:
     virtual void OMSetBlendState(bool bIsBlendMode) = 0;
     virtual void OmSetDepthStencilState(EComparisonFunc Func) = 0;
     virtual void Present() = 0;
-    virtual void PSSetDefaultSampler(UINT StartSlot) = 0;
+    virtual void PSSetDefaultSampler(UINT StartSlot) = 0;  
+    virtual void PSSetMirrorSampler(UINT StartSlot) = 0;
 };
 

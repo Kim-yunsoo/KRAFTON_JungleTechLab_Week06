@@ -442,8 +442,8 @@ struct FLinearColor
 struct FLightInfo
 {
     ELighType Type;
-    
     FVector LightPos;
+
     FLinearColor Color; 
 
     //Point Light
@@ -472,3 +472,27 @@ struct FXAAInfo
 };
 
 static_assert(sizeof(FXAAInfo) % 16 == 0, "FXAAInfo must be 16-byte aligned");
+
+
+struct FHeatSpot
+{
+    FVector2D UV;
+    float RadiusPx;
+    float Strength;
+
+    FLinearColor Color;
+};
+
+struct FHeatInfo
+{
+    uint32    NumSpots = 0;
+    float     DistortionPx = 0.8f;  // 1px 근처 권장
+    float     EmissiveMul = 0.12f; // 선택
+    float     TimeSec = 0.0f;
+
+    FVector2D InvRes;           // 1/width,1/height
+    float     FalloffExp = 2.2f;
+    float     Pad0 = 0.0f;
+
+    FHeatSpot Spots[8];        // 최대 8개
+};

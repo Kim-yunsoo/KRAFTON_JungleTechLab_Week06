@@ -42,11 +42,11 @@ VS_OUT VS_FullScreen(uint id : SV_VertexID)
         float2(3.0, -1.0)
     };
 
-    float2 p = verts[id];
-    VS_OUT o;
-    o.pos = float4(p, 0.0f, 1.0f);
-    o.uv = 0.5f * float2(p.x, -p.y) + 0.5f;
-    return o;
+    float2 pos = verts[id];
+    VS_OUT output;
+    output.pos = float4(pos, 0.0f, 1.0f);
+    output.uv = 0.5f * float2(pos.x, -pos.y) + 0.5f;
+    return output;
 }
 
 //------------------------------------------------------------------------------

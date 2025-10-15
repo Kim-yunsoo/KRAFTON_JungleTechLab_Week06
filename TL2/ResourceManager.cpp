@@ -385,6 +385,8 @@ void UResourceManager::InitShaderILMap()
     layout.Add({ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 });
     layout.Add({ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 40, D3D11_INPUT_PER_VERTEX_DATA, 0 });
     ShaderToInputLayoutMap["StaticMeshShader.hlsl"] = layout;
+    // Fireball uses the same static mesh vertex format
+    ShaderToInputLayoutMap["Fireball.hlsl"] = layout;
     ShaderToInputLayoutMap["DecalShader.hlsl"] = layout;
     ShaderToInputLayoutMap["ProjectionDecal.hlsl"] = layout;
     layout.clear();
@@ -405,6 +407,8 @@ void UResourceManager::InitShaderILMap()
     // FXAA fullscreen pass uses SV_VertexID (no inputs). Keep layout empty and
     // handle null input layout at bind time.
     ShaderToInputLayoutMap["FXAA.hlsl"] = layout; // empty layout
+    ShaderToInputLayoutMap["HeatDistortion.hlsl"] = layout; // empty layout
+   
 }
 
 TArray<D3D11_INPUT_ELEMENT_DESC>& UResourceManager::GetProperInputLayout(const FString& InShaderName)

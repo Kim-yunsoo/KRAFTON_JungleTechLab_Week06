@@ -103,7 +103,10 @@ public:
 	void RenderEngineActors(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport);
 	//void GameRender(ACameraActor* Camera, FViewport* Viewport);
 
+	//** === post processing == */
 	void ApplyFXAA(FViewport* vt);
+	void ApplyHeat(FViewport* vt);
+
 
 	void PostProcessing();
 	  /** === 필요한 엑터 게터 === */
@@ -163,6 +166,8 @@ private:
 	UUIManager& UIManager;
 	UInputManager& InputManager;
 	USelectionManager& SelectionManager;
+
+	float TimeSeconds = 0.0f;
 
 
 	// 메인 카메라

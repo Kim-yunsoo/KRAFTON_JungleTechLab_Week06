@@ -56,6 +56,7 @@ public:
     void UpdateFXAAConstantBuffers(const FXAAInfo& InFXAAInfo) override;
     void UpdateViewportConstantBuffer(float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
     void UpdateDepthVisualizationBuffer(float NearPlane, float FarPlane, float ViewportX, float ViewportY, float ViewportWidth, float ViewportHeight, float ScreenWidth, float ScreenHeight);
+    void UpdateHeatConstantBuffer(const FHeatInfo& HeatCB) override;
     void UpdateCameraNearFarConstantBuffer(float NearPlane, float FarPlane);
     void UpdateFogParameterConstantBuffer(float FogDensity, float FogHeightFalloff, float FogStartDistance, float FogCutoffDistance, float FogMaxOpacity, const FVector4& FogInscatteringColor, const FVector& FogComponentPosition);
     void UpdateInverseViewProjMatrixConstantBuffer(const FMatrix& InvViewMatrix, const FMatrix& InvProjectionMatrix);
@@ -75,7 +76,8 @@ public:
 	void OMSetBackBufferOnly() override;
     void OMSetBlendState(bool bIsBlendMode) override;
     void Present() override;
-	void PSSetDefaultSampler(UINT StartSlot) override;
+	void PSSetDefaultSampler(UINT StartSlot) override; 
+    void PSSetMirrorSampler(UINT StartSlot) override;
 
     void CreateShader(ID3D11InputLayout** OutSimpleInputLayout, ID3D11VertexShader** OutSimpleVertexShader, ID3D11PixelShader** OutSimplePixelShader) override;
 
@@ -121,6 +123,18 @@ public:
     {
         return FXAASRV;
     }
+    inline ID3D11RenderTargetView* GetFXAARTV()
+    {
+        return FXAARTV;
+    }
+    inline ID3D11ShaderResourceView* GetHeatSRV()
+    {
+        return HeatSRV;
+    }
+    inline ID3D11RenderTargetView* GetHeatRTV()
+    {
+        return HeatRTV;
+    }
 
     // Update viewport CB (b6) from current RS viewport
     void UpdateViewportCBFromCurrent();
@@ -134,6 +148,7 @@ private:
     void CreateConstantBuffer() override;
     void CreateDepthStencilState() override;
 	void CreateSamplerState();
+	void CreateMirrorSamplerState();
 
     // release
 	void ReleaseSamplerState();
@@ -186,6 +201,11 @@ private:
     ID3D11Texture2D* FXAATex = nullptr;
     ID3D11RenderTargetView* FXAARTV = nullptr;
     ID3D11ShaderResourceView* FXAASRV = nullptr;
+    
+    ID3D11Texture2D* HeatTex = nullptr;
+    ID3D11RenderTargetView* HeatRTV = nullptr;
+    ID3D11ShaderResourceView* HeatSRV = nullptr;
+
 
     // 버퍼 핸들
     ID3D11Buffer* ModelCB{};
@@ -200,6 +220,7 @@ private:
     ID3D11Buffer* DepthVisualizationCB{};
     ID3D11Buffer* LightCB{}; 
     ID3D11Buffer* FXAACB{};
+    ID3D11Buffer* HeatCB{};
 
     // ✅ Fog Pass용 Constant Buffers
     ID3D11Buffer* CameraNearFarCB = nullptr;          // b0: Camera Info
@@ -213,6 +234,7 @@ private:
     ID3D11Buffer* ConstantBuffer{};
 
     ID3D11SamplerState* DefaultSamplerState = nullptr;
+    ID3D11SamplerState* MirrorSamplerState = nullptr;
 
     bool bFXAAEnabledFlag = true;
     // User override for FXAA parameters (optional)
