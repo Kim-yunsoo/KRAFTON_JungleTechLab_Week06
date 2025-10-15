@@ -609,7 +609,7 @@ void UActorSpawnWidget::SpawnExponentialHeightFogActor(UWorld* World) const
 		FogComp->SetFogDensity(0.02f);               // 적당한 밀도
 		FogComp->SetFogHeightFalloff(0.2f);          // 높이에 따른 감소율
 		FogComp->SetStartDistance(0.0f);             // 카메라 바로 앞부터 시작
-		FogComp->SetFogCutoffDistance(5000.0f);      // 5000 유닛까지
+		FogComp->SetFogCutoffDistance(3600.0f);      // 4000 유닛까지
 		FogComp->SetFogMaxOpacity(1.0f);             // 최대 불투명도
 
 		// 하늘색 안개 (기본값)
