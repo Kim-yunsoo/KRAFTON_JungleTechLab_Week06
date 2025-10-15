@@ -2244,7 +2244,9 @@ void UWorld::PostProcessing()
     if (MultiViewport->GetCurrentLayoutMode() == EViewportLayoutMode::FourSplit) {
         auto** Viewports = MultiViewport->GetViewports();
         for (int i = 0; i < 4; ++i)
-        { 
+        {
+            ApplyHeat(Viewports[i]->GetViewport());
+            ApplySceneEffect(Viewports[i]->GetViewport());
             ApplyFXAAOnVP(Viewports[i]->GetViewport());
         }
     }
