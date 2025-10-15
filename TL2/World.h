@@ -107,6 +107,8 @@ public:
 	void ApplyFXAA(FViewport* vt);
 	void ApplyHeat(FViewport* vt);
 
+	// Gizmo Rendering (after post-processing)
+	void RenderGizmo(FViewport* Viewport, ACameraActor* Camera);
 
 	void PostProcessing();
 	  /** === 필요한 엑터 게터 === */

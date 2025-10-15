@@ -2302,6 +2302,13 @@ void UWorld::PostProcessing()
 
             ApplyHeat(Viewports[i]->GetViewport());
             ApplySceneEffect(Viewports[i]->GetViewport());
+
+            // Render Gizmo after scene effects (Fog, Depth) but before FXAA
+            if (FViewportClient* vc = Viewports[i]->GetViewportClient())
+            {
+                RenderGizmo(Viewports[i]->GetViewport(), vc->GetCamera());
+            }
+
             ApplyFXAAOnVP(Viewports[i]->GetViewport());
         }
     }
@@ -2320,9 +2327,49 @@ void UWorld::PostProcessing()
 
         ApplyHeat(viewport);
         ApplySceneEffect(viewport);
+
+        // Render Gizmo after scene effects (Fog, Depth) but before FXAA
+        if (FViewportClient* vc = MultiViewport->GetMainViewport()->GetViewportClient())
+        {
+            RenderGizmo(viewport, vc->GetCamera());
+        }
+
         ApplyFXAAOnVP(viewport);
     } 
 
     // Restore the original viewport so UI and other rendering is not affected
     Renderer->GetRHIDevice()->GetDeviceContext()->RSSetViewports(1, &OldViewport);
+}
+
+void UWorld::RenderGizmo(FViewport* Viewport, ACameraActor* Camera)
+{
+    if (!Viewport || !Camera || !GizmoActor || !Renderer)
+    {
+        return;
+    }
+
+    // PIE 모드에서는 기즈모를 렌더링하지 않음
+    if (IsPIEWorld())
+    {
+        return;
+    }
+
+    // 선택된 액터가 없으면 기즈모를 렌더링하지 않음
+    if (!USelectionManager::GetInstance().HasSelection())
+    {
+        return;
+    }
+
+    D3D11RHI* D3D11Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
+    ID3D11DeviceContext* DeviceContext = D3D11Device->GetDeviceContext();
+
+    // 1. FXAA RenderTarget에 렌더링 (Depth 버퍼는 사용하지 않음)
+    D3D11Device->OMSetFXAARenderTarget();
+
+    // 2. 기즈모 렌더링
+    GizmoActor->Render(Camera, Viewport);
+
+    // 3. 상태 복원
+    // RenderTarget 언바인딩 (다음 렌더링을 위해)
+    DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 }

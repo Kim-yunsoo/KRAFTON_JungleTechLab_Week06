@@ -57,13 +57,7 @@ void FViewportClient::Draw(FViewport* Viewport)
             {
                 World->SetViewModeIndex(ViewModeIndex);
                 World->RenderViewports(Camera, Viewport);
-                AGizmoActor* GizmoActor = World->GetGizmoActor();
-
-                if (GizmoActor)
-                {
-                    GizmoActor->Render(Camera, Viewport);
-                        
-                }
+                // Gizmo rendering moved to PostProcessing in World::RenderGizmo()
             }
             break;
         }
@@ -83,12 +77,7 @@ void FViewportClient::Draw(FViewport* Viewport)
             {
                 World->SetViewModeIndex(ViewModeIndex);
                 World->RenderViewports(Camera, Viewport);
-                
-
-                if (World->GetGizmoActor())
-                {
-                    World->GetGizmoActor()->Render(Camera, Viewport);
-                }
+                // Gizmo rendering moved to PostProcessing in World::RenderGizmo()
             }
             break;
         }
