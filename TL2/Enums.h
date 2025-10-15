@@ -476,7 +476,10 @@ struct FHeatSpot
     FVector2D UV;
     float RadiusPx;
     float Strength;
+
+    FLinearColor Color;
 };
+
 struct FHeatInfo
 {
     uint32    NumSpots = 0;

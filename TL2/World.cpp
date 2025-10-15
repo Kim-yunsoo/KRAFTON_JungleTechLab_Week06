@@ -410,6 +410,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
                         Heat.UV = OutUV;
                         Heat.RadiusPx = RadiusPx;
                         Heat.Strength = Strength;
+                        Heat.Color = LightInfo.Color;
                         HeatCB.Spots[HeatCB.NumSpots++] = Heat; 
                     }
 

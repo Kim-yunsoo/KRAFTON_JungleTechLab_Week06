@@ -34,7 +34,7 @@ float SoftAttenuate(FLightInfo LightInfo, float3 Position)
 {
     float dist = length(Position - LightInfo.LightPos);
     float x = saturate(dist / LightInfo.Radius);
-    return pow(1.0f - x, LightInfo.RadiusFallOff);
+    return pow(1.0f - x, LightInfo.RadiusFallOff) * LightInfo.Intensity;
 }
 
 // Diffuse-only point light helper (world-space)
@@ -47,7 +47,7 @@ float3 Calculate_PointLight_Diffuse(FLightInfo LightInfo, float3 worldPos, float
     
     float atten = SoftAttenuate(LightInfo, worldPos);
     
-    float3 lightColor = LightInfo.Color.rgb * LightInfo.Intensity;
+    float3 lightColor = LightInfo.Color.rgb;
 
     return lightColor * NdotL * atten;
 } 

@@ -1,3 +1,12 @@
+struct HeatSpot
+{
+    float2 UV;
+    float RadiusPx;
+    float Strength;
+
+    float4 Color;
+};
+
 cbuffer HeatConstantBuffer : register(b8)
 {
     int NumSpots;
@@ -10,9 +19,9 @@ cbuffer HeatConstantBuffer : register(b8)
     float Padding;
     
     // xy: uv, z: RadiusPx, w: Strength
-    float4 Spots[8];
+    HeatSpot Spots[8];
 };
- 
+
 cbuffer HeatViewportCB : register(b6)
 {
     float4 ViewportRect;
@@ -56,37 +65,39 @@ float4 mainPS(VS_OUT input) : SV_Target
     noise = noise * 2 - 1; // [-1, 1] //나이스한 sampling을 위해서
     
     float2 offset = 0;
-    float glow = 0;
-    
+    float glowEffect = 0;
+    float3 glowColor = float3(0, 0, 0);
+
     [loop]
     for (uint s = 0; s < NumSpots; ++s)
     {
         // Spots: xy: uv, z: RadiusPx, w: Strength 
         
-        //viewport 기준 uv
-        float2 localUV = Spots[s].xy; //현재 Viewport 기준 [0, 1]
-        //screen 기준 uv
-        
+        //viewport 기준 uv, spots center의 uv 좌표
+        float2 localUV = Spots[s].UV; //현재 Viewport 기준 [0, 1]
+        //screen 기준 uv ,spots center의 uv좌표
         float2 globalUV = (ViewportRect.xy + localUV * ViewportRect.zw) * InvRes; // Viewport.zw = width , height
         
         // Spots.z: RadiusPx
         //float rpx = max(Spots[s].z, 1.0);
-        float strength = Spots[s].w;   
+        float strength = Spots[s].Strength;   
 
         // uv→픽셀좌표로 변환해 반경(px)으로 감쇠
         float2 pxDist= (uv - globalUV) / px;
-        float radius = length(pxDist);
-        float w = saturate(1.0 - pow(radius / Spots[s].z, FalloffExp) ) * strength;
+        float radius = length(pxDist); // 중심으로 부터 얼마나 떨어졌는 지
+        float attenu = saturate(1.0 - pow(radius / Spots[s].RadiusPx, FalloffExp) ) * strength; // 그걸 Radius 로 나눠서 감쇠
+        
 
         // 방사 + 노이즈 혼합
         float2 dir = normalize(pxDist);
-        offset += (dir * 0.35 + noise * 0.65) * (DistortionPx * px) * w;
+        offset += (dir * 0.25 + noise * 0.75) * (DistortionPx * px * 1.5) * attenu ;
 
-        glow = max(glow, w);
+        glowEffect = max(glowEffect, attenu);
+        glowColor = max(glowColor, Spots[s].Color.rgb * attenu);
     }
     
     float3 color = SceneColor.Sample(Sampler, uv + offset).rgb;
-    color += glow * EmissiveMul;
+    color = color + (glowColor + glowEffect) * EmissiveMul; // EmissiveMul을 빼면 빛이 너무 강하다 
     
     return float4(color, 1);     
 }
