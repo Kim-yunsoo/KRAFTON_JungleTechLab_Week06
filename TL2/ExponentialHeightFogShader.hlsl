@@ -91,17 +91,6 @@ PS_INPUT mainVS(uint vertexID : SV_VertexID)
 //------------------------------------------------------
 
 /**
- * NDC Depth를 선형 Depth로 변환
- */
-float LinearizeDepth(float depthNDC)
-{
-    // DirectX perspective projection 역변환
-    float linearDepth = (2.0f * g_NearPlane * g_FarPlane) /
-                        (g_FarPlane + g_NearPlane - depthNDC * (g_FarPlane - g_NearPlane));
-    return linearDepth;
-}
-
-/**
  * Screen UV와 Depth로부터 World Position 복원
  */
 float3 ReconstructWorldPosition(float2 screenUV, float depthNDC)
@@ -148,19 +137,23 @@ float CalculateFogAmount(float3 cameraPos, float3 worldPos, float distance)
         return 0.0f;
     
     // 2. CutoffDistance 이후에는 최대 불투명도
-    if (distance > g_FogCutoffDistance)
+    if (g_FogCutoffDistance > 0.0 && distance > g_FogCutoffDistance)
         return g_FogMaxOpacity;
     
     // 3. 거리 기반 안개 계산 [0, 1]
     float distanceFactor = (distance - g_FogStartDistance) / (g_FogCutoffDistance - g_FogStartDistance);
     distanceFactor = saturate(distanceFactor);
     
-    // 4. 높이 기반 안개 밀도 (중간 지점의 높이 사용)
-    float midPointHeight = (cameraPos.z + worldPos.z) * 0.5f;
-    float heightDensity = CalculateFogDensityAtHeight(midPointHeight);
-    
-    // 5. 최종 안개 적용량 = 거리 * 높이 밀도 * 최대 불투명도
-    float fogAmount = distanceFactor * heightDensity * g_FogMaxOpacity;
+    // 4. 높이에 따른 안개 밀도 적분 (샘플링)
+    float heightIntegral = 0.0;
+    int numSamples = 8;
+    for (int i = 0; i < numSamples; ++i)
+    {
+        float t = i / (float) numSamples;
+        float3 samplePos = lerp(cameraPos, worldPos, t);
+        heightIntegral += CalculateFogDensityAtHeight(samplePos.z);
+    }
+    float fogAmount = heightIntegral / numSamples * distance;
     
     return saturate(fogAmount);
 }
