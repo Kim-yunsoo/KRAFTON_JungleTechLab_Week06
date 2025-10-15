@@ -2245,6 +2245,17 @@ void UWorld::PostProcessing()
         auto** Viewports = MultiViewport->GetViewports();
         for (int i = 0; i < 4; ++i)
         {
+            if (!Viewports[i]) continue;
+
+            if (FViewport* vp = Viewports[i]->GetViewport())
+            {
+                vp->BeginRenderFrame();
+                if (FViewportClient* vc = Viewports[i]->GetViewportClient())
+                {
+                    vc->Draw(vp);
+                } 
+            }
+
             ApplyHeat(Viewports[i]->GetViewport());
             ApplySceneEffect(Viewports[i]->GetViewport());
             ApplyFXAAOnVP(Viewports[i]->GetViewport());
