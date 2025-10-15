@@ -30,6 +30,7 @@
 #include "RenderingStats.h"
 #include "BillboardComponent.h"
 #include "DecalComponent.h"
+#include "HeightFogComponent.h"
 
 FRay MakeRayFromMouse(const FMatrix& InView,
                       const FMatrix& InProj)
@@ -944,6 +945,22 @@ bool CPickingSystem::CheckActorPicking(AActor* Actor, USceneComponent*& OutCompo
         }
     }
 
+    // 4. HeightFogComponent 검사
+    const TSet<UHeightFogComponent*> HeightFogComponents = Actor->GetComponents<UHeightFogComponent>();
+    for (UHeightFogComponent* HeightFogComponent : HeightFogComponents)
+    {
+        float HitDistance;
+        if (CheckHeightFogComponentPicking(HeightFogComponent, Ray, HitDistance))
+        {
+            if (HitDistance < ClosestDistance)
+            {
+                ClosestDistance = HitDistance;
+                ClosestComponent = HeightFogComponent;
+                bHit = true;
+            }
+        }
+    }
+
     // 가장 가까운 컴포넌트 반환
     if (bHit)
     {
@@ -1106,6 +1123,36 @@ bool CPickingSystem::CheckDecalComponentPicking(const UDecalComponent* Component
     // Ray-Sphere 교차 검사
     float SphereHitDistance;
     if (IntersectRaySphere(Ray, DecalWorldPos, PickingRadius, SphereHitDistance))
+    {
+        OutDistance = SphereHitDistance;
+        return true;
+    }
+
+    return false;
+}
+
+bool CPickingSystem::CheckHeightFogComponentPicking(const UHeightFogComponent* Component, const FRay& Ray, float& OutDistance)
+{
+    if (!Component) return false;
+
+    // HeightFog의 월드 위치 (빌보드의 중심점)
+    FVector FogWorldPos = Component->GetWorldLocation();
+
+    // 카메라 정보 가져오기 (빌보드는 항상 카메라를 향함)
+    UWorld* World = Component->GetOwner()->GetWorld();
+    if (!World) return false;
+
+    ACameraActor* CameraActor = World->GetCameraActor();
+    if (!CameraActor) return false;
+
+    // 빌보드 크기를 기반으로 구의 반경 계산 (기본 크기 1.0 사용)
+    float BillboardRadius = 0.5f; // 기본 빌보드 크기의 절반
+    // 피킹을 쉽게 하기 위해 반경을 확장 (조정 가능)
+    float PickingRadius = BillboardRadius * 1.0f;
+
+    // Ray-Sphere 교차 검사
+    float SphereHitDistance;
+    if (IntersectRaySphere(Ray, FogWorldPos, PickingRadius, SphereHitDistance))
     {
         OutDistance = SphereHitDistance;
         return true;

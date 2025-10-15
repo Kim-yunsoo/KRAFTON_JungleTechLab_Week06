@@ -40,7 +40,7 @@ UDecalComponent::UDecalComponent()
     // Billboard setup (Editor only)
     auto& ResourceManager = UResourceManager::GetInstance();
     BillboardQuad = ResourceManager.Get<UTextQuad>("Billboard");
-    BillboardTexture = ResourceManager.Load<UTexture>("Editor/Decal/DecalActor_64x.dds");
+    BillboardTexture = ResourceManager.Load<UTexture>("Editor/Icon/S_DecalActorIcon.dds");
     BillboardMaterial = ResourceManager.Load<UMaterial>("Billboard.hlsl");
 
     SetTickEnabled(true);
@@ -507,7 +507,7 @@ void UDecalComponent::RenderBillboard(URenderer* Renderer, const FMatrix& View, 
     FVector BillboardPos = GetWorldLocation();
 
     // 텍스처 로드 
-    BillboardMaterial->Load("Editor/Decal/DecalActor_64x.dds", Renderer->GetRHIDevice()->GetDevice());
+    BillboardMaterial->Load("Editor/Icon/S_DecalActorIcon.dds", Renderer->GetRHIDevice()->GetDevice());
 
     // 상수 버퍼 업데이트
     Renderer->UpdateBillboardConstantBuffers(BillboardPos, View, Proj, CamRight, CamUp);

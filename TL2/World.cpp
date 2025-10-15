@@ -398,6 +398,12 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
                 continue;
             }
 
+            if (UHeightFogComponent* HeightFogComponent = Cast<UHeightFogComponent>(Component))
+            {
+                HeightFogComponent->Render(Renderer, ViewMatrix, ProjectionMatrix);
+                continue;
+            }
+
             if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
             {
                 bool bIsSelected = SelectionManager.IsActorSelected(Actor);

@@ -18,6 +18,9 @@ public:
     // Component Tick
     virtual void TickComponent(float DeltaSeconds) override;
 
+    // Rendering
+    void Render(class URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
+
     // Duplicate
     virtual UObject* Duplicate() override;
     virtual UObject* Duplicate(FObjectDuplicationParameters Parameters) override;
@@ -98,4 +101,27 @@ protected:
 
     /** 컴포넌트 활성화 여부 */
     bool bEnabled = true;
+
+    // ============================================================
+    // Billboard for Editor
+    // ============================================================
+
+    /** 빌보드 렌더링 (Editor 전용) */
+    void RenderBillboard(class URenderer* Renderer, const FMatrix& View, const FMatrix& Proj);
+
+    /** 빌보드 정점 생성 */
+    void CreateBillboardVertices();
+
+    /** 빌보드 쿼드 메시 */
+    class UTextQuad* BillboardQuad = nullptr;
+
+    /** 빌보드 텍스처 */
+    class UTexture* BillboardTexture = nullptr;
+
+    /** 빌보드 머티리얼 */
+    class UMaterial* BillboardMaterial = nullptr;
+
+    /** 빌보드 크기 */
+    float BillboardWidth = 1.0f;
+    float BillboardHeight = 1.0f;
 };
