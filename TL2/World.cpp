@@ -1620,20 +1620,20 @@ void UWorld::CleanupWorld()
 
 void UWorld::InitializeFullscreenQuad()
 {
-    SceneDepthShader = ResourceManager.Load<UShader>("SceneDepthShader.hlsl");
+    UShader* SceneDepthShader = ResourceManager.Load<UShader>("SceneDepthShader.hlsl");
     if (!SceneDepthShader)
     {
         UE_LOG("ERROR: Failed to load SceneDepthShader.hlsl");
     }
 
-    ExponentialHeightFogShader = ResourceManager.Load<UShader>("ExponentialHeightFogShader.hlsl");
+    UShader* ExponentialHeightFogShader = ResourceManager.Load<UShader>("ExponentialHeightFogShader.hlsl");
     if (!ExponentialHeightFogShader)
     {
         UE_LOG("ERROR: Failed to load ExponentialHeightFogShader.hlsl");
     }
 
     // ✅ CopyShader 로드
-    CopyShader = ResourceManager.Load<UShader>("CopyShader.hlsl");
+    UShader* CopyShader = ResourceManager.Load<UShader>("CopyShader.hlsl");
     if (!CopyShader)
     {
         UE_LOG("ERROR: Failed to load CopyShader.hlsl");
@@ -1642,6 +1642,7 @@ void UWorld::InitializeFullscreenQuad()
 
 void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport)
 {
+    UShader* SceneDepthShader = ResourceManager.Load<UShader>("SceneDepthShader.hlsl");
     if (!SceneDepthShader || !Renderer)
     {
         UE_LOG("ERROR: SceneDepthPass skipped - shader or renderer is null");
@@ -1727,6 +1728,7 @@ void UWorld::RenderSceneDepthPass(const FMatrix& ViewMatrix, const FMatrix& Proj
 
 void UWorld::RenderExponentialHeightFogPass(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport)
 {
+    UShader* ExponentialHeightFogShader = ResourceManager.Load<UShader>("ExponentialHeightFogShader.hlsl");
     if (!ExponentialHeightFogShader || !Renderer)
     {
         return;
@@ -1886,80 +1888,9 @@ bool UWorld::HasActiveFog() const
     return false;
 }
 
-void UWorld::CopySceneToBackBuffer(FViewport* Viewport)
-{
-    if (!CopyShader || !Renderer)
-    {
-        UE_LOG("ERROR: CopyShader or Renderer is nullptr!");
-        return;
-    }
-
-    D3D11RHI* D3D11Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
-    ID3D11DeviceContext* DeviceContext = D3D11Device->GetDeviceContext();
-
-    // Viewport 정보
-    float ViewportX = static_cast<float>(Viewport->GetStartX());
-    float ViewportY = static_cast<float>(Viewport->GetStartY());
-    float ViewportWidth = static_cast<float>(Viewport->GetSizeX());
-    float ViewportHeight = static_cast<float>(Viewport->GetSizeY());
-    float ScreenWidth = CLIENTWIDTH;
-    float ScreenHeight = CLIENTHEIGHT;
-
-    // ============================================================
-    // Scene RTV 언바인딩
-    // ============================================================
-    DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
-
-    ID3D11ShaderResourceView* SceneSRV = D3D11Device->GetSceneShaderResourceView();
-
-    if (!SceneSRV)
-    {
-        UE_LOG("ERROR: SceneSRV is nullptr!");
-        D3D11Device->OMSetRenderTargets();
-        return;
-    }
-
-    // ============================================================
-    // ✅ BackBuffer RTV만 바인딩 (DSV 없이)
-    // ============================================================
-    D3D11Device->OMSetBackBufferOnly(); // ← 수정
-
-    // SRV 바인딩
-    DeviceContext->PSSetShaderResources(0, 1, &SceneSRV);
-
-    // Depth/Blend State 설정
-    Renderer->OMSetDepthStencilState(EComparisonFunc::Always);
-    Renderer->OMSetBlendState(false);
-
-    // Shader 준비
-    Renderer->PrepareShader(CopyShader);
-
-    // Viewport Constant Buffer 업데이트
-    Renderer->UpdateCopyShaderViewportBuffer(
-        ViewportX, ViewportY,
-        ViewportWidth, ViewportHeight,
-        ScreenWidth, ScreenHeight
-    );
-
-    D3D11Device->PSSetDefaultSampler(0);
-
-    // Fullscreen Triangle 렌더링
-    DeviceContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
-    DeviceContext->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
-    DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    DeviceContext->Draw(3, 0);
-
-    // 정리
-    ID3D11ShaderResourceView* NullSRV = nullptr;
-    DeviceContext->PSSetShaderResources(0, 1, &NullSRV);
-
-    // ✅ 기본 상태 복원
-    D3D11Device->OMSetRenderTargets();
-    Renderer->OMSetDepthStencilState(EComparisonFunc::LessEqual);
-}
-
 void UWorld::CopySceneToFXAARenderTarget(FViewport* Viewport)
 {
+    UShader* CopyShader = ResourceManager.Load<UShader>("CopyShader.hlsl");
     if (!CopyShader || !Renderer)
     {
         UE_LOG("ERROR: CopyShader or Renderer is nullptr!");

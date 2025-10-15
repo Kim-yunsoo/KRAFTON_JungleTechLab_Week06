@@ -152,8 +152,6 @@ public:
 	void RenderExponentialHeightFogPass(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport);
 
 	// ✅ Scene → BackBuffer 복사 함수 추가
-	void CopySceneToBackBuffer(FViewport* Viewport);
-
 	void CopySceneToFXAARenderTarget(FViewport* Viewport);
 
 	// ✅ Fog 활성화 여부 확인 함수
@@ -200,13 +198,6 @@ private:
 	// BVH 주기적 재빌드 관련
 	int32 BVHRebuildInterval = 30; // 0 = 더티 플래그만 사용, N = N프레임마다 재빌드
 	int32 BVHFrameCounter = 0;
-
-	// Scene Depth Pass용 전체 화면 쿼드 쉐이더
-	UShader* SceneDepthShader = nullptr;
-	// Exponential Height Fog Shader 
-	UShader* ExponentialHeightFogShader = nullptr;
-	// CopyShader
-	UShader* CopyShader = nullptr; // ✅ 추가
 };
 
 template<class T>
