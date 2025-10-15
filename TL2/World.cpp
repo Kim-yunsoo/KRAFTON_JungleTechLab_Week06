@@ -536,20 +536,20 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
     // ✅ Pass 3/4: Post-Process (FXAA Render Target 출력)
     // ====================================================================
 
-    if (ViewModeIndex == EViewModeIndex::VMI_SceneDepth)
-    {
-        // Depth 시각화
-        RenderSceneDepthPass(ViewMatrix, ProjectionMatrix, Viewport);
-    }
-	else if (HasActiveFog() && Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Fog))
-    {
-        // Fog 적용
-        RenderExponentialHeightFogPass(ViewMatrix, ProjectionMatrix, Viewport);
-    }
-    else
-    {
-		CopySceneToFXAARenderTarget(Viewport);
-    }
+ //   if (ViewModeIndex == EViewModeIndex::VMI_SceneDepth)
+ //   {
+ //       // Depth 시각화
+ //       RenderSceneDepthPass(ViewMatrix, ProjectionMatrix, Viewport);
+ //   }
+	//else if (HasActiveFog() && Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Fog))
+ //   {
+ //       // Fog 적용
+ //       RenderExponentialHeightFogPass(ViewMatrix, ProjectionMatrix, Viewport);
+ //   }
+ //   else
+ //   {
+	//	CopySceneToFXAARenderTarget(Viewport);
+ //   }
 }
 
 void UWorld::RenderEngineActors(const FMatrix& ViewMatrix, const FMatrix& ProjectionMatrix, FViewport* Viewport)
@@ -2217,6 +2217,29 @@ void UWorld::PostProcessing()
         
         ApplyFXAA(vp);
     };
+
+    auto ApplySceneEffect = [&](FViewport* vp)
+        {
+            ///vp->
+            
+            if (ViewModeIndex == EViewModeIndex::VMI_SceneDepth)
+            {
+                // Depth 시각화
+                RenderSceneDepthPass(ViewMatrix, ProjectionMatrix, vp);
+            }
+            else if (HasActiveFog() && Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Fog))
+            {
+                // Fog 적용
+                RenderExponentialHeightFogPass(ViewMatrix, ProjectionMatrix, vp);
+            }
+            else
+            {
+                CopySceneToFXAARenderTarget(vp);
+
+
+            }
+
+        };
 
     if (MultiViewport->GetCurrentLayoutMode() == EViewportLayoutMode::FourSplit) {
         auto** Viewports = MultiViewport->GetViewports();
