@@ -110,6 +110,9 @@ public:
 	// Gizmo Rendering (after post-processing)
 	void RenderGizmo(FViewport* Viewport, ACameraActor* Camera);
 
+	// Billboard Rendering (before gizmo)
+	void RenderBillboards(FViewport* Viewport, ACameraActor* Camera);
+
 	void PostProcessing();
 	  /** === 필요한 엑터 게터 === */
 	const TArray<AActor*>& GetActors() { return Level ? Level->GetActors() : Actors; }

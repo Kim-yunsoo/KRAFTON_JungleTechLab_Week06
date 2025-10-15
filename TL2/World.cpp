@@ -481,7 +481,7 @@ void UWorld::RenderViewports(ACameraActor* Camera, FViewport* Viewport)
 
             if (UHeightFogComponent* HeightFogComponent = Cast<UHeightFogComponent>(Component))
             {
-                HeightFogComponent->Render(Renderer, ViewMatrix, ProjectionMatrix);
+                //HeightFogComponent->Render(Renderer, ViewMatrix, ProjectionMatrix);
                 continue;
             }
 
@@ -2303,6 +2303,12 @@ void UWorld::PostProcessing()
             ApplyHeat(Viewports[i]->GetViewport());
             ApplySceneEffect(Viewports[i]->GetViewport());
 
+            // Render Billboards before Gizmo (to avoid Fog occlusion)
+            if (FViewportClient* vc = Viewports[i]->GetViewportClient())
+            {
+                RenderBillboards(Viewports[i]->GetViewport(), vc->GetCamera());
+            }
+
             // Render Gizmo after scene effects (Fog, Depth) but before FXAA
             if (FViewportClient* vc = Viewports[i]->GetViewportClient())
             {
@@ -2328,6 +2334,12 @@ void UWorld::PostProcessing()
         ApplyHeat(viewport);
         ApplySceneEffect(viewport);
 
+        // Render Billboards before Gizmo (to avoid Fog occlusion)
+        if (FViewportClient* vc = MultiViewport->GetMainViewport()->GetViewportClient())
+        {
+            RenderBillboards(viewport, vc->GetCamera());
+        }
+
         // Render Gizmo after scene effects (Fog, Depth) but before FXAA
         if (FViewportClient* vc = MultiViewport->GetMainViewport()->GetViewportClient())
         {
@@ -2339,6 +2351,80 @@ void UWorld::PostProcessing()
 
     // Restore the original viewport so UI and other rendering is not affected
     Renderer->GetRHIDevice()->GetDeviceContext()->RSSetViewports(1, &OldViewport);
+}
+
+void UWorld::RenderBillboards(FViewport* Viewport, ACameraActor* Camera)
+{
+    if (!Viewport || !Camera || !Renderer || !Level)
+    {
+        return;
+    }
+
+    // PIE 모드에서는 빌보드를 렌더링하지 않음
+    if (IsPIEWorld())
+    {
+        return;
+    }
+
+    D3D11RHI* D3D11Device = static_cast<D3D11RHI*>(Renderer->GetRHIDevice());
+    ID3D11DeviceContext* DeviceContext = D3D11Device->GetDeviceContext();
+
+    // 1. FXAA RenderTarget에 렌더링 (Depth 버퍼는 사용하지 않음)
+    D3D11Device->OMSetFXAARenderTarget();
+
+    // 2. View/Projection Matrix 계산
+    float ViewportAspectRatio = static_cast<float>(Viewport->GetSizeX()) / static_cast<float>(Viewport->GetSizeY());
+    if (Viewport->GetSizeY() == 0)
+    {
+        ViewportAspectRatio = 1.0f;
+    }
+    FMatrix ViewMatrix = Camera->GetViewMatrix();
+    FMatrix ProjectionMatrix = Camera->GetProjectionMatrix(ViewportAspectRatio, Viewport);
+
+    // 3. Level의 모든 Actor를 순회하며 빌보드 렌더링
+    const TArray<AActor*>& LevelActors = Level->GetActors();
+    for (AActor* Actor : LevelActors)
+    {
+        if (!Actor || Actor->GetActorHiddenInGame())
+        {
+            continue;
+        }
+
+        for (UActorComponent* Component : Actor->GetComponents())
+        {
+            if (!Component)
+            {
+                continue;
+            }
+
+            // UHeightFogComponent의 빌보드 렌더링
+            if (UHeightFogComponent* FogComp = Cast<UHeightFogComponent>(Component))
+            {
+                FogComp->Render(Renderer, ViewMatrix, ProjectionMatrix);
+            }
+            // UDecalComponent의 빌보드 렌더링 (RenderEditorVisuals는 이미 메인 패스에서 호출되므로 여기서는 빌보드만)
+            else if (UDecalComponent* DecalComp = Cast<UDecalComponent>(Component))
+            {
+                // DecalComponent의 RenderEditorVisuals를 호출하여 빌보드 렌더링
+                DecalComp->RenderEditorVisuals(Renderer, ViewMatrix, ProjectionMatrix);
+            }
+            // UBillboardComponent 렌더링
+            else if (UBillboardComponent* BillboardComp = Cast<UBillboardComponent>(Component))
+            {
+                if (UActorComponent* ActorComp = Cast<UActorComponent>(BillboardComp))
+                {
+                    if (ActorComp->IsActive())
+                    {
+                        BillboardComp->Render(Renderer, ViewMatrix, ProjectionMatrix, Viewport);
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. 상태 복원
+    // RenderTarget 언바인딩 (다음 렌더링을 위해)
+    DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 }
 
 void UWorld::RenderGizmo(FViewport* Viewport, ACameraActor* Camera)
