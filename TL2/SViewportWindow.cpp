@@ -301,6 +301,13 @@ void SViewportWindow::RenderToolbar()
 				Viewport->ToggleShowFlag(EEngineShowFlags::SF_Decals);
 			}
 
+			// Fog
+			bool bFogEnabled = Viewport->IsShowFlagEnabled(EEngineShowFlags::SF_Fog);
+			if (ImGui::Checkbox("Fog", &bFogEnabled))
+			{
+				Viewport->ToggleShowFlag(EEngineShowFlags::SF_Fog);
+			}
+
 			ImGui::EndCombo();
 		}
 

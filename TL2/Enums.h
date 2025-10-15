@@ -334,9 +334,12 @@ enum class EEngineShowFlags : uint64
 
     // Decals
 	SF_Decals = 1ull << 7,        // Show/hide decals
+
+    // Fog
+	SF_Fog = 1ull << 8,           // Show/hide fog effects
     
     // Default enabled flags
-    SF_DefaultEnabled = SF_Primitives | SF_StaticMeshes | SF_Grid | SF_Decals,
+    SF_DefaultEnabled = SF_Primitives | SF_StaticMeshes | SF_Grid | SF_Decals | SF_Fog,
     
     // All flags (for initialization/reset)
     SF_All = 0xFFFFFFFFFFFFFFFFull
